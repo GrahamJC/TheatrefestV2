@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block pagetitle %}Venues{% endblock %}
+
+{% block content %}
+
+    <div id="tf-program-venues">
+
+        <div class="nav nav-pills nav-justified mb-3">
+            <a class="nav-item nav-link active" href="#tab-ticketed" data-toggle="tab">Ticketed</a>
+            <a class="nav-item nav-link" href="#tab-alt-spaces" data-toggle="tab">Alt Spaces</a>
+            {% if request.site.info.festival.venue_map %}
+                <a class="nav-item nav-link" href="#tab-map" data-toggle="tab">Map</a>
+            {% endif %}
+        </div>
+
+        <div class="tab-content">
+
+            <div id="tab-ticketed" class="tab-pane active">
+                <h6>Tickets are required for all performances at these venues.</h6>
+                {% for venue in ticketed_venues %}
+                    {% include 'program/venues_venue.html' %}
+                {% endfor %}
+            </div>
+
+            <div id="tab-alt-spaces" class="tab-pane">
+                <h6>These venues are for non-ticketed, pay-what-you-will performances.</h6>
+                {% for venue in nonticketed_venues %}
+                    {% include 'program/venues_venue.html' %}
+                {% endfor %}
+            </div>
+
+            {% if request.site.info.festival.venue_map %}
+                <div id="tab-map" class="tab-pane">
+                    <img class="w-100" src="{{ MEDIA_ROOT }}{{ request.site.info.festival.venue_map.url }}" />
+                </div>
+            {% endif %}
+
+        </div>
+
+    </div>
+
+{% endblock %}
+

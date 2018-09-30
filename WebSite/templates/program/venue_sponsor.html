@@ -1,0 +1,7 @@
+<div class="mb-3" style="height: 75px; {% if venue.sponsor.background %}background-color: {{ venue.sponsor.background }};{% endif %}">
+    <a href="{{ venue.sponsor.url }}" target="_blank"  style="{% if venue.sponsor.color %}color: {{ venue.sponsor.color }};{% endif %}">
+        {% if venue.sponsor.image %}<img class="h-100 float-right" src="{{ MEDIA_ROOT }}{{ venue.sponsor.image.url }}" />{% endif %}
+        <div class="p-1">{{ venue.name }} programme is sponsored by</div>
+        {% if venue.sponsor.message %}<div class="p-1">{{ venue.sponsor.message }}</div>{% endif %}
+    </a>
+</div>

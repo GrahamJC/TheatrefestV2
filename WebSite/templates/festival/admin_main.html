@@ -1,0 +1,17 @@
+﻿{% extends "base.html" %}
+{% load i18n %}
+
+{% block pagetitle %}Festival Admininistration{% endblock %}
+
+{% block content %}
+
+    <ul>
+        <li>Shows</li>
+        <li>Companies</li>
+        <li>Venues</li>
+        <li><a href="{% url 'festival:admin_pages' %}">Pages</a></li>
+        <li>Navigator</li>
+        <li>Images</li>
+    </ul>
+
+{% endblock %}

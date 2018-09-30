@@ -1,0 +1,13 @@
+{% load widget_tweaks %}
+{% load my_tweaks %}
+
+{% if field|is_checkbox %}
+    {{ field }}
+{% elif field|is_file %}
+    {{ field }}
+{% elif field.errors %}
+    {{ field|add_class:"form-control is-invalid" }}
+{% else %}
+    {{ field|add_class:"form-control" }}
+{% endif %}
+

@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block pagetitle %}{{ venue.name }}{% endblock %}
+
+{% block content %}
+
+    <div id="tf-program-venue-detail">
+
+        {% if venue.sponsor %}
+            {% include 'program/venue_sponsor.html' %}
+        {% endif %}
+
+        {% for show in shows %}
+            {% if show.is_cancelled %}
+                <div class="tf-show tf-cancelled row mb-3">
+                    <div class="col-4 col-md-3"><img class="m-1 w-100" src="{{ MEDIA_ROOT }}{{ show.image.url }}" /></div>
+                    <div class="col-8 col-md-9">
+                        <h5 class="tf-show-name">{{ show.name }}</h5>
+                        <h6 class="tf-company-name">{{ show.company.name }}</h6>
+                        <div class="tf-description">
+                            {% if show.replaced_by %}
+                                CHANGE TO BROCHURE: this show is cancelled and replaced by {{ show.replaced_by.company.name }} performing <a href="{% url 'program:show' show.replaced_by.uuid %}">{{ show.replaced_by.name }}</a>.
+                            {% else %}
+                                CHANGE TO BROCHURE: this show is cancelled.
+                            {% endif %}
+                        </div>
+                        <div class="tf-info-1">
+                            <span class="tf-performance-days">
+                                {% for date in show.performance_dates %}
+                                    {% if not forloop.first %}, {% endif %}
+                                    {{ date | date:'D' }}
+                                {% endfor %}
+                            </span>
+                        </div>
+                    </div>
+                </div>                
+            {% else %}
+                <div class="tf-show row mb-3">
+                    <div class="col-4 col-md-3"><a href="{% url 'program:show' show.uuid %}"><img class="m-1 w-100" src="{{ MEDIA_ROOT }}{{ show.image.url }}" /></a></div>
+                    <div class="col-8 col-md-9">
+                        <h5 class="tf-show-name"><a href="{% url 'program:show' show.uuid %}">{{ show.name }}</a></h5>
+                        <h6 class="company tf-company-name">{{ show.company.name }}</h6>
+                        {% if show.listing_short %}
+                            <div class="tf-description d-none d-sm-block">{{ show.listing | linebreaks }}</div>
+                            <div class="tf-description d-block d-sm-none">{{ show.listing_short | linebreaks }}</div>
+                        {% else %}
+                            <div class="tf-description">{{ show.listing | linebreaks }}</div>
+                        {% endif %}
+                        <div class="tf-info-1">
+                            <span class="tf-performance-days">
+                                {% for date in show.performance_dates %}
+                                    {% if not forloop.first %}, {% endif %}
+                                    {{ date | date:'D' }}
+                                {% endfor %}
+                            </span>
+                        </div>
+                        <div class="tf-info-2">
+                            {% if show.display_genres %}
+                                <span class="tf-genres d-none d-sm-inline">
+                                    {{ show.display_genres }}
+                                </span>
+                            {% endif %}
+                            {% if show.has_warnings %}
+                                <a class="tf-warning" href="{% url 'program:show' show.uuid %}">(content)</a>
+                            {% endif %}
+                            {% if show.age_range %}
+                                <span class="tf-age-range">Age {{ show.age_range }}</span>
+                            {% endif %}
+                            {% if show.duration %}
+                                <span class="tf-duration">{{ show.duration }} mins</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% empty %}
+            <h6>There are no shows at this venue.</h6>
+        {% endfor %}
+
+    </div>
+
+{% endblock %}
+

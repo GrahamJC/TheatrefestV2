@@ -1,0 +1,129 @@
+{% load static %}
+
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    {% block meta %}
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    {% endblock %}
+    {% block css %}
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.1.3/dist/css/bootstrap.min.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+        {% if request.site.info.stylesheet %}
+            <link rel="stylesheet" href="{% static request.site.info.stylesheet %}">
+        {% endif %}
+    {% endblock %}
+    {% block head-script %}
+        <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js" ></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.1.3/dist/js/bootstrap.min.js" ></script>
+        <script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment.min.js" ></script>
+    {% endblock %}
+    <title>{% block title %}{{ request.site.info.festival.title }}{% endblock %}</title>
+</head>
+
+<body>
+
+    <div id="tf-container" class="container">
+        <div class="row">
+            <div class="col-xl-10 offset-xl-1">
+
+                {% if request.site.info.banner %}
+                    {% include request.site.info.banner %}
+                {% else %}
+                    <div id="tf-banner" class="mb-1">
+                        {% if request.site.info.festival.banner %}
+                            <img class="w-100" src="{{ MEDIA_ROOT }}{{ request.site.info.festival.banner.url }}" />
+                        {% endif %}
+                    </div>
+                {% endif %}
+
+                {% if request.site.info.navigator %}
+                    {% include request.site.info.navigator %}
+                {% else %}
+                    <div id="tf-navigator" class="mb-2">
+                        <nav class="navbar navbar-expand-md navbar-dark bg-secondary py-1">
+                            <a class="navbar-brand d-inline d-md-none d-lg-inline" href="#">{{ request.festival.name }}</a>
+                            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapse" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                                <span class="navbar-toggler-icon"></span>
+                            </button>
+                            <div id="navbar-collapse" class="collapse navbar-collapse">
+                                <ul class="navbar-nav mr-auto">
+                                    {% for opt in request.festival.navigator_options.all %}
+                                        <li class="nav-item"><a class="nav-link" href="{{ opt.href }}">{{ opt.label }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                                <ul class="navbar-nav">
+                                    {% if user.is_authenticated %}
+                                        <li class="nav-item dropdown">
+                                            <a id="navbar-myaccount-link"class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">my account</a>
+                                            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbar-myaccount-link">
+                                                <a class="dropdown-item" href="#">{{ user.email }}</a>
+                                                <div class="dropdown-divider"></div>
+                                                <a class="dropdown-item" href="#">tickets and efringers</a>
+                                                {% if user.is_manager or user.is_box_office or user.is_volunteer %}
+                                                    <div class="dropdown-divider"></div>
+                                                    <a class="dropdown-item" href="#">volunteer</a>
+                                                    {% if user.is_box_office %}
+                                                        <a class="dropdown-item" href="#">box office</a>
+                                                    {% endif %}
+                                                    {% if user.is_manager %}
+                                                        <a class="dropdown-item" href="#">manager</a>
+                                                    {% endif %}
+                                                {% endif %}
+                                                {% if user.is_admin %}
+                                                    <div class="dropdown-divider"></div>
+                                                    <a class="dropdown-item" href="/festival/admin">festival admin</a>
+                                                    {% if not user.festival %}
+                                                        <a class="dropdown-item" href="#">site admin</a>
+                                                    {% endif %}
+                                                    {% if not user.site %}
+                                                        <a class="dropdown-item" href="/admin">system admin</a>
+                                                    {% endif %}
+                                                {% endif %}
+                                                <div class="dropdown-divider"></div>
+                                                <a class="dropdown-item" href="{% url 'logout' %}">logout</a>
+                                            </div>
+                                        </li>
+                                    {% else %}
+                                        <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">login/register</a></li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </nav>
+                    </div>    
+                {% endif %}
+
+                {% if request.site.info.header %}
+                    {% include request.site.info.header %}
+                {% else %}
+                    <div id="tf-header">
+                        <h3 id="tf-page-title">{% block pagetitle %}{% endblock %}</h3>
+                        {% for msg in messages %}
+                            <div class="{{ msg.tags }}" role="alert">{{ msg }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <div id="tf-content">
+                    {% block content %}{% endblock %}
+                </div>
+
+                {% if request.site.info.footer %}
+                    {% include request.site.info.footer %}
+                {% else %}
+                    <div id="tf-footer">
+                    </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>  
+
+    {% block body-script %}
+    {% endblock %}
+
+</body>
+
+</html>

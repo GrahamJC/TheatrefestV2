@@ -1,0 +1,62 @@
+$primary-color: #1a7cf3;
+$secondary-color: #fd7f02;
+$warning-color: #ff4040;
+
+$screen-sm: 576px;
+$screen-md: 768px;
+$screen-lg: 992px;
+$screen-xl: 1200px;
+
+// Colors
+.tf-warning {
+    color: $warning-color;
+}
+.tf-company-name {
+    color: $secondary-color;
+}
+
+// Cancelled items are greyed out
+.tf-cancelled {
+    color: darkgrey;
+
+    .tf-show-name, .tf-company-name, .tf-warning {
+        color: darkgrey;
+    }
+
+    img {
+        filter: grayscale(100%) contrast(50%);
+    }
+}
+
+// Lists
+ul.tf-none {
+    list-style-type: none;
+}
+ul.tf-noindent {
+    padding: 0;
+}
+
+// YouTube videos
+.youtube {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    width: 100%;
+    height: 153px;
+
+    @media (min-width: $screen-md) {
+        height: 299px;
+    }
+
+    @media (min-width: $screen-lg) {
+        height: 349px;
+    }
+
+    @media (min-width: $screen-xl) {
+        height: 358px;
+    }
+
+    iframe {
+        width: 100%;
+        height: 100%;
+    }
+}

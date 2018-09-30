@@ -1,0 +1,98 @@
+﻿{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block pagetitle %}Shows{% endblock %}
+
+{% block content %}
+
+    <div id="tf-program-shows">
+
+        <div class="card mb-2">
+            <div class="card-header"><a data-toggle="collapse" href="#search-expand">What are you looking for (click to search)?</a></div>
+            <div id="search-expand" class="collapse">
+                <div class="card-body">
+                    <p class="tf-instructions">Check days, venues and/or genres to restrict the search (leave all boxes unchecked to see everything).</p>
+                    <form class="row" method="GET">
+                        <div class="col-sm">{{ search.days.label_tag }}<br/>{{ search.days | add_class:"tf-none tf-noindent" }}</div>
+                        <div class="col-sm">{{ search.venues.label_tag }}<br/>{{ search.venues | add_class:"tf-none tf-noindent" }}</div>
+                        <div class="col-sm">{{ search.genres.label_tag }}<br/>{{ search.genres | add_class:"tf-none tf-noindent"}}</div>
+                        <div class="col-sm"><input class="btn btn-primary" type="submit" value="Search"/></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        {% for show in results %}
+            {% if show.is_cancelled %}
+                <div class="tf-show tf-cancelled row mb-3">
+                    <div class="col-4 col-md-3"><img class="m-1 w-100" src="{{ MEDIA_ROOT }}{{ show.image.url }}" /></div>
+                    <div class="col-8 col-md-9">
+                        <h5 class="tf-show-name">{{ show.name }}</h5>
+                        <h6 class="tf-company-name">{{ show.company.name }}</h6>
+                        <div class="tf-description">
+                            {% if show.replaced_by %}
+                                CHANGE TO BROCHURE: this show is cancelled and replaced by {{ show.replaced_by.company.name }} performing <a href="{% url 'program:show' show.replaced_by.uuid %}">{{ show.replaced_by.name }}</a>.
+                            {% else %}
+                                CHANGE TO BROCHURE: this show is cancelled.
+                            {% endif %}
+                        </div>
+                        <div class="tf-info-1">
+                            <h6 class="tf-venue-name d-inline">{{ show.venue.name }}: </h6>
+                            <span class="tf-performance-days">
+                                {% for date in show.performance_dates %}
+                                    {% if not forloop.first %}, {% endif %}
+                                    {{ date | date:'D' }}
+                                {% endfor %}
+                            </span>
+                        </div>
+                    </div>
+                </div>                
+            {% else %}
+                <div class="tf-show row mb-3">
+                    <div class="col-4 col-md-3"><a href="{% url 'program:show' show.uuid %}"><img class="m-1 w-100" src="{{ MEDIA_ROOT }}{{ show.image.url }}" /></a></div>
+                    <div class="col-8 col-md-9">
+                        <h5 class="tf-show-name"><a href="{% url 'program:show' show.uuid %}">{{ show.name }}</a></h5>
+                        <h6 class="tf-company-name">{{ show.company.name }}</h6>
+                        {% if show.listing_short %}
+                            <div class="tf-description d-none d-sm-block">{{ show.listing | linebreaks }}</div>
+                            <div class="tf-description d-block d-sm-none">{{ show.listing_short | linebreaks }}</div>
+                        {% else %}
+                            <div class="tf-description">{{ show.listing | linebreaks }}</div>
+                        {% endif %}
+                        <div class="tf-info1">
+                            <h6 class="tf-venue-name d-inline"><a href="{% url 'program:venue' show.venue.uuid %}" {% if show.venue.color %}style="color: {{ show.venue.color }}"{% endif %}>{{ show.venue.name }}</a>: </h6>
+                            <span class="tf-performance-days">
+                                {% for date in show.performance_dates %}
+                                    {% if not forloop.first %}, {% endif %}
+                                    {{ date | date:'D' }}
+                                {% endfor %}
+                            </span>
+                            <span class="tf-ticket-type">({% if show.venue.is_ticketed %}ticketed{% else %}pay-what-you-will{% endif %})</span>
+                        </div>
+                        <div class="tf-info2">
+                            {% if show.genre_list %}
+                            <span class="tf-genres d-none d-sm-inline">
+                                {{ show.genre_list }}
+                            </span>
+                            {% endif %}
+                            {% if show.has_warnings %}
+                                <a class="tf-warning" href="{% url 'program:show' show.uuid %}">(content)</a>
+                            {% endif %}
+                            {% if show.age_range %}
+                                <span class="tf-age-range">Age {{ show.age_range }}</span>
+                            {% endif %}
+                            {% if show.duration %}
+                                <span class="tf-duration">{{ show.duration }} mins</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}            
+        {% empty %}
+            <p>There are no shows that meet your search criteria.</p>
+        {% endfor %}
+
+    </div>
+
+{% endblock %}
+

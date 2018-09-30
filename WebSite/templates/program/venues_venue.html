@@ -1,0 +1,48 @@
+{% load static %}
+
+<div class="mb-3">
+
+    <h5 class="tf-venue-name">
+        <a href="{% url 'program:venue' venue.uuid %}" {% if venue.color %}style="color: {{ venue.color }};"{% endif %}>
+            {% if venue.map_index < 100 %}
+                <span class="px-1" {% if venue.color %}style="color:white; background-color: {{ venue.color }};"{% endif %}>{{ venue.map_index }}</span>
+            {% endif %}
+            {{ venue.name }}
+        </a>
+    </h5>
+
+    <div class="d-block d-sm-none">
+        <a class="float-left mr-4" href="{% url 'program:venue' venue.uuid %}">
+            <img class="m-1 w-100" src="{{ MEDIA_ROOT }}{{ venue.image.url }}" />
+        </a>
+        <p>{{ venue.listing }}</p>
+        <div class="text-right mb-2"><a href="{% url 'program:venue' venue.uuid %}">shows</a></div>
+    </div>
+
+    <div class="row d-none d-sm-flex">
+        <div class="col-4 col-md-3 col-lg-2">
+            <a href="{% url 'program:venue' venue.uuid %}">
+                <img class="m-1 w-100" src="{{ MEDIA_ROOT }}{{ venue.image.url }}" />
+            </a>
+        </div>
+        <div class="col-8 col-md-9 col-lg-10">
+            <a class="d-block d-sm-none float-left"href="{% url 'program:venue' venue.uuid %}">
+                <img class="m-1 w-100" src="{{ MEDIA_ROOT }}{{ venue.image.url }}" />
+            </a>
+            {% if venue.listing_short %}
+                <div class="tf-description d-none d-sm-block">{{ venue.listing | linebreaks }}</div>
+                <div class="tf-description d-block d-sm-none">{{ venue.listing_short | linebreaks }}</div>
+            {% else %}
+                <div class="tf-description">{{ venue.listing | linebreaks }}</div>
+            {% endif %}
+            <p>{{ venue.listing }}</p>
+            <div class="text-right mb-2"><a href="{% url 'program:venue' venue.uuid %}">shows</a></div>
+        </div>
+    </div>
+
+
+    {% if venue.sponsor %}
+        {% include 'program/venue_sponsor.html' %}
+    {% endif %}
+
+</div>

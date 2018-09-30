@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "Register for an account" %}{% endblock %}
+
+{% block pagetitle %}Register{% endblock %}
+
+{% block content %}
+
+    <div class="row">
+
+        <div class="col-md">
+            <div class="card mb-2">
+                <div class="card-header">New User</div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" id="next" value="{{ next }}" />
+                        {% include 'bs4_form.html' %}
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">Register</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md">
+            <div class="card mb-2">
+                <div class="card-header">Information</div>
+                <div class="card-body">
+                    <p>Registering on this site will allow you to buy tickets and eFringer Vouchers using your credit card.</p>
+                    <p>
+                        We need your contact details in order to send you your ticket details and to inform you if there is a change to the programme that affects your purchase.
+                        We will also contact you once after the Festival for your comment on how the ticketing system worked.
+                        Otherwise we will not use this information to contact you and we will not pass on this information to a third party.
+                    </p>
+                    <p>We will delete this information 6 months after the Festival.</p>
+                    <p>
+                        When you pay by card, the stripe payment site processes your payment details.
+                        We have no access to them and do not store them in any form.
+                    </p>
+                    <a class="card-link" href="{% static 'PrivacyPolicy.pdf' %}" target="_blank">Privacy Policy</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+{% endblock %}
