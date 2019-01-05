@@ -1,6 +1,7 @@
 import os
 import posixpath
 import json
+from decimal import Decimal
 
 from django.core.exceptions import ImproperlyConfigured
 from django.contrib.messages import constants as messages
@@ -44,8 +45,14 @@ INSTALLED_APPS = [
     'widget_tweaks',
 
     'core.apps.CoreConfig',
+    'content.apps.ContentConfig',
     'festival.apps.FestivalConfig',
     'program.apps.ProgramConfig',
+    'tickets.apps.TicketsConfig',
+    'venue.apps.VenueConfig',
+    'boxoffice.apps.BoxOfficeConfig',
+    'reports.apps.ReportsConfig',
+    # 'volunteer.apps.VolunteerConfig',
 ]
 
 MIDDLEWARE = [

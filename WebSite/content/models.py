@@ -5,9 +5,9 @@ from core.models import TimeStampedModel, Festival
 from core.utils import get_image_filename
 
 
-class ContentPage(TimeStampedModel):
+class Page(TimeStampedModel):
 
-    festival = models.ForeignKey(Festival, on_delete=models.CASCADE, related_name='content_pages')
+    festival = models.ForeignKey(Festival, on_delete=models.CASCADE, related_name='pages')
     name = models.CharField(max_length=32)
     title = models.CharField(max_length=64, blank=True, default='')
     body = models.TextField(blank=True, default='')
@@ -20,12 +20,12 @@ class ContentPage(TimeStampedModel):
         return f'{self.festival.name}/{self.name}'
 
     def can_delete(self):
-        return self.navigator_options.count() == 0
+        return self.navigators.count() == 0
 
 
-class ContentPageImage(TimeStampedModel):
+class PageImage(TimeStampedModel):
 
-    page = models.ForeignKey(ContentPage, on_delete = models.CASCADE, related_name = 'images')
+    page = models.ForeignKey(Page, on_delete = models.CASCADE, related_name = 'images')
     name = models.CharField(max_length = 32)
     image = models.ImageField(upload_to = get_image_filename, blank = True, default = '')
 
@@ -37,7 +37,7 @@ class ContentPageImage(TimeStampedModel):
         return f'{self.page}/{self.name}'
 
 
-class NavigatorOption(TimeStampedModel):
+class Navigator(TimeStampedModel):
 
     URL = 1
     PAGE = 2
@@ -52,12 +52,12 @@ class NavigatorOption(TimeStampedModel):
         (VENUES, 'List venues'),
     )
 
-    festival = models.ForeignKey(Festival, on_delete=models.CASCADE, related_name='navigator_options')
+    festival = models.ForeignKey(Festival, on_delete=models.CASCADE, related_name='navigators')
     seqno = models.PositiveIntegerField(blank=True, default=0)
     label = models.CharField(max_length=32)
     type = models.IntegerField(choices=TYPE_CHOICES)
     url = models.URLField(max_length=32, blank=True, default='')
-    page = models.ForeignKey(ContentPage, null=True, blank=True, on_delete=models.PROTECT, related_name='navigator_options')
+    page = models.ForeignKey(Page, null=True, blank=True, on_delete=models.PROTECT, related_name='navigators')
 
     class Meta:
         ordering = ('festival', 'seqno', 'label')
@@ -65,15 +65,15 @@ class NavigatorOption(TimeStampedModel):
 
     @property
     def href(self):
-        if self.type == NavigatorOption.URL and self.url:
+        if self.type == Navigator.URL and self.url:
             return self.utl
-        elif self.type == NavigatorOption.PAGE and self.page:
-            return reverse('festival:page', kwargs={'page_uuid': self.page.uuid})
-        elif self.type == NavigatorOption.SHOWS:
+        elif self.type == Navigator.PAGE and self.page:
+            return reverse('content:page', kwargs={'page_uuid': self.page.uuid})
+        elif self.type == Navigator.SHOWS:
             return reverse('program:shows')
-        elif self.type == NavigatorOption.SCHEDULE:
+        elif self.type == Navigator.SCHEDULE:
             return reverse('program:schedule')
-        elif self.type == NavigatorOption.VENUES:
+        elif self.type == Navigator.VENUES:
             return reverse('program:venues')
         else:
             return '#'

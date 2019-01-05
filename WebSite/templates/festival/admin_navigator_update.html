@@ -1,0 +1,48 @@
+﻿{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block pagetitle %}Festival Admininistration: Update Navigator{% endblock %}
+
+{% block content %}
+
+    <form method="post">
+        {% csrf_token %}
+        {% include 'bs4_form.html' %}
+        <div class="form-group">
+            <button name="Continue" type="submit" class="btn btn-primary">Save and Continue</button>
+            <button name="Exit" type="submit" class="btn btn-primary">Save and Exit</button>
+            <a href="{%url 'festival:admin_navigators' %}" class="btn btn-secondary">Cancel</a>
+            {% if page.can_delete %}
+                <a class="float-right btn btn-secondary" data-toggle="modal" data-target="#tf-delete-modal">Delete</a>
+            {% endif %}
+        </div>
+    </form>
+
+    <div id="tf-delete-modal" class="modal fade" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Delete navigator</h5></div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this navigator?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary">Yes</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block body-script %}
+
+    <script language="javascript">
+
+        $('#tf-delete-modal').on('click', '.btn-primary', function () {
+            window.location.href = "{%url 'festival:admin_navigator_delete' navigator.uuid %}";
+        });
+
+    </script>
+
+{% endblock %}

@@ -4,20 +4,24 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.views.generic import TemplateView, RedirectView
-#from django.views.generic.base import TemplateView
 
 from django_registration.backends.activation.views import ActivationView
 
 import debug_toolbar
 
 from core.views import RegistrationView
-from festival.views import home
+from content.views import home
 
 urlpatterns = [
     path('', home),
     path('home', home, name='home'),
+    path('content/', include('content.urls')),
     path('festival/', include('festival.urls')),
     path('program/', include('program.urls')),
+    path('tickets/', include('tickets.urls')),
+    path('venue/', include('venue.urls')),
+    path('boxoffice/', include('boxoffice.urls')),
+    path('reports/', include('reports.urls')),
     path('admin', admin.site.urls),
     # django.contrib.auth
     path('login/', auth_views.LoginView.as_view(), name='login'),

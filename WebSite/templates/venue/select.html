@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block pagetitle %}Select Venue{% endblock %}
+
+{% block content %}
+
+    <ul>
+        {% for venue in venues %}
+            <li><a class="btn btn-default" href="{% url 'venue:main' venue.uuid %}">{{ venue.name }}</a></li>
+        {% endfor %}
+    </ul>
+
+
+{% endblock %}

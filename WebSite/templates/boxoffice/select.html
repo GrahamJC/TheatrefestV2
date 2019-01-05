@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block pagetitle %}Select Box Office{% endblock %}
+
+{% block content %}
+
+    <ul>
+        {% for boxoffice in boxoffices %}
+            <li><a class="btn btn-default" href="{% url 'boxoffice:main' boxoffice.uuid %}">{{ boxoffice.name }}</a></li>
+        {% endfor %}
+    </ul>
+
+
+{% endblock %}

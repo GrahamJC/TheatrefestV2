@@ -1,0 +1,19 @@
+<table class="table">
+    {% for performance in refund.performances %}
+        <tr>
+            <td colspan="2">
+                <strong>{{ performance.show }}</strong><br/>
+                {{ performance.date | date:"D, jS M" }} at {{ performance.time }}<br/>
+                {% for ticket in performance.tickets %}
+                   <span style="padding-left: 50px;">{{ ticket.description }}</span><br/>
+                {% endfor %}
+            </td>
+            <td>
+                <br/>
+                <br/>
+                {% for ticket in performance.tickets %}
+                    {% if ticket.cost %}&#163;{{ ticket.cost }}{% endif %}<br/>
+                {% endfor %}
+            </td>
+    {% endfor %}
+</table>

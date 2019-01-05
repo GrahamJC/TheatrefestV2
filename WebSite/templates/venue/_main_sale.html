@@ -1,0 +1,187 @@
+{% load widget_tweaks %}
+
+<div class="row">
+    <div class="col-6">
+        {% if not sale or sale.completed %}
+            <div class="card mb-2">
+                <h6 class="card-header">New Sale</h6>
+                <div class="card-body">
+                    <p>To start a new sale enter the customer name or e-mail address and click Start.</p>
+                    <p><strong>Important:</strong> if the customer wants to purchase tickets using an eFringer you must enter the e-mail address of the account used to purchase the eFringer.</p>
+                    <form id="sale-customer-form">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            {{ sale_customer_form.customer | add_class:'form-control' }}
+                        </div>
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">Start</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        {% else %}
+            <div class="card mb-2">
+                <h6 class="card-header">Tickets</h6>
+                <div class="card-body">
+                    <form id="sale-tickets-form">
+                        {% csrf_token %}
+                        {% if sale_tickets_form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in sale_tickets_form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-group">
+                            {{ sale_tickets_form.show | add_class:'form-control' | add_error_class:'is-invalid' }}
+                            {% for error in sale_tickets_form.show.errors %}
+                                <p class="invalid-feedback">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        <div class="form-group">
+                            {{ sale_tickets_form.performance | add_class:'form-control' | add_error_class:'is-invalid' }}
+                            {% for error in sale_tickets_form.performance.errors %}
+                                <p class="invalid-feedback">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {{ sale_ticket_subforms.management_form }}
+                        {% for form in sale_ticket_subforms.forms %}
+                            <div class="row mb-1">
+                                <div class="col-6">{{ form.type_id }}<p class="form-control-plaintext">{{ form.name }}{{ form.name.value }}</p></div>
+                                <div class="col-2">{{ form.price }}{% if form.price.value %}<p class="form-control-plaintext">&#163;{{ form.price.value | floatformat }}</p>{% endif %}</div>
+                                <div class="col-4">{{ form.quantity | add_class:'form-control' }}</div>
+                            </div>
+                        {% endfor %}
+                        {{ sale_fringer_subforms.management_form }}
+                        {% for form in sale_fringer_subforms.forms %}
+                            <div class="form-group">
+                                {{ form.fringer_id }}{{ form.name }}
+                                <div class="form-check">
+                                    {{ form.buy | add_class:'form-check-input' }}
+                                    <label class="form-check-label">eFringer: {{ form.name.value }}</label>
+                                </div>
+                                {% for error in form.buy.errors %}
+                                    <p class="invalid-feedback">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">Add</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="card mb-2">
+                <h6 class="card-header">Extras</h6>
+                <div class="card-body">
+                    <form id="sale-extras-form" method="post">
+                        {% csrf_token %}
+                        {% include 'bs4_form.html' with form=sale_extras_form %}
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary" name="action" value="BuyFringers">Add/Update</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="col-6">
+        {% if not sale %}
+            <div class="card">
+                <h6 class="card-header">Information</h6>
+                <div class="card-body">
+                    This area will be used to display notifications from the system administrator.
+                </div>
+            </div>
+        {% else %}
+            <div class="card">
+                <h6 class="card-header"><i class="fa fa-user-circle {% if sale.customer_user %}text-primary{% endif %}"></i> {{ sale.customer }}</h6>
+                <div class="card-body">
+                    {% if sale.buttons %}
+                        <div class="row mb-2">
+                            <div class="col-9"><strong>{{ sale.buttons }} x Buttons</strong></div>
+                            <div class="col-3 text-right">&#163;{{ sale.button_cost }}</div>
+                        </div>
+                    {% endif %}
+                    {% for fringer in sale.fringers.all %}
+                        <div class="row mb-2">
+                            <div class="col-9"><strong>Frequent Fringers: {{ fringer.description }}</strong></div>
+                            <div class="col-3 text-right">&#163;{{ fringer.cost }}</div>
+                        </div>
+                    {% endfor %}
+                    {% for performance in sale.performances %}
+                        <div class="row mb-2">
+                            <div class="col-9"><strong>{{ performance.show }}</strong></div>
+                            <div class="col-3 text-right">&#163;{{ performance.ticket_cost }}</div>
+                            <div class="col-6">{{ performance.date | date:"D, jS M" }} at {{ performance.time }}</div>
+                            <div class="col-3"><a href="#tf-venue-sale-tickets-{{ forloop.counter }}" data-toggle="collapse">{{ performance.tickets | length }} Tickets</a></div>
+                            <div class="col-3 text-right">
+                                {% if not sale.completed %}
+                                    <a href="#" onclick="$('#sale-tab-content').load('{% url "venue:sale_remove_performance" sale.uuid performance.uuid %}')">Remove</a>
+                                {% endif %}
+                            </div>
+                            <div id="tf-venue-sale-tickets-{{ forloop.counter }}" class="col-12 collapse">
+                                {% for ticket in performance.tickets %}
+                                    <div class="row">
+                                        <div class="col-1"></div>
+                                        <div class="col-5">{{ ticket.description }}</div>
+                                        <div class="col-2 text-right">{% if ticket.cost %}&#163;{{ ticket.cost }}{% endif %}</div>
+                                        <div class="col-3">
+                                            {% if not sale.completed %}
+                                                <a href="#" onclick="$('#sale-tab-content').load('{% url "venue:sale_remove_ticket" sale.uuid ticket.uuid %}')">Remove</a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                    <div class="row mb-2">
+                        <div class="col-9"><strong>Total</strong></div>
+                        <div class="col-3 text-right">{% if sale %}&#163;{{ sale.total_cost }}{% endif %}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-12">
+                            {% if sale.completed %}
+                                <button class="btn btn-primary">E-mail</button>
+                                <a class="btn btn-primary" href="{% url 'reports:sale_pdf' sale.uuid %}" target="_blank">PDF</a>
+                            {% else %}
+                                <a class="btn btn-primary" href="#" onclick="$('#sale-tab-content').load('{% url "venue:sale_complete" sale.uuid %}')">Complete</a>
+                                <a class="btn btn-primary" href="#" onclick="$('#sale-tab-content').load('{% url "venue:sale_cancel" sale.uuid %}')">Cancel</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script language="javascript">
+
+    $( function() {
+        {% if not sale or sale.completed %}
+            $('#sale-customer-form').submit(function (event) {
+                event.preventDefault();
+                var postData = $('#sale-customer-form').serializeArray()
+                $('#sale-tab-content').load('{% url "venue:sale_start" venue.uuid %}', postData);
+            });
+        {% else %}
+            $('#{{ sale_tickets_form.show.auto_id }}').on('change', function() {
+                $('#{{ sale_tickets_form.performance.auto_id }}').load('{% url 'venue:sale_show_performances' sale.uuid '00000000-0000-0000-0000-000000000000' %}'.replace('00000000-0000-0000-0000-000000000000', $(this).val()));
+            });
+            $('#sale-tickets-form').submit(function (event) {
+                event.preventDefault();
+                var postData = $('#sale-tickets-form').serializeArray()
+                $('#sale-tab-content').load('{% url "venue:sale_add_tickets" sale.uuid %}', postData);
+            });
+            $('#sale-extras-form').submit(function (event) {
+                event.preventDefault();
+                var postData = $('#sale-extras-form').serializeArray()
+                $('#sale-tab-content').load('{% url "venue:sale_update_extras" sale.uuid %}', postData);
+            });
+        {% endif %}
+    });
+
+</script>

@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block basket %}<!-- Hide basket -->{% endblock %}
+
+{% block pagetitle %}Checkout{% endblock %}
+
+{% block content %}
+
+    <div  id="tf-tickets-checkout">
+
+        <div class="row">
+
+            <div class="col col-md-6">
+                <div class="card mb-3">
+                    <h6 class="card-header">Tickets</h6>
+                    <div class="card-body">
+                        {% if basket.has_tickets %}
+                            {% for performance in basket.performances %}
+                                <div class="row">
+                                    <div class="col-9"><strong>{{ performance.show }}</strong></div>
+                                    <div class="col-3 text-right">&#163;{{ performance.ticket_cost }}</div>
+                                    <div class="col-6">{{ performance.date | date:"D, jS M" }} at {{ performance.time }}</div>
+                                    <div class="col-3"><a href="#tf-boxoffice-sale-tickets-{{ forloop.counter }}" data-toggle="collapse">{{ performance.tickets | length }} Tickets</a></div>
+                                    <div class="col-3 text-right"><a href="{% url 'tickets:checkout_remove_performance' performance.uuid %}">Remove</a></div>
+                                    <div id="tf-boxoffice-sale-tickets-{{ forloop.counter }}" class="col-12 collapse">
+                                        {% for ticket in performance.tickets %}
+                                            <div class="row">
+                                                <div class="col-1"></div>
+                                                <div class="col-3">{{ ticket.description }}</div>
+                                                <div class="col-2 text-right">{% if ticket.cost %}&#163;{{ ticket.cost }}{% endif %}</div>
+                                                <div class="col-3"><a href="{% url 'tickets:checkout_remove_ticket' ticket.uuid %}">Remove</a></div>
+                                                <div class="col-3"></div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            There are no tickets in your basket.
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <div class="card mb-3">
+                    <h6 class="card-header">eFringer Vouchers</h6>
+                    <div class="card-body">
+                        {% if basket.has_fringers %}
+                            <table class="table table-striped table-borderless">
+                                {% for fringer in basket.fringers.all %}
+                                    <tr><td class="row">
+                                        <div class="col-12 col-md-8">{{ fringer.name }} ({{ fringer.description }})</div>
+                                        <div class="col-10 col-md-3">&#163;{{ fringer.cost }}</div>
+                                        <div class="col-2 col-md-1"><a href="{% url 'tickets:checkout_remove_fringer' fringer.id %}"><i class="fa fa-trash"></i></a></div>
+                                    </td></tr>
+                                {% endfor %}
+                            </table>
+                        {% else %}
+                            There are no eFringer Vouchers in your basket.
+                        {% endif %}
+                    </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="card">
+
+            <h6 class="card-header">Summary</h6>
+            <div class="card-body">
+
+                <div class="row">
+
+                    <div class="col-12 col-sm-6">
+                        <div class="alert alert-info">
+                            <ul>
+                                <li>Tickets bought by credit card cannot be cancelled once checkout has been completed.</li>
+                                <li>A booking fee of 1.4% plus 20p is charged on all credit card transactions.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-sm-6">
+                        {% if not basket.is_empty %}
+                            <form method="POST">
+                                {% csrf_token %}
+                                <table class="table">
+                                    <tr>
+                                        <td>Tickets</td>
+                                        <td>&#163;{{ basket.ticket_cost }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Fringers</td>
+                                        <td>&#163;{{ basket.fringer_cost }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Booking fee</td>
+                                        <td>&#163;{{ basket.stripe_fee }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Total</strong></td>
+                                        <td><strong>&#163;{{ basket.stripe_charge }}</strong></td>
+                                    </tr>
+                                </table>
+                                <script src="https://checkout.stripe.com/checkout.js" class="stripe-button"
+                                    data-key="{{ stripe_key }}"
+                                    data-email="{{ basket.user.email }}"
+                                    data-allow-remember-me="false"
+                                    data-amount="{{ basket.stripe_charge_pence }}"
+                                    data-name="Theatrefest"
+                                    data-description="Buy tickets"
+                                    data-image=""
+                                    data-currency="GBP">
+                                </script>
+                            </form>
+                        {% else %}
+                            Your basket is empty.
+                        {% endif %}
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+{% endblock %}

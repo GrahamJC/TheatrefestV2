@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block pagetitle %}Buy Tickets{% endblock %}
+
+{% block content %}
+
+    <div id="tf-tickets-buy-closed">
+
+        <h5 class="tf-show-name"><a href="{% url 'program:show' performance.show.uuid %}">{{ performance.show.name }}</a></h5>
+        <h6>{{ performance.date|date:'D, j M' }} at {{ performance.time|time:'P' }}</p>
+        <p>Tickets available: {{ performance.tickets_available }}</p>
+
+        {% if last_30mins %}
+            <p><strong>Online ticket sales for this performance are now closed.</strong></p>
+            <p>Tickets can still be purchased from the venue box office.</p>
+        {% else %}
+            <p><strong>Ticket sales for this performance are now closed.</strong></p>
+        {% endif %}
+
+
+    </div>
+
+{% endblock %}

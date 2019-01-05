@@ -1,21 +1,18 @@
-import os
-import posixpath
-
 from .base import *
 
+DEBUG=False
+
 ALLOWED_HOSTS = [
-    'localhost',
+    'tickets2.theatrefest.co.uk',
 ]
 INTERNAL_IPS = [
-        '127.0.0.1',
-        'localhost',
 ]
 
 # Database
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'theatrefestV2',
+        'NAME': 'theatrefest',
         'USER': 'theatrefest',
         'PASSWORD': 'barnum',
         'HOST': 'localhost',
@@ -25,25 +22,21 @@ DATABASES = {
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+#    {
+#        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+#    },
+#    {
+#        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+#    },
+#    {
+#        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+#    },
+#    {
+#        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+#    },
 ]
 
 # Static files (CSS, JavaScript, Images)
-STATICFILES_DIRS = [
-	os.path.join(BASE_DIR, "static"),
-]
-STATIC_ROOT = os.path.join(BASE_DIR, "django_static") # posixpath.join(*(BASE_DIR.split(os.path.sep) + ['django_static']))
 STATIC_URL = '/static/'
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 MEDIA_URL = "/media/"
@@ -54,6 +47,12 @@ EMAIL_PORT = 587
 EMAIL_HOST_USER = "postmaster@mg.theatrefest.co.uk"
 EMAIL_HOST_PASSWORD = get_secret("MAILGUN_EMAIL_HOST_PASSWORD")
 EMAIL_USE_TLS = True
+
+# Stripe
+STRIPE_PUBLIC_KEY = get_secret("STRIPE_PUBLIC_KEY")
+STRIPE_PRIVATE_KEY = get_secret("STRIPE_PRIVATE_KEY")
+STRIPE_FEE_FIXED = Decimal(0.2)
+STRIPE_FEE_PERCENT = Decimal(0.014)
 
 # Logging
 LOGGING = {
@@ -79,7 +78,7 @@ LOGGING = {
         },
         "theatrefest": {
             "class": "logging.handlers.TimedRotatingFileHandler",
-            "filename": r"C:\Temp\Theatrefest\theatrefest.log",
+            "filename": r"/var/log/theatrefest/theatrefest.log",
             "when": "midnight",
             "interval": 1,
             "backupCount": 10,
@@ -88,7 +87,7 @@ LOGGING = {
         },
         "django": {
             "class": "logging.handlers.TimedRotatingFileHandler",
-            "filename": r"C:\Temp\Theatrefest\django.log",
+            "filename": r"/var/log/theatrefest/django.log",
             "when": "midnight",
             "interval": 1,
             "backupCount": 10,

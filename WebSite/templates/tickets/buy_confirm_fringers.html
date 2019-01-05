@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block pagetitle %}Thankyou{% endblock %}
+
+{% block content %}
+
+    <div id="tf-tickets-confirm">
+
+        <p>You have added eFringer Vouchers to your basket.</p>
+        <div class="alert alert-warning">These vouchers cannot be used to buy tickets for a performance until they have been paid for through the checkout.</div>
+        <p>What would you like to do next?</p>
+        <ul>
+            <li><a href="{% url 'tickets:checkout' %}">Go to the checkout</a></li>
+            <li><a href="{% url 'tickets:buy' performance.uuid %}">Buy tickets for {{ performance.show.name }} on {{ performance.date|date:'D, j M' }} at {{ performance.time|time:'P' }}</a></li>
+            <li><a href="{% url 'program:shows' %}">Find another show</a></li>
+            <li><a href="{% url 'tickets:myaccount' %}">Manage my account</a></li>
+        </ul>
+
+    </div>
+
+{% endblock %}

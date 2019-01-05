@@ -1,0 +1,15 @@
+/env/
+/venv/
+/obj/
+/media/
+/django_static/
+/static/
+__pycache__/
+migrations/
+*.bak
+*.scss
+*.sh
+compilerconfig.*
+website.pyproj
+website.pyproj.user
+rsync-*

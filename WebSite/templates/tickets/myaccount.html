@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block pagetitle %}My Account{% endblock %}
+
+{% block content %}
+    <div id="tf-tickets-myaccount">
+
+        <div class="nav nav-pills nav-justified mb-3">
+            <a class="nav-item nav-link {% if tab == 'tickets' %}active{% endif %}" href="#tf-tickets-tab" data-toggle="tab">Credit Card</a>
+            <a class="nav-item nav-link {% if tab == 'fringers' %}active{% endif %}" href="#tf-fringers-tab" data-toggle="tab">eFringers</a>
+            <a class="nav-item nav-link {% if tab == 'faqs' %}active{% endif %}" href="#tf-faqs-tab" data-toggle="tab">FAQs</a>
+        </div>
+
+        <div class="tab-content">
+
+            <div id="tf-tickets-tab" class="tab-pane {% if tab == 'tickets' %}active{% endif %}">
+                <div class="row">
+                    <div class="col-12 col-sm-6">
+                        <div class="card">
+                            <h6 class="card-header">Current</h6>
+                            <div class="card-body">
+                                {% if performances_current %}
+                                    {% for performance in performances_current %}
+                                        <div class="row mb-2">
+                                            <div class="col-12"><strong>{{ performance.show }}</strong></div>
+                                            <div class="col-7">{{ performance.date | date:"D, jS M" }} at {{ performance.time }}</div>
+                                            <div class="col-3"><a href="#tf-tickets-show-current-tickets-{{ forloop.counter }}" data-toggle="collapse">{{ performance.tickets | length }} Tickets</a></div>
+                                            <div class="col-2 text-right"><a href="{% url 'tickets:print_performance' performance.id %}">Print</a></div>
+                                            <div id="tf-tickets-show-current-tickets-{{ forloop.counter }}" class="col-12 collapse">
+                                                {% for ticket in performance.tickets %}
+                                                    <div class="row">
+                                                        <div class="col-2 text-right">{{ ticket.id }}</div>
+                                                        <div class="col-5">
+                                                            {% if ticket.fringer_name %}
+                                                                eFringer: {{ ticket.fringer_name }}
+                                                            {% else %}
+                                                                {{ ticket.description }}
+                                                            {% endif %}
+                                                        </div>
+                                                        <div class="col-3">
+                                                            {% if ticket.fringer_name %}
+                                                                <a href="{% url 'tickets:ticket_cancel' ticket.uuid %}">Cancel</a>
+                                                            {% elif ticket.cost %}
+                                                                &#163;{{ ticket.cost }}
+                                                            {% endif %}
+                                                        </div>
+                                                        <div class="col-2"></div>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                {% else %}
+                                    You do not have any tickets for future performances.
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6">
+                        <div class="card">
+                            <h6 class="card-header">Past</h6>
+                            <div class="card-body">
+                                {% if performances_past %}
+                                    <p>These tickets are for peformances that have already taken place.</p>
+                                    {% for performance in performances_past %}
+                                        <div class="row mb-2">
+                                            <div class="col-12"><strong>{{ performance.show }}</strong></div>
+                                            <div class="col-6">{{ performance.date | date:"D, jS M" }} at {{ performance.time }}</div>
+                                            <div class="col-3"><a href="#tf-tickets-show-past-tickets-{{ forloop.counter }}" data-toggle="collapse">{{ performance.tickets | length }} Tickets</a></div>
+                                            <div class="col-3"></div>
+                                            <div id="tf-tickets-show-past-tickets-{{ forloop.counter }}" class="col-12 collapse">
+                                                {% for ticket in performance.tickets %}
+                                                    <div class="row">
+                                                        <div class="col-2 text-right">{{ ticket.id }}</div>
+                                                        <div class="col-5">
+                                                            {% if ticket.fringer_name %}
+                                                                eFringer: {{ ticket.fringer_name }}
+                                                            {% else %}
+                                                                {{ ticket.description }}
+                                                            {% endif %}
+                                                        </div>
+                                                        <div class="col-3">
+                                                            {% if ticket.cost %}
+                                                                &#163;{{ ticket.cost }}
+                                                            {% endif %}
+                                                        </div>
+                                                        <div class="col-2"></div>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                {% else %}
+                                    You do not have any tickets for past performances.
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tf-fringers-tab" class="tab-pane {% if tab == 'fringers' %}active{% endif %}">
+                <div class="row">
+                    <div class="col-12 col-sm-6">
+                        <div class="card">
+                            <h6 class="card-header">Manage eFringer Vouchers</h6>
+                            <div class="card-body">
+                                {% if formset.forms %}
+                                    <form id="tf-tickets-fringers-rename-form" class="form-inline" method="POST">
+                                        {% csrf_token %}
+                                        {{ formset.management_form }}
+                                        <table class="table table-striped table-borderless">
+                                            {% for form in formset %}
+                                                <tr><td class="form-group {% if form.name.errors %}has-error{% endif %}">
+                                                    <div class="col-7">{{ form.id }} {{ form.name | add_class:'form-control tf-name' }}</div>
+                                                    <div class="col-4"><p class="form-control-plaintext">{{ form.instance.available }} available</p></div>
+                                                    <div class="col-1">
+                                                        {% if form.instance.used %}
+                                                            <a class="form-control-plaintext" data-toggle="collapse" href="#tf-tickets-fringers-list-{{ form.id.value }}"><i class="fa fa-info-circle"></i></a>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="col-12">{% for error in form.name.errors %}<p class="help-block">{{ error }}</p>{% endfor %}</div>
+                                                    <div class="col-12">
+                                                        <div id="tf-tickets-fringers-list-{{ form.id.value }}" class="collapse">
+                                                            {% for ticket in form.instance.valid_tickets.all %}
+                                                                <div>
+                                                                    {{ ticket.performance.show.name }}<br/>
+                                                                    &nbsp;&nbsp;{{ ticket.performance.date|date:'D, j M' }} at {{ ticket.performance.time|date:'H:i' }}
+                                                                </div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                </td></tr>
+                                            {% endfor %}
+                                        </table>
+                                        <div class="form-group">
+                                            <button type="submit" class="btn btn-primary" name="action" value="RenameFringers">Rename</button>
+                                        </div>
+                                    </form>
+                                {% else %}
+                                    You do not have any eFringer Vouchers.
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6">
+                        <div class="card">
+                            <h6 class="card-header">Buy eFringer Vouchers</h6>
+                            <div class="card-body">
+                                {% if sales_open %}
+                                    <form method="POST">
+                                        {% csrf_token %}
+                                        {% include 'bs4_form.html' with form=buy_form %}
+                                        <div class="form-group">
+                                            <button type="submit" class="btn btn-primary" name="action" value="AddFringers">Add to Basket</button>
+                                        </div>
+                                    </form>
+                                {% else %}
+                                    eFringers Vouchers will be on sale from Friday, June 1st.
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tf-faqs-tab" class="tab-pane {% if tab == 'faqs' %}active{% endif %}">
+                {% include 'tickets/faqs.html' %}
+            </div>
+
+        </div>
+
+    </div>
+
+{% endblock %}

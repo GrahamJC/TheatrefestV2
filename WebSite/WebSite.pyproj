@@ -30,6 +30,20 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="boxoffice\admin.py" />
+    <Compile Include="boxoffice\apps.py" />
+    <Compile Include="boxoffice\tests.py" />
+    <Compile Include="boxoffice\urls.py" />
+    <Compile Include="boxoffice\views.py" />
+    <Compile Include="boxoffice\__init__.py" />
+    <Compile Include="content\admin.py" />
+    <Compile Include="content\apps.py" />
+    <Compile Include="content\migrations\__init__.py" />
+    <Compile Include="content\models.py" />
+    <Compile Include="content\tests.py" />
+    <Compile Include="content\urls.py" />
+    <Compile Include="content\views.py" />
+    <Compile Include="content\__init__.py" />
     <Compile Include="core\templatetags\my_tweaks.py">
       <SubType>Code</SubType>
     </Compile>
@@ -59,7 +73,6 @@
     <Compile Include="festival\admin.py" />
     <Compile Include="festival\apps.py" />
     <Compile Include="festival\migrations\__init__.py" />
-    <Compile Include="festival\models.py" />
     <Compile Include="festival\tests.py" />
     <Compile Include="festival\forms.py" />
     <Compile Include="festival\views.py" />
@@ -78,20 +91,84 @@
     </Compile>
     <Compile Include="program\views.py" />
     <Compile Include="program\__init__.py" />
+    <Compile Include="reports\admin.py" />
+    <Compile Include="reports\apps.py" />
+    <Compile Include="reports\models.py" />
+    <Compile Include="reports\tests.py" />
+    <Compile Include="reports\urls.py" />
+    <Compile Include="reports\views.py" />
+    <Compile Include="reports\__init__.py" />
+    <Compile Include="tickets\admin.py" />
+    <Compile Include="tickets\apps.py" />
+    <Compile Include="tickets\forms.py" />
+    <Compile Include="tickets\migrations\__init__.py" />
+    <Compile Include="tickets\models.py" />
+    <Compile Include="tickets\tests.py" />
+    <Compile Include="tickets\urls.py" />
+    <Compile Include="tickets\views.py" />
+    <Compile Include="tickets\__init__.py" />
+    <Compile Include="venue\admin.py" />
+    <Compile Include="venue\apis.py" />
+    <Compile Include="venue\apps.py" />
+    <Compile Include="venue\migrations\__init__.py" />
+    <Compile Include="venue\models.py" />
+    <Compile Include="venue\tests.py" />
+    <Compile Include="venue\urls.py" />
+    <Compile Include="venue\views.py" />
+    <Compile Include="venue\__init__.py" />
+    <Compile Include="volunteers\admin.py" />
+    <Compile Include="volunteers\apps.py" />
+    <Compile Include="volunteers\migrations\__init__.py" />
+    <Compile Include="volunteers\models.py" />
+    <Compile Include="volunteers\tests.py" />
+    <Compile Include="volunteers\views.py" />
+    <Compile Include="volunteers\__init__.py" />
     <Compile Include="website\settings\base.py" />
     <Compile Include="website\settings\production.py" />
+    <Compile Include="website\wsgi_production.py" />
     <Compile Include="website\__init__.py" />
     <Compile Include="website\settings\development.py" />
     <Compile Include="website\urls.py" />
     <Compile Include="website\wsgi.py" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="content\templates\index.html" />
+    <Content Include="templates\festival\admin_navigators.html" />
+    <Content Include="templates\festival\admin_navigator_create.html" />
+    <Content Include="templates\festival\admin_navigator_update.html" />
+    <Content Include="templates\venue\admission_tickets.html" />
+    <Content Include="templates\boxoffice\main.html" />
+    <Content Include="templates\boxoffice\report_refunds.html" />
+    <Content Include="templates\boxoffice\report_refund_detail.html" />
+    <Content Include="templates\venue\report_sales.html" />
+    <Content Include="templates\venue\report_sale_detail.html" />
+    <Content Include="templates\venue\report_summary.html" />
+    <Content Include="templates\boxoffice\select.html" />
+    <Content Include="templates\boxoffice\_main_refund.html" />
+    <Content Include="templates\boxoffice\_main_sale.html" />
     <Content Include="templates\bs4_field.html" />
     <Content Include="templates\bs4_formset_table.html" />
+    <Content Include="templates\content\page.html" />
+    <Content Include="templates\content\no_home.html" />
     <Content Include="templates\festival\admin_pages.html" />
     <Content Include="templates\festival\admin_page_create.html" />
     <Content Include="templates\festival\admin_page_update.html" />
-    <Content Include="templates\festival\content_page.html" />
+    <Content Include="templates\tickets\buy.html" />
+    <Content Include="templates\tickets\buy_closed.html" />
+    <Content Include="templates\tickets\buy_confirm_fringers.html" />
+    <Content Include="templates\tickets\buy_confirm_fringer_tickets.html" />
+    <Content Include="templates\tickets\buy_confirm_tickets.html" />
+    <Content Include="templates\tickets\checkout.html" />
+    <Content Include="templates\tickets\checkout_confirm.html" />
+    <Content Include="templates\tickets\faqs.html" />
+    <Content Include="templates\tickets\myaccount.html" />
+    <Content Include="templates\tickets\myaccount_confirm_fringers.html" />
+    <Content Include="templates\tickets\sale_email.txt" />
+    <Content Include="templates\venue\main.html" />
+    <Content Include="templates\venue\select.html" />
+    <Content Include="templates\venue\_main_sale.html" />
+    <Content Include="venue\templates\index.html" />
+    <Content Include="volunteers\templates\index.html" />
     <None Include="compilerconfig.json" />
     <Content Include="compilerconfig.json.defaults">
       <SubType>Content</SubType>
@@ -123,9 +200,12 @@
     <Content Include="templates\program\venues_venue.html" />
     <Content Include="templates\program\venue_sponsor.html" />
     <Content Include="templates\registration\login.html" />
-    <Content Include="templates\festival\no_home.html" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="boxoffice\" />
+    <Folder Include="content\" />
+    <Folder Include="content\migrations\" />
+    <Folder Include="content\templates\" />
     <Folder Include="core\" />
     <Folder Include="core\migrations\" />
     <Folder Include="core\templatetags\" />
@@ -133,15 +213,27 @@
     <Folder Include="festival\migrations\" />
     <Folder Include="program\" />
     <Folder Include="program\migrations\" />
+    <Folder Include="reports\" />
     <Folder Include="static\" />
     <Folder Include="static\site\" />
     <Folder Include="static\site\theatrefest\" />
     <Folder Include="templates\" />
+    <Folder Include="templates\boxoffice\" />
     <Folder Include="templates\django_registration\" />
     <Folder Include="templates\festival\" />
+    <Folder Include="templates\content\" />
+    <Folder Include="templates\venue\" />
     <Folder Include="templates\registration\" />
     <Folder Include="templates\program\" />
     <Folder Include="templates\tickets\" />
+    <Folder Include="tickets\" />
+    <Folder Include="tickets\migrations\" />
+    <Folder Include="venue\" />
+    <Folder Include="venue\migrations\" />
+    <Folder Include="venue\templates\" />
+    <Folder Include="volunteers\" />
+    <Folder Include="volunteers\migrations\" />
+    <Folder Include="volunteers\templates\" />
     <Folder Include="website\" />
     <Folder Include="website\settings\" />
   </ItemGroup>

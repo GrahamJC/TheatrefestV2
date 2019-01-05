@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block pagetitle %}Buy Tickets{% endblock %}
+
+{% block content %}
+
+    <div id="tf-tickets-buy">
+
+        <h5 class="tf-show-name"><a href="{% url 'program:show' performance.show.uuid %}">{{ performance.show.name }}</a></h5>
+        <h6>{{ performance.date|date:'D, j M' }} at {{ performance.time|time:'P' }}</h6>
+        <p>Tickets available: {{ performance.tickets_available }}</p>
+
+        {% if performance.tickets_available %}
+
+            <div class="alert alert-info">
+                <strong>Every audience member aged 13+ needs a <a href="#tf_fringe_badges" data-toggle="collapse">Fringe Badge</a> to enter a ticketed venue.</strong>
+                <p id="tf_fringe_badges" class="collapse">
+                    These badges are available at any of the box-offices and at certain alt space venues for just &#163;1.
+                    This one-off payment of just &#163;1 is the only charge that Fringe TheatreFest makes towards the running of the festival.
+                    All of the ticket money and the pay-what-you-will collection goes to the performers.
+                </p>
+            </div>
+
+            <div class="nav nav-tabs nav-justified mb-3">
+                <a class="nav-item nav-link {% if tab == 'tickets' %}active{% endif %}" href="#tf-credit-card-tab" data-toggle="tab">Credit Card</a>
+                <a class="nav-item nav-link {% if tab == 'fringers' %}active{% endif %}" href="#tf-fringers-tab" data-toggle="tab">eFringers</a>
+                <a class="nav-item nav-link {% if tab == 'faqs' %}active{% endif %}" href="#tf-faqs-tab" data-toggle="tab">FAQs</a>
+            </div>
+
+            <div class="tab-content">
+
+                <div id="tf-credit-card-tab" class="tab-pane {% if tab == 'tickets' %}active{% endif %}">
+                    <div class="row">
+                        <div class="col-12 col-md-6 mb-2">
+                            <div class="card">
+                                <h6 class="card-header">Buy Tickets</h6>
+                                <div class="card-body">
+                                    {% if sales_open %}
+                                        <form class="form-inline" method="post">
+                                            {% csrf_token %}
+                                            {{ ticket_formset.management_form }}
+                                            <table class="table table-striped">
+                                                {% for form in ticket_formset.forms %}
+                                                    <tr>
+                                                        <td>{{ form.id }}<p class="form-control-plaintext">{{ form.name.value }}</p></td>
+                                                        <td><p class="form-control-plaintext">&#163;{{ form.price.value|floatformat }}</p></td>
+                                                        <td>{{ form.quantity | add_class:'form-control' }}</td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </table>
+                                            <div class="tf-actions">
+                                                <button type="submit" class="btn btn-primary" name="action" value="AddTickets">Add to Basket</button>
+                                            </div>
+                                        </form>
+                                    {% else %}
+                                        Tickets will be on sale from Friday, June 1st.
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6 mb-2">
+                            <div class="alert alert-info">
+                                <ul>
+                                    <li>Tickets are added to your basket but are not confirmed until they have been paid for at the checkout.</li>
+                                    <li>A booking fee of 1.4% plus 20p will be added to your total when you checkout.</li>
+                                    <li>You can add tickets for multiple performances and pay for them all together to minimise the total booking fee.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tf-fringers-tab" class="tab-pane {% if tab == 'fringers' %}active{% endif %}">
+                    <div class="row">
+                        <div class="col-12 col-sm-6">
+                            <div class="card mb-2">
+                                <h6 class="card-header">Use eFringer Credits</h6>
+                                <div class="card-body">
+                                    {% if fringers %}
+                                        <form method="post">
+                                            {% csrf_token %}
+                                            <p><i>eFringer Vouchers that have already been used for this performance are not shown below because each eFringer Voucher can only be used to buy one ticket per performance.</i></p>
+                                            <table class="table table-striped">
+                                                {% for fringer in fringers %}
+                                                    <tr>
+                                                        <td><input type="checkbox" name="fringer_id" value="{{ fringer.id }}" /></td>
+                                                        <td style="width: 100%">{{ fringer.name }} ({{ fringer.available }} credits remaining)</td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </table>
+                                            <button type="submit" class="btn btn-primary" name="action" value="UseFringers">Confirm</button>
+                                        </form>
+                                    {% else %}
+                                        <p>You do not have any eFringer credits available for this performance.</p>
+                                        <p><i>eFringer Vouchers that have already been used for this performance are not shown because each eFringer Voucher can only be used to buy one ticket per performance.</i></p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <div class="card mb-2">
+                                <h6 class="card-header">Buy eFringer Vouchers</h6>
+                                <div class="card-body">
+                                    {% if sales_open %}
+                                        <form method="POST">
+                                            {% csrf_token %}
+                                            {% include 'bs4_form.html' with form=buy_fringer_form %}
+                                            <div class="form-group">
+                                                <button type="submit" class="btn btn-primary" name="action" value="AddFringers">Add to Basket</button>
+                                            </div>
+                                        </form>
+                                    {% else %}
+                                        eFringers Vouchers will be on sale from Friday, June 1st.
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="alert alert-info mb-2">
+                                <ul>
+                                    <li>Buy an eFringer Voucher and use it to buy tickets for 6 different performances at a reduced price.</li>
+                                    <li>Each eFringer Voucher can only be used to purchase one ticket per performance.</li>
+                                    <li>An eFringer Voucher cannot be used to buy tickets until it has been paid for at the checkout.</li>
+                                    <li>If you have more than one eFringer Voucher you can give each one a name to make them easier to keep track of.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tf-faqs-tab" class="tab-pane {% if tab == 'faqs' %}active{% endif %}">
+                    {% include 'tickets/faqs.html' %}
+                </div>
+
+            </div>
+
+        {% else %}
+
+            <div class="card">
+                <div class="card-header">Sold Out</div>
+                <div class="card-body">
+                    There are no more tickets available for this performance.
+                </div>
+            </div>
+            
+        {% endif %}
+
+    </div>
+
+{% endblock %}

@@ -50,8 +50,8 @@
                             </button>
                             <div id="navbar-collapse" class="collapse navbar-collapse">
                                 <ul class="navbar-nav mr-auto">
-                                    {% for opt in request.festival.navigator_options.all %}
-                                        <li class="nav-item"><a class="nav-link" href="{{ opt.href }}">{{ opt.label }}</a></li>
+                                    {% for nav in request.festival.navigators.all %}
+                                        <li class="nav-item"><a class="nav-link" href="{{ nav.href }}">{{ nav.label }}</a></li>
                                     {% endfor %}
                                 </ul>
                                 <ul class="navbar-nav">
@@ -61,24 +61,24 @@
                                             <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbar-myaccount-link">
                                                 <a class="dropdown-item" href="#">{{ user.email }}</a>
                                                 <div class="dropdown-divider"></div>
-                                                <a class="dropdown-item" href="#">tickets and efringers</a>
-                                                {% if user.is_manager or user.is_box_office or user.is_volunteer %}
+                                                <a class="dropdown-item" href="{% url 'tickets:myaccount' %}">tickets and efringers</a>
+                                                {% if user.is_volunteer or user.is_venue or user.is_boxoffice %}
                                                     <div class="dropdown-divider"></div>
                                                     <a class="dropdown-item" href="#">volunteer</a>
-                                                    {% if user.is_box_office %}
-                                                        <a class="dropdown-item" href="#">box office</a>
+                                                    {% if user.is_venue %}
+                                                        <a class="dropdown-item" href="{% url 'venue:select' %}">venue</a>
                                                     {% endif %}
-                                                    {% if user.is_manager %}
-                                                        <a class="dropdown-item" href="#">manager</a>
+                                                    {% if user.is_boxoffice %}
+                                                        <a class="dropdown-item" href="{% url 'boxoffice:select' %}">box office</a>
                                                     {% endif %}
                                                 {% endif %}
                                                 {% if user.is_admin %}
                                                     <div class="dropdown-divider"></div>
                                                     <a class="dropdown-item" href="/festival/admin">festival admin</a>
-                                                    {% if not user.festival %}
+                                                    {% if user.is_site_amdin %}
                                                         <a class="dropdown-item" href="#">site admin</a>
                                                     {% endif %}
-                                                    {% if not user.site %}
+                                                    {% if user.is_system_admin %}
                                                         <a class="dropdown-item" href="/admin">system admin</a>
                                                     {% endif %}
                                                 {% endif %}
@@ -101,8 +101,29 @@
                     <div id="tf-header">
                         <h3 id="tf-page-title">{% block pagetitle %}{% endblock %}</h3>
                         {% for msg in messages %}
-                            <div class="{{ msg.tags }}" role="alert">{{ msg }}</div>
+                            <div class="{{ msg.tags }} alert-dismissible" role="alert">
+                                {{ msg }}
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                            </div>
                         {% endfor %}
+                        {% block basket %}
+                            {% if request.user.is_authenticated and not request.user.basket.is_empty %}
+                                <div class="alert alert-info">
+                                    <a class="btn btn-primary pull-right" style="margin-top: -7px;" href="{% url 'tickets:checkout' %}">Go to Checkout</a>
+                                    <i class="fa fa-lg fa-shopping-basket" aria-hidden="true"></i>
+                                    <span class="d-none d-sm-inline">
+                                        &nbsp;&nbsp;Tickets: {{ request.user.basket.ticket_count }}
+                                        &nbsp;&nbsp;eFringers: {{ request.user.basket.fringer_count }}
+                                    </span>
+                                    <span class="d-inline d-sm-none">
+                                        &nbsp;&nbsp;Items: {{ request.user.basket.total_count }}
+                                    </span>
+                                    <span class="d-none d-md-inline">
+                                        &nbsp;&nbsp;Cost: &#163;{{ request.user.basket.total_cost }}
+                                    </span>
+                                </div>
+                            {% endif %}
+                        {% endblock %}
                     </div>
                 {% endif %}
 

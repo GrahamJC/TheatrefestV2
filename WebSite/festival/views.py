@@ -4,7 +4,6 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
-from django.contrib import messages
 from django.forms.models import inlineformset_factory
 from django.shortcuts import get_object_or_404, render, redirect
 from django.template import Template, Context
@@ -14,42 +13,8 @@ from django.views.generic import View, FormView, CreateView, UpdateView, DeleteV
 from extra_views import InlineFormSet, CreateWithInlinesView, UpdateWithInlinesView
 from extra_views.contrib.mixins import SuccessMessageWithInlinesMixin
 
-from .models import ContentPage, ContentPageImage
-from .forms import ContentPageForm, ContentPageImageForm
-
-
-def home(request):
-
-    # Go to first naviator option
-    option = request.site.info.festival.navigator_options.first()
-    if option:
-        return redirect(option.href)
-
-    # If there are no navigator options display no home page
-    return render(request, 'festival/no_home.html')
-
-
-def content_page(request, page_uuid):
-
-    # Get the page
-    page = get_object_or_404(ContentPage, uuid=page_uuid)
-
-    # Render the page body as a Django template
-    context = {
-        'page': page,
-    }
-    media_url = getattr(settings, 'MEDIA_URL', '/media')
-    for image in page.images.all():
-        context[f'image_{image.name}_url'] = os.path.join(media_url, image.image.url)
-    template = Template(page.body)
-    body_html = template.render(Context(context))
-
-    # Render the page
-    context = {
-        'page': page,
-        'body_html': body_html,
-    }
-    return render(request, 'festival/content_page.html', context)
+from content.models import Page, PageImage, Navigator
+from .forms import PageForm, PageImageForm, NavigatorForm
 
 
 @login_required
@@ -73,20 +38,20 @@ def admin_pages(request):
 def admin_page_create(request):
 
     # Create image formset type
-    ImageFormset = inlineformset_factory(ContentPage, ContentPageImage, form=ContentPageImageForm, extra=1)
+    ImageFormset = inlineformset_factory(Page, PageImage, form=PageImageForm, extra=1)
 
     # Check request type
     if request.method == 'GET':
 
         # Create page form and image formset
-        form = ContentPageForm(initial={'festival': request.festival})
+        form = PageForm(initial={'festival': request.festival})
         images_formset = ImageFormset()
 
     else:
 
         # Create page form, bind it to POST data and valdate
         page = None
-        form = ContentPageForm(data=request.POST, files=request.FILES)
+        form = PageForm(data=request.POST, files=request.FILES)
         if form.is_valid():
             page = form.save(commit=False)
 
@@ -117,23 +82,23 @@ def admin_page_create(request):
 def admin_page_update(request, page_uuid):
 
     # Get page
-    page = get_object_or_404(ContentPage, uuid=page_uuid)
+    page = get_object_or_404(Page, uuid=page_uuid)
 
     # Create image formset type
-    ImageFormset = inlineformset_factory(ContentPage, ContentPageImage, form=ContentPageImageForm, extra=1)
+    ImageFormset = inlineformset_factory(Page, PageImage, form=PageImageForm, extra=1)
 
     # Check request type
     if request.method == 'GET':
 
         # Create page form and image formset
-        form = ContentPageForm(instance=page)
+        form = PageForm(instance=page)
         images_formset = ImageFormset(instance=page)
 
     else:
 
         # Create page form, bind it to POST data and valdate
         page_valid = False
-        form = ContentPageForm(instance=page, data=request.POST, files=request.FILES)
+        form = PageForm(instance=page, data=request.POST, files=request.FILES)
         if form.is_valid():
             form.save(commit=False)
             page_valid = True
@@ -164,7 +129,7 @@ def admin_page_update(request, page_uuid):
 def admin_page_delete(request, page_uuid):
 
     # Get page
-    page = get_object_or_404(ContentPage, uuid=page_uuid)
+    page = get_object_or_404(Page, uuid=page_uuid)
 
     # Delete it
     page.delete()
@@ -174,10 +139,10 @@ def admin_page_delete(request, page_uuid):
     return redirect('festival:admin_pages')
 
 
-class ContentPageImagesInline(InlineFormSet):
+class PageImagesInline(InlineFormSet):
 
-    model = ContentPageImage
-    form_class = ContentPageImageForm
+    model = PageImage
+    form_class = PageImageForm
 
     def get_factory_kwargs(self):
         kwargs = super().get_factory_kwargs()
@@ -185,14 +150,14 @@ class ContentPageImagesInline(InlineFormSet):
         return kwargs
 
 
-class CreateContentPageView(LoginRequiredMixin, SuccessMessageWithInlinesMixin, CreateWithInlinesView):
+class CreatePageView(LoginRequiredMixin, SuccessMessageWithInlinesMixin, CreateWithInlinesView):
 
-    model = ContentPage
-    form_class = ContentPageForm
+    model = Page
+    form_class = PageForm
     template_name = 'festival/admin_page_create.html'
     success_message = 'Page added'
     success_url = reverse_lazy('festival:admin_pages')
-    inlines = [ContentPageImagesInline]
+    inlines = [PageImagesInline]
 
     def get_initial(self):
         initial = super().get_initial()
@@ -200,15 +165,99 @@ class CreateContentPageView(LoginRequiredMixin, SuccessMessageWithInlinesMixin, 
         return initial
 
 
-class UpdateContentPageView(LoginRequiredMixin, SuccessMessageWithInlinesMixin, UpdateWithInlinesView):
+class UpdatePageView(LoginRequiredMixin, SuccessMessageWithInlinesMixin, UpdateWithInlinesView):
 
-    model = ContentPage
-    form_class = ContentPageForm
+    model = Page
+    form_class = PageForm
     template_name = 'festival/admin_page_update.html'
     success_message = 'Page updated'
     success_url = reverse_lazy('festival:admin_pages')
-    inlines = [ContentPageImagesInline]
+    inlines = [PageImagesInline]
 
     def get_object(self):
         page_uuid = self.kwargs.get('page_uuid')
-        return get_object_or_404(ContentPage, uuid=page_uuid)
+        return get_object_or_404(Page, uuid=page_uuid)
+
+
+@login_required
+def admin_navigators(request):
+
+    # Render the page
+    return render(request, 'festival/admin_navigators.html')
+
+
+@login_required
+def admin_navigator_create(request):
+
+    # Check request type
+    if request.method == 'GET':
+
+        # Create navigator form
+        form = NavigatorForm(request.festival, initial={'festival': request.festival})
+
+    else:
+
+        # Create navigator form, bind it to POST data and valdate
+        navigator = None
+        form = NavigatorForm(request.festival, data=request.POST)
+        if form.is_valid():
+            navigator = form.save()
+
+            # Notify success and return to navigator list (if exiting) or navigator edit (if continuing)
+            messages.success(request, 'Navigator added')
+            if 'Exit' in request.POST:
+                return redirect('festival:admin_navigators')
+            else:
+                return redirect('festival:admin_navigator_update', navigator_uuid=navigator.uuid)
+
+    # Create context and render page
+    context = {
+        'form': form,
+    }
+    return render(request, 'festival/admin_navigator_create.html', context)
+
+
+@login_required
+def admin_navigator_update(request, navigator_uuid):
+
+    # Get navigator
+    navigator = get_object_or_404(Navigator, uuid=navigator_uuid)
+
+    # Check request type
+    if request.method == 'GET':
+
+        # Create navigator form
+        form = NavigatorForm(request.festival, instance=navigator)
+
+    else:
+
+        # Create navigator form, bind it to POST data and valdate
+        form = NavigatorForm(request.festival, instance=navigator, data=request.POST)
+        if form.is_valid():
+            form.save()
+
+            # Notify success and return to navigator list (if exiting) or navigator edit (if continuing)
+            messages.success(request, 'Navigator updated')
+            if 'Exit' in request.POST:
+                return redirect('festival:admin_navigators')
+
+    # Create context and render page
+    context = {
+        'navigator': navigator,
+        'form': form,
+    }
+    return render(request, 'festival/admin_navigator_update.html', context)
+
+
+@login_required
+def admin_navigator_delete(request, navigator_uuid):
+
+    # Get navigator
+    navigator = get_object_or_404(Navigator, uuid=navigator_uuid)
+
+    # Delete it
+    navigator.delete()
+
+    # Return to navigator  list
+    messages.success(request, 'Navigator deleted')
+    return redirect('festival:admin_navigators')

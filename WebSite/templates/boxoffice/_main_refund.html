@@ -1,0 +1,118 @@
+{% load widget_tweaks %}
+
+<div class="row">
+    <div class="col-6">
+        {% if not refund or refund.completed %}
+            <div class="card">
+                <h6 class="card-header">New Refund</h6>
+                <div class="card-body">
+                    <p>To start a new refund enter the customer name or e-mail address and click Start.</p>
+                    <form id="refund-customer-form">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            {{ refund_customer_form.customer | add_class:'form-control' }}
+                        </div>
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">Start</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        {% else %}
+            <div class="card">
+                <h6 class="card-header">Tickets</h6>
+                <div class="card-body">
+                    <form id="refund-ticket-form" method="post">
+                        {% csrf_token %}
+                        {% include 'bs4_form.html' with form=refund_ticket_form %}
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">Add</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    <div class="col-6">
+        {% if not refund %}
+            <div class="card">
+                <h6 class="card-header">Information</h6>
+                <div class="card-body">
+                    This area will be used to display notifications from the system administrator.
+                </div>
+            </div>
+        {% else %}
+            <div class="card">
+                <div class="card-header"><i class="fa fa-user-circle {% if refund.customer_user %}text-primary{% endif %}"></i> {{ refund.customer }}</div>
+                <div class="card-body">
+                    <table class="table table-striped mb-2">
+                        <tr>
+                            <th>Ticket</th>
+                            <th>Show/Performance</th>
+                            <th>Type/Cost</th>
+                        </tr>
+                        {% for ticket in refund.tickets.all %}
+                            <tr>
+                                <td>
+                                    {{ ticket.id }}<br/>
+                                    {% if not refund.completed %}
+                                        <a href="#" onclick="$('#refund-tab-content').load('{% url "boxoffice:refund_remove_ticket" refund.uuid ticket.uuid %}')">Remove</a>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ ticket.performance.show.name }}<br/>
+                                    {{ ticket.performance.date | date:"D, jS M" }} at {{ ticket.performance.time }}
+                                </td>
+                                <td>
+                                    {{ ticket.description }}<br/>
+                                    {% if ticket.cost %}&#163;{{ ticket.cost }}{% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        <tr>
+                            <td></td>
+                            <td><strong>Total</strong></td>
+                            <td>&#163;{{ refund.total_cost }}</td>
+                        </tr>
+                    </table>
+                    {% if refund.completed %}
+                        <button class="btn btn-primary">E-mail</button>
+                        <a class="btn btn-primary" href="{% url 'reports:refund_pdf' refund.uuid %}" target="_blank">PDF</a>
+                    {% else %}
+                        <form id="refund-form">
+                            {% csrf_token %}
+                            {% include 'bs4_form.html' with form=refund_form %}
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary">Complete</button>
+                                <a class="btn btn-primary" href="#" onclick="$('#refund-tab-content').load('{% url "boxoffice:refund_cancel" refund.uuid %}')" formnovalidate>Cancel</a>
+                            </div>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script language="javascript">
+    $(function () {
+        {% if not refund %}
+            $('#refund-customer-form').submit(function (event) {
+                event.preventDefault();
+                var postData = $('#refund-customer-form').serializeArray()
+                $('#refund-tab-content').load('{% url "boxoffice:refund_start" boxoffice.uuid %}', postData);
+            });
+        {% else %}
+            $('#refund-ticket-form').submit(function (event) {
+                event.preventDefault();
+                postData = $('#refund-ticket-form').serializeArray()
+                $('#refund-tab-content').load('{% url "boxoffice:refund_add_ticket" refund.uuid %}', postData);
+            });
+            $('#refund-form').submit(function (event) {
+                event.preventDefault();
+                postData = $('#refund-form').serializeArray()
+                $('#refund-tab-content').load('{% url "boxoffice:refund_complete" refund.uuid %}', postData);
+            });
+        {% endif %}
+    });
+</script>

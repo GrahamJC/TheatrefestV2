@@ -229,6 +229,19 @@ class ShowPerformance(TimeStampedModel):
     def is_suspended(self):
         return self.show.is_suspended
 
+    @property
+    def tickets_sold(self):
+        return self.tickets.filter(basket__isnull = True).count()
+
+    @property
+    def tickets_refunded(self):
+        return self.tickets.filter(refund__isnull = False).count()
+
+    @property
+    def tickets_available(self):
+        available = self.show.venue.capacity - self.tickets_sold + self.tickets_refunded if self.show.venue.capacity else 0
+        return available if available > 0 else 0
+
 
 class ShowReview(TimeStampedModel):
 

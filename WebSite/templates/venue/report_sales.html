@@ -1,0 +1,22 @@
+<table class="table table-striped">
+    <tr>
+        <th>Sale No</th>
+        <th>Customer</th>
+        <th>Buttons</th>
+        <th>Fringers</th>
+        <th>Tickets</th>
+        <th>Amount</th>
+        <th>Completed</th>
+    </tr>
+    {% for sale in sales %}
+        <tr>
+            <td><a href="#" onclick="showSaleDetail({{ sale.id }}, '{{ sale.uuid }}')">{{ sale.id }}</a></td>
+            <td>{{ sale.customer }}</td>
+            <td>{{ sale.buttons }}</td>
+            <td>{{ sale.fringers.count }}</td>
+            <td>{{ sale.tickets.count }}</td>
+            <td>&#163;{{ sale.amount }}</td>
+            <td>{{ sale.completed }}</td>
+        </tr>
+    {% endfor %}
+</table>

@@ -1,0 +1,31 @@
+<table class="table">
+    {% if sale.buttons %}
+        <tr>
+            <td colspan="2"><strong>{{ sale.buttons }} x Buttons</strong></td>
+            <td>&#163;{{ sale.button_cost }}</td>
+        </tr>
+    {% endif %}
+    {% for fringer in sale.fringers.all %}
+        <tr>
+            <td colspan="2"><strong>eFringer Voucher: {{ fringer.description }}</strong></td>
+            <td>&#163;{{ fringer.cost }}</td>
+        </td>
+    {% endfor %}
+    {% for performance in sale.performances %}
+        <tr>
+            <td colspan="2">
+                <strong>{{ performance.show }}</strong><br/>
+                {{ performance.date | date:"D, jS M" }} at {{ performance.time }}<br/>
+                {% for ticket in performance.tickets %}
+                   <span style="padding-left: 50px;">{{ ticket.description }}</span><br/>
+                {% endfor %}
+            </td>
+            <td>
+                <br/>
+                <br/>
+                {% for ticket in performance.tickets %}
+                    {% if ticket.cost %}&#163;{{ ticket.cost }}{% endif %}<br/>
+                {% endfor %}
+            </td>
+    {% endfor %}
+</table>

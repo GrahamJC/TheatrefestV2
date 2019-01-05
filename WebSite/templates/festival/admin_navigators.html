@@ -1,0 +1,16 @@
+﻿{% extends "base.html" %}
+{% load i18n %}
+
+{% block pagetitle %}Festival Admininistration: Navigators{% endblock %}
+
+{% block content %}
+
+    <ul>
+        {% for navigator in request.festival.navigators.all %}
+            <li><a href="{% url 'festival:admin_navigator_update' navigator.uuid %}">{{ navigator.label }}</a></li>
+        {%endfor %}
+    </ul>
+
+    <a href="{% url 'festival:admin_navigator_create' %}" class="btn btn-primary">Add</a>
+
+{% endblock %}

@@ -27,6 +27,8 @@ class Festival(TimeStampedModel):
     title = models.CharField(max_length=64)
     banner = models.ImageField(upload_to = get_image_filename, blank = True, default = '')
     venue_map = models.ImageField(upload_to = get_image_filename, blank = True, default = '')
+    online_sales_open = models.DateField(null=True, blank=True)
+    online_sales_close = models.DateField(null=True, blank=True)
 
     def __str__(self):
         return self.title
@@ -77,8 +79,8 @@ class User(TimeStampedModel, AbstractBaseUser, PermissionsMixin):
     last_name = models.CharField(blank=True, default='', max_length=30)
     is_active = models.BooleanField(default=True)
     is_admin = models.BooleanField(default=False)
-    is_manager = models.BooleanField(default=False)
-    is_box_office = models.BooleanField(default=False)
+    is_boxoffice = models.BooleanField(default=False)
+    is_venue = models.BooleanField(default=False)
     is_volunteer = models.BooleanField(default=False)
 
     class Meta:
@@ -90,6 +92,25 @@ class User(TimeStampedModel, AbstractBaseUser, PermissionsMixin):
     REQUIRED_FILEDS = []
 
     objects = UserManager()
+
+    def __str__(self):
+        return f'{self.festival.name}/{self.email}' if self.festival else self.email
+
+    @property
+    def username(self):
+        return self.email
+
+    @property
+    def is_staff(self):
+        return self.is_admin and not (self.site or self.festival)
+
+    @property
+    def is_site_admin(self):
+        return self.is_admin and not self.festival
+
+    @property
+    def is_system_admin(self):
+        return self.is_staff
 
     @property
     def is_staff(self):
@@ -103,9 +124,6 @@ class User(TimeStampedModel, AbstractBaseUser, PermissionsMixin):
 
     def get_natural_key(self):
         return [self.site, self.festival, self.email]
-
-    def __str__(self):
-        return f'{self.festival.name}/{self.email}' if self.festival else self.email
 
     def clean(self):
         super().clean()

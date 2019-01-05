@@ -1,0 +1,19 @@
+<a class="btn btn-primary float-right" href="{% url 'reports:admission_pdf' performance.uuid %}" target="_blank">PDF</a>
+
+<h5 class="tf-show-name"><a href="{% url 'program:show_detail' performance.show.id %}">{{ performance.show.name }}</a></h5>
+<h6>{{ performance.date|date:'D, j M' }} at {{ performance.time|time:'P' }}</h6>
+
+<table class="table table-striped">
+    <tr>
+        <th>Number</th>
+        <th>Customer</th>
+        <th>Type</th>
+    </tr>
+    {% for ticket in tickets %}
+        <tr {% if ticket.is_cancelled %}class="tf-cancelled"{% endif %}>
+            <td>{{ ticket.id }}</td>
+            <td>{% if ticket.user %} {{ ticket.user.username }} {%else%} {{ ticket.sale.customer }} {% endif %}</td>
+            <td>{{ ticket.description }}</td>
+        </tr>
+    {% endfor %}
+</table>

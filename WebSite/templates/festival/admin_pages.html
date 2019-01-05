@@ -6,7 +6,7 @@
 {% block content %}
 
     <ul>
-        {% for page in request.festival.content_pages.all %}
+        {% for page in request.festival.pages.all %}
             <li><a href="{% url 'festival:admin_page_update' page.uuid %}">{{ page.name }}</a></li>
         {%endfor %}
     </ul>

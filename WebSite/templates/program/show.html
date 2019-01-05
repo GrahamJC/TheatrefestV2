@@ -31,7 +31,7 @@
                             {% for performance in show.performances.all %}
                                 <p class="m-0">
                                     {% if show.venue.is_ticketed and not show.is_suspended %}
-                                        <a href="#">{{ performance.date | date:'D' }} at {{ performance.time | time:'P'}}</a>
+                                        <a href="{% url 'tickets:buy' performance.uuid %}">{{ performance.date | date:'D' }} at {{ performance.time | time:'P'}}</a>
                                     {% else %}
                                         {{ performance.date | date:'D' }} at {{ performance.time | time:'P'}}
                                     {% endif %}

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block pagetitle %}Thankyou{% endblock %}
+
+{% block content %}
+
+    <div id="tf-tickets-confirm">
+
+        <p>You have purchased the following:</p>
+
+        {% for fringer in sale.fringers.all %}
+            <div class="row form-group">
+                <div class="col-9"><strong>eFringer Voucher: {{ fringer.description }}</strong></div>
+                <div class="col-3 text-right">&#163;{{ fringer.cost }}</div>
+            </div>
+        {% endfor %}
+
+        {% for performance in sale.performances %}
+            <div class="row form-group">
+                <div class="col-12"><strong>{{ performance.show }}</strong></div>
+                <div class="col-12">{{ performance.date | date:"D, jS M" }} at {{ performance.time }}</div>
+                <div class="col-12">
+                    {% for ticket in performance.tickets %}
+                        <div class="row">
+                            <div class="col-3 col-md-2 text-right">{{ ticket.id }}</div>
+                            <div class="col-5 col-md-2">{{ ticket.description }}</div>
+                            <div class="col-4 col-md-2 text-right">{% if ticket.cost %}&#163;{{ ticket.cost }}{% endif %}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endfor %}
+
+        <p>
+            An e-mail containing ticket details has been sent to {{ sale.user.email }} and should be presented at the venue.
+            If you do not receive this e-mail please check your spam or junk mail folder.
+        </p>
+
+        <p>What would you like to do next?</p>
+        <ul>
+            <li><a href="{% url 'tickets:print_sale' sale.uuid %}" target="_blank">Print a receipt for this sale</a></li>
+            <li><a href="{% url 'program:shows' %}">Find another show</a></li>
+            <li><a href="{% url 'tickets:myaccount' %}">Manage my account</a></li>
+        </ul>
+
+    </div>
+
+{% endblock %}

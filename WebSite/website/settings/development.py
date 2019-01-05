@@ -1,6 +1,3 @@
-import os
-import posixpath
-
 from .base import *
 
 ALLOWED_HOSTS = [
@@ -16,9 +13,11 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'theatrefestV2',
+#        'NAME': 'theatrefest',
         'USER': 'theatrefest',
         'PASSWORD': 'barnum',
         'HOST': 'localhost',
+#        'HOST': 'theatrefestvm.ukwest.cloudapp.azure.com',
         'PORT': '5432',
     },
 }
@@ -38,6 +37,12 @@ EMAIL_PORT = 587
 EMAIL_HOST_USER = "postmaster@mg.theatrefest.co.uk"
 EMAIL_HOST_PASSWORD = get_secret("MAILGUN_EMAIL_HOST_PASSWORD")
 EMAIL_USE_TLS = True
+
+# Stripe
+STRIPE_PUBLIC_KEY = get_secret("STRIPE_TEST_PUBLIC_KEY")
+STRIPE_PRIVATE_KEY = get_secret("STRIPE_TEST_PRIVATE_KEY")
+STRIPE_FEE_FIXED = Decimal(0.2)
+STRIPE_FEE_PERCENT = Decimal(0.014)
 
 # Logging
 LOGGING = {

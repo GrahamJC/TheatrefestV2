@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block pagetitle %}Thankyou{% endblock %}
+
+{% block content %}
+
+    <p>You have added eFringer Vouchers to your basket.</p>
+
+    <div class="alert alert warning">These vouchers cannot be used to buy tickets for a performance until they have been paid for through the checkout.</div>
+
+    <p>What would you like to do next?</p>
+    <ul>
+        <li><a href="{% url 'tickets:checkout' %}">Go to the checkout</a></li>
+        <li><a href="{% url 'tickets:myaccount' %}">Return to my account</a></li>
+    </ul>
+
+{% endblock %}

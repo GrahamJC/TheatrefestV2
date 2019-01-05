@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block pagetitle %}Box Office: {{ venue.name }}{% endblock %}
+
+
+{% block content %}
+
+    <div class="nav nav-tabs nav-justified mb-3">
+        <a id="sale-tab" class="nav-item nav-link {% if tab == 'sale' %}active"{% endif %}" href="#sale-tab-content" data-toggle="tab">Sale</a>
+        <a id="admission-tab" class="nav-item nav-link {% if tab == 'admission' %}active"{% endif %}" href="#admission-tab-content" data-toggle="tab">Admission</a>
+        <a id="report-tab" class="nav-item nav-link {% if tab == 'report' %}active"{% endif %}" href="#report-tab-content" data-toggle="tab">Report</a>
+    </div>
+
+    <div class="tab-content">
+
+        <div id="sale-tab-content" class="tab-pane {% if tab == 'sale' %}active{% endif %}">
+            {% include 'venue/_main_sale.html' %}
+        </div>
+
+        <div id="admission-tab-content" class="tab-pane {% if tab == 'admission' %}active{% endif %}">
+            <div class="card mb-2">
+                <h6 class="card-header">Show/Performance</h6>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <ul>
+                            <li>Select the show and performance for which you want to manage admission.</li>
+                            <li>30 minutes before the performance starts print the ticket list and use it to issue admission tokens.</li>
+                            <li>Issue admission tokens immediately for any tickets sold after the list has been printed.</li>
+                        </ul>
+                    </div>
+                    <form>
+                        <div class="form-group">
+                            <select id="admission-show" class="form-control"></select>
+                        </div>
+                        <div class="form-group">
+                            <select id="admission-performance" class="form-control"></select>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="card">
+                <h6 class="card-header">Tickets</h6>
+                <div class="card-body">
+                    <div id="admission-tickets"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="report-tab-content" class="tab-pane {% if tab == 'report' %}active{% endif %}">
+            <form>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label">Select date</label>
+                    <div class="col-sm-4">
+                        <select id="report-date" class="form-control">
+                            <option value="{{ report_today }}" selected>Today</option>
+                            {% for date in report_dates %}
+                                <option value="{{ date.value }}">{{ date.text }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </form>
+            <div class="card mb-2">
+                <h6 class="card-header">Summary</h6>
+                <div class="card-body">
+                    <div id="report-summary"></div>
+                </div>
+            </div>
+            <div class="card mb-2">
+                <h6 class="card-header">Sales</h6>
+                <div class="card-body">
+                    <div id="report-sales"></div>
+                </div>
+            </div>
+            <div class="card mb-2">
+                <h6 class="card-header">Refunds</h6>
+                <div class="card-body">
+                    <div id="report-refunds"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="report-modal" class="modal fade" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Modal title</h4>
+                </div>
+                <div class="modal-body"></div>
+                <div class="modal-footer">
+                    <a id="report-modal-pdf" class="btn btn-primary" href="#" target="_blank">PDF</a>
+                    <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block body-script %}
+
+    <script language="javascript">
+
+        $( function() {
+            $('#admission-show').load('{% url 'venue:admission_shows' venue.uuid %}');
+
+            $('#admission-show').on('change', function(event) {
+                $('#admission-performance').load('{% url 'venue:admission_show_performances' '00000000-0000-0000-0000-000000000000' %}'.replace('00000000-0000-0000-0000-000000000000', $(this).val()));
+            });
+
+            $('#admission-performance').on('change', function(event) {
+                $('#admission-tickets').load('{% url 'venue:admission_performance_tickets' '00000000-0000-0000-0000-000000000000' %}'.replace('00000000-0000-0000-0000-000000000000', $(this).val()));
+            });
+
+            $('#report-date').on('change', updateReport);
+            $('#report-tab').on('show.bs.tab', updateReport);
+        });
+
+        function updateReport() {
+            var date = $('#report-date').val()
+            $('#report-summary').load('{% url 'venue:report_summary' venue.uuid 'yyyyMMdd' %}'.replace('yyyyMMdd', date));
+            $('#report-sales').load('{% url 'venue:report_sales' venue.uuid 'yyyyMMdd' %}'.replace('yyyyMMdd', date));
+        };
+
+        function showSaleDetail(sale_id, sale_uuid) {
+            $('#report-modal .modal-title').text('Sale: ' + sale_id);
+            $('#report-modal .modal-body').load('{% url "venue:report_sale_detail" '00000000-0000-0000-0000-000000000000' %}'.replace('00000000-0000-0000-0000-000000000000', sale_uuid));
+            $('#report-modal-pdf').attr('href', '{% url 'reports:sale_pdf' '00000000-0000-0000-0000-000000000000' %}'.replace('00000000-0000-0000-0000-000000000000', sale_uuid));
+            $('#report-modal').modal('show');
+        }
+
+    </script>
+
+{% endblock %}
