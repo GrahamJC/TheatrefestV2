@@ -11,7 +11,7 @@
             <div class="col-12 col-md-3">
                 <h6 class="d-block d-md-none tf-company-name">{{ show.company.name }}</h6>
                 {% if show.image %}
-                    <div><img class="m-1 w-100" src="{{ MEDIA_ROOT }}{{ show.image.url }}" /></div>
+                    <img class="m-1 w-100" src="{{ MEDIA_ROOT }}{{ show.image.url }}" />
                 {% endif %}
                 <div class="tf-info1">
                     {% if show.genre_list %}
@@ -30,7 +30,7 @@
                         <div class="tf-performances pl-2 mb-1">
                             {% for performance in show.performances.all %}
                                 <p class="m-0">
-                                    {% if show.venue.is_ticketed and not show.is_suspended %}
+                                    {% if show.venue.is_ticketed and not show.is_suspended and not show.festival.is_archived %}
                                         <a href="{% url 'tickets:buy' performance.uuid %}">{{ performance.date | date:'D' }} at {{ performance.time | time:'P'}}</a>
                                     {% else %}
                                         {{ performance.date | date:'D' }} at {{ performance.time | time:'P'}}
@@ -38,15 +38,17 @@
                                 </p>
                             {% endfor %}
                         </div>
-                        {% if show.is_suspended %}
-                            <p>Online ticket sales for this show are temporarily unavailable.</p>
-                        {% elif show.venue.is_ticketed %}
-                            <p>Select a performance to buy tickets online.</p>
-                        {% else %}
-                            <p>
-                                This is a pay-what-you-will-show.
-                                There are no tickets but there will be a bucket-collection.
-                            </p>
+                        {% if not show.festival.is_archived %}
+                            {% if show.is_suspended %}
+                                <p>Online ticket sales for this show are temporarily unavailable.</p>
+                            {% elif show.venue.is_ticketed %}
+                                <p>Select a performance to buy tickets online.</p>
+                            {% else %}
+                                <p>
+                                    This is a pay-what-you-will-show.
+                                    There are no tickets but there will be a bucket-collection.
+                                </p>
+                            {% endif %}
                         {% endif %}
                     {% endif %}
                 </div>

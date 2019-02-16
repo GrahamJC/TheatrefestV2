@@ -1,0 +1,20 @@
+﻿<table class="table">
+    <thead class="thead-light">
+        <tr>
+            <th>Date/Time</th>
+            <th>Tickets</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for performance in show.performances.all %}
+            <tr>
+                <td><a href="{% url 'program:admin_show_performance_update' show.uuid performance.uuid %}">{{ performance.date }} at {{ performance.time }}</a></td>
+                <td>TBD</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="mb-4 text-right">
+    <a class="btn btn-primary" href="{% url 'program:admin_show_performance_create' show.uuid %}">Add Performance</a>
+</div>

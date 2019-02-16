@@ -2,11 +2,20 @@ import os
 
 from django.db.models.functions import Lower
 from django.conf import settings
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib import messages
+from django.contrib.messages.views import SuccessMessageMixin
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render, redirect
 from django.template import Template, Context
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.views import View
+from django.views.generic import ListView, CreateView, UpdateView
+
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Layout, Field, HTML, Submit, Button, Row, Column
+from crispy_forms.bootstrap import FormActions, TabHolder, Tab
 
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
@@ -17,8 +26,20 @@ from reportlab.lib.units import cm
 from reportlab.lib import colors
 
 from core.models import Festival
-from .models import Show, ShowPerformance, Venue
-from .forms import SearchForm
+from .models import (
+    Genre,
+    Venue, VenueContact, VenueSponsor,
+    Company, CompanyContact,
+    Show, ShowPerformance, ShowReview, ShowImage,
+)
+from .forms import (
+   SearchForm, 
+   AdminGenreForm,
+   AdminVenueForm, AdminVenueContactForm, AdminVenueSponsorForm,
+   AdminCompanyForm, AdminCompanyContactForm,
+   AdminShowForm, AdminShowPerformanceForm, AdminShowReviewForm, AdminShowImageForm,
+)
+
 
 def shows(request, festival_uuid=None):
 
@@ -304,3 +325,1157 @@ def venue(request, venue_uuid):
         'shows': venue.shows.order_by(Lower('name')),
     }
     return render(request, 'program/venue.html', context)
+
+
+class AdminGenreList(LoginRequiredMixin, ListView):
+
+    model = Genre
+    context_object_name = 'genres'
+    template_name = 'program/admin_genres.html'
+
+    def get_queryset(self):
+        return Genre.objects.filter(festival=self.request.festival)
+
+
+class AdminGenreCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+
+    model = Genre
+    form_class = AdminGenreForm
+    context_object_name = 'genre'
+    template_name = 'program/admin_genre.html'
+    success_message = 'Genre added'
+    success_url = reverse_lazy('program:admin_genres')
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['festival'] = self.request.festival
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Field('name'),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('cancel', 'Cancel'),
+            ),
+        )
+        return form
+
+
+class AdminGenreUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+
+    model = Genre
+    form_class = AdminGenreForm
+    slug_field = 'uuid'
+    context_object_name = 'genre'
+    template_name = 'program/admin_genre.html'
+    success_message = 'Genre updated'
+    success_url = reverse_lazy('program:admin_genres')
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['festival'] = self.request.festival
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Field('name'),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('delete', 'Delete'),
+                Button('cancel', 'Cancel'),
+            )
+        )
+        return form
+    
+
+@login_required
+def admin_genre_delete(request, slug):
+
+    # Delete genre
+    genre = get_object_or_404(Genre, uuid=slug)
+    genre.delete()
+    messages.success(request, 'Genre deleted')
+    return redirect('program:admin_genres')
+
+
+class AdminVenueList(LoginRequiredMixin, ListView):
+
+    model = Venue
+    context_object_name = 'venues'
+    template_name = 'program/admin_venues.html'
+
+    def get_queryset(self):
+        return Venue.objects.filter(festival=self.request.festival)
+
+
+class AdminVenueCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+
+    model = Venue
+    form_class = AdminVenueForm
+    context_object_name = 'venue'
+    template_name = 'program/admin_venue.html'
+    success_message = 'Venue added'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['festival'] = self.request.festival
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Field('name'),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('cancel', 'Cancel'),
+            ),
+        )
+        return form
+
+    def get_success_url(self):
+        return reverse('program:admin_venue_update', args=[self.object.uuid])
+
+
+class AdminVenueUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+
+    model = Venue
+    form_class = AdminVenueForm
+    slug_field = 'uuid'
+    context_object_name = 'venue'
+    template_name = 'program/admin_venue.html'
+    success_message = 'Venue updated'
+    success_url = reverse_lazy('program:admin_venues')
+
+    def dispatch(self, request, *args, **kwargs):
+        self.initial_tab = kwargs.pop('tab', None)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['festival'] = self.request.festival
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.fields['listing'].widget.attrs['rows'] = 4
+        form.fields['listing_short'].widget.attrs['rows'] = 2
+        form.fields['detail'].widget.attrs['rows'] = 16
+        form.fields['is_ticketed'].label = 'Ticketed'
+        form.fields['is_scheduled'].label = 'Scheduled'
+        form.fields['is_searchable'].label = 'Searchable'
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Field('name'),
+            TabHolder(
+                Tab ('General',
+                    'image',
+                    'listing',
+                    'listing_short',
+                    Row(
+                        Column('is_ticketed', css_class='form-group col-md-4 mb-0'),
+                        Column('is_scheduled', css_class='form-group col-md-4 mb-0'),
+                        Column('is_searchable', css_class='form-group col-md-4 mb-0'),
+                        css_class = 'form-row',
+                    ),
+                    Row(
+                        Column('capacity', css_class='form-group col-md-4 mb-0'),
+                        Column('map_index', css_class='form-group col-md-4 mb-0'),
+                        Column('color', css_class='form-group col-md-4 mb-0'),
+                        css_class = 'form-row',
+                    ),
+                ),
+                Tab('Details',
+                    'detail',
+                ),
+                Tab('Address',
+                    'address1',
+                    'address2',
+                    Row(
+                        Column('city', css_class='form-group col-md-8 mb-0'),
+                        Column('post_code', css_class='form-group col-md-4 mb-0'),
+                        css_class = 'form-row',
+                    ),
+                    Row(
+                        Column('telno', css_class='form-group col-md-4 mb-0'),
+                        Column('email', css_class='form-group col-md-8 mb-0'),
+                        css_class = 'form-row',
+                    ),
+                ),
+                Tab('Social Media',
+                    Row(
+                        Column('website', css_class='form-group col-md-6 mb-0'),
+                        Column('twitter', css_class='form-group col-md-6 mb-0'),
+                        css_class = 'form-row',
+                    ),
+                    Row(
+                        Column('facebook', css_class='form-group col-md-6 mb-0'),
+                        Column('instagram', css_class='form-group col-md-6 mb-0'),
+                        css_class = 'form-row',
+                    ),
+                ),
+                Tab('Contacts',
+                    HTML('{% include \'program/_admin_venue_contacts.html\' %}')
+                ),
+                Tab('Sponsors',
+                    HTML('{% include \'program/_admin_venue_sponsors.html\' %}')
+                ),
+            ),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('delete', 'Delete'),
+                Button('cancel', 'Cancel'),
+            )
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['initial_tab'] = self.initial_tab
+        return context_data
+    
+
+@login_required
+def admin_venue_delete(request, slug):
+
+    # Delete venue
+    venue = get_object_or_404(Venue, uuid=slug)
+    venue.delete()
+    messages.success(request, 'Venue deleted')
+    return redirect('program:admin_venues')
+
+
+class AdminVenueContactCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+
+    model = VenueContact
+    form_class = AdminVenueContactForm
+    context_object_name = 'contact'
+    template_name = 'program/admin_venue_contact.html'
+    success_message = 'Venue contact added'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.venue = get_object_or_404(Venue, uuid=kwargs['venue_uuid'])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['venue'] = self.venue
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Field('name'),
+            Field('role'),
+            Field('address1'),
+            Field('address2'),
+            Row(
+                Column('city', css_class='form-group col-md-8 mb-0'),
+                Column('post_code', css_class='form-group col-md-4 mb-0'),
+                css_class = 'form-row',
+            ),
+            Row(
+                Column('telno', css_class='form-group col-md-6 mb-0'),
+                Column('mobile', css_class='form-group col-md-6 mb-0'),
+                css_class = 'form-row',
+            ),
+            Field('email'),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('cancel', 'Cancel'),
+            )
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['venue'] = self.venue
+        return context_data
+
+    def get_success_url(self):
+        return reverse('program:admin_venue_update_tab', args=[self.venue.uuid, 'contacts'])
+
+
+class AdminVenueContactUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+
+    model = VenueContact
+    form_class = AdminVenueContactForm
+    slug_field = 'uuid'
+    context_object_name = 'contact'
+    template_name = 'program/admin_venue_contact.html'
+    success_message = 'Venue contact updated'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.venue = get_object_or_404(Venue, uuid=kwargs['venue_uuid'])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['venue'] = self.venue
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Field('name'),
+            Field('role'),
+            Field('address1'),
+            Field('address2'),
+            Row(
+                Column('city', css_class='form-group col-md-8 mb-0'),
+                Column('post_code', css_class='form-group col-md-4 mb-0'),
+                css_class = 'form-row',
+            ),
+            Row(
+                Column('telno', css_class='form-group col-md-6 mb-0'),
+                Column('mobile', css_class='form-group col-md-6 mb-0'),
+                css_class = 'form-row',
+            ),
+            Field('email'),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('delete', 'Delete'),
+                Button('cancel', 'Cancel'),
+            )
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['venue'] = self.venue
+        return context_data
+
+    def get_success_url(self):
+        return reverse('program:admin_venue_update_tab', args=[self.venue.uuid, 'contacts'])
+    
+
+@login_required
+def admin_venue_contact_delete(request, venue_uuid, slug):
+
+    # Delete venue contact
+    contact = get_object_or_404(VenueContact, uuid=slug)
+    contact.delete()
+    messages.success(request, 'Venue contact deleted')
+    return redirect('program:admin_venue_update_tab', venue_uuid, 'contacts')
+
+
+class AdminVenueSponsorCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+
+    model = VenueSponsor
+    form_class = AdminVenueSponsorForm
+    context_object_name = 'sponsor'
+    template_name = 'program/admin_venue_sponsor.html'
+    success_message = 'Venue sponsor added'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.venue = get_object_or_404(Venue, uuid=kwargs['venue_uuid'])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['venue'] = self.venue
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Field('name'),
+            Field('image'),
+            Field('message'),
+            Row(
+                Column('color', css_class='form-group col-md-6 mb-0'),
+                Column('background', css_class='form-group col-md-6 mb-0'),
+                css_class = 'form-row',
+            ),
+            Field('contact'),
+            Row(
+                Column('telno', css_class='form-group col-md-4 mb-0'),
+                Column('email', css_class='form-group col-md-8 mb-0'),
+                css_class = 'form-row',
+            ),
+            Row(
+                Column('website', css_class='form-group col-md-6 mb-0'),
+                Column('facebook', css_class='form-group col-md-6 mb-0'),
+                css_class = 'form-row',
+            ),
+            Row(
+                Column('twitter', css_class='form-group col-md-6 mb-0'),
+                Column('instagram', css_class='form-group col-md-6 mb-0'),
+                css_class = 'form-row',
+            ),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('cancel', 'Cancel'),
+            )
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['venue'] = self.venue
+        return context_data
+
+    def get_success_url(self):
+        return reverse('program:admin_venue_update_tab', args=[self.venue.uuid, 'sponsors'])
+
+
+class AdminVenueSponsorUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+
+    model = VenueSponsor
+    form_class = AdminVenueSponsorForm
+    slug_field = 'uuid'
+    context_object_name = 'sponsor'
+    template_name = 'program/admin_venue_sponsor.html'
+    success_message = 'Venue sponsor updated'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.venue = get_object_or_404(Venue, uuid=kwargs['venue_uuid'])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['venue'] = self.venue
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Field('name'),
+            Field('image'),
+            Field('message'),
+            Row(
+                Column('color', css_class='form-group col-md-6 mb-0'),
+                Column('background', css_class='form-group col-md-6 mb-0'),
+                css_class = 'form-row',
+            ),
+            Field('contact'),
+            Row(
+                Column('telno', css_class='form-group col-md-4 mb-0'),
+                Column('email', css_class='form-group col-md-8 mb-0'),
+                css_class = 'form-row',
+            ),
+            Row(
+                Column('website', css_class='form-group col-md-6 mb-0'),
+                Column('facebook', css_class='form-group col-md-6 mb-0'),
+                css_class = 'form-row',
+            ),
+            Row(
+                Column('twitter', css_class='form-group col-md-6 mb-0'),
+                Column('instagram', css_class='form-group col-md-6 mb-0'),
+                css_class = 'form-row',
+            ),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('delete', 'Delete'),
+                Button('cancel', 'Cancel'),
+            )
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['venue'] = self.venue
+        return context_data
+
+    def get_success_url(self):
+        return reverse('program:admin_venue_update_tab', args=[self.venue.uuid, 'sponsors'])
+    
+
+@login_required
+def admin_venue_sponsor_delete(request, venue_uuid, slug):
+
+    # Delete venue sponsor
+    sponsor = get_object_or_404(VenueSponsor, uuid=slug)
+    sponsor.delete()
+    messages.success(request, 'Venue sponsor deleted')
+    return redirect('program:admin_venue_update_tab', venue_uuid, 'sponsors')
+
+
+class AdminCompanyList(LoginRequiredMixin, ListView):
+
+    model = Company
+    context_object_name = 'companies'
+    template_name = 'program/admin_companies.html'
+
+    def get_queryset(self):
+        return Company.objects.filter(festival=self.request.festival)
+
+
+class AdminCompanyCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+
+    model = Company
+    form_class = AdminCompanyForm
+    context_object_name = 'company'
+    template_name = 'program/admin_company.html'
+    success_message = 'Company added'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['festival'] = self.request.festival
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Field('name'),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('cancel', 'Cancel'),
+            ),
+        )
+        return form
+
+    def get_success_url(self):
+        return reverse('program:admin_company_update', args=[self.object.uuid])
+
+
+class AdminCompanyUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+
+    model = Company
+    form_class = AdminCompanyForm
+    slug_field = 'uuid'
+    context_object_name = 'company'
+    template_name = 'program/admin_company.html'
+    success_message = 'Company updated'
+    success_url = reverse_lazy('program:admin_companies')
+
+    def dispatch(self, request, *args, **kwargs):
+        self.initial_tab = kwargs.pop('tab', None)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['festival'] = self.request.festival
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.fields['listing'].widget.attrs['rows'] = 4
+        form.fields['listing_short'].widget.attrs['rows'] = 2
+        form.fields['detail'].widget.attrs['rows'] = 16
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Field('name'),
+            TabHolder(
+                Tab ('General',
+                    'image',
+                    'listing',
+                    'listing_short',
+                ),
+                Tab('Details',
+                    'detail',
+                ),
+                Tab('Address',
+                    'address1',
+                    'address2',
+                    Row(
+                        Column('city', css_class='form-group col-md-8 mb-0'),
+                        Column('post_code', css_class='form-group col-md-4 mb-0'),
+                        css_class = 'form-row',
+                    ),
+                    Row(
+                        Column('telno', css_class='form-group col-md-4 mb-0'),
+                        Column('email', css_class='form-group col-md-8 mb-0'),
+                        css_class = 'form-row',
+                    ),
+                ),
+                Tab('Social Media',
+                    Row(
+                        Column('website', css_class='form-group col-md-6 mb-0'),
+                        Column('twitter', css_class='form-group col-md-6 mb-0'),
+                        css_class = 'form-row',
+                    ),
+                    Row(
+                        Column('facebook', css_class='form-group col-md-6 mb-0'),
+                        Column('instagram', css_class='form-group col-md-6 mb-0'),
+                        css_class = 'form-row',
+                    ),
+                ),
+                Tab('Contacts',
+                    HTML('{% include \'program/_admin_company_contacts.html\' %}')
+                ),
+            ),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('delete', 'Delete'),
+                Button('cancel', 'Cancel'),
+            )
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['initial_tab'] = self.initial_tab
+        return context_data
+    
+
+@login_required
+def admin_company_delete(request, slug):
+
+    # Delete company
+    company = get_object_or_404(Company, uuid=slug)
+    company.delete()
+    messages.success(request, 'Company deleted')
+    return redirect('program:admin_companies')
+
+
+class AdminCompanyContactCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+
+    model = CompanyContact
+    form_class = AdminCompanyContactForm
+    context_object_name = 'contact'
+    template_name = 'program/admin_company_contact.html'
+    success_message = 'Company contact added'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.company = get_object_or_404(Company, uuid=kwargs['company_uuid'])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['company'] = self.company
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Field('name'),
+            Field('role'),
+            Field('address1'),
+            Field('address2'),
+            Row(
+                Column('city', css_class='form-group col-md-8 mb-0'),
+                Column('post_code', css_class='form-group col-md-4 mb-0'),
+                css_class = 'form-row',
+            ),
+            Row(
+                Column('telno', css_class='form-group col-md-6 mb-0'),
+                Column('mobile', css_class='form-group col-md-6 mb-0'),
+                css_class = 'form-row',
+            ),
+            Field('email'),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('cancel', 'Cancel'),
+            )
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['company'] = self.company
+        return context_data
+
+    def get_success_url(self):
+        return reverse('program:admin_company_update_tab', args=[self.company.uuid, 'contacts'])
+
+
+class AdminCompanyContactUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+
+    model = CompanyContact
+    form_class = AdminCompanyContactForm
+    slug_field = 'uuid'
+    context_object_name = 'contact'
+    template_name = 'program/admin_company_contact.html'
+    success_message = 'Company contact updated'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.company = get_object_or_404(Company, uuid=kwargs['company_uuid'])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['company'] = self.company
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Field('name'),
+            Field('role'),
+            Field('address1'),
+            Field('address2'),
+            Row(
+                Column('city', css_class='form-group col-md-8 mb-0'),
+                Column('post_code', css_class='form-group col-md-4 mb-0'),
+                css_class = 'form-row',
+            ),
+            Row(
+                Column('telno', css_class='form-group col-md-6 mb-0'),
+                Column('mobile', css_class='form-group col-md-6 mb-0'),
+                css_class = 'form-row',
+            ),
+            Field('email'),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('delete', 'Delete'),
+                Button('cancel', 'Cancel'),
+            )
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['company'] = self.company
+        return context_data
+
+    def get_success_url(self):
+        return reverse('program:admin_company_update_tab', args=[self.company.uuid, 'contacts'])
+    
+
+@login_required
+def admin_company_contact_delete(request, company_uuid, slug):
+
+    # Delete company contact
+    contact = get_object_or_404(CompanyContact, uuid=slug)
+    contact.delete()
+    messages.success(request, 'Company contact deleted')
+    return redirect('program:admin_company_update_tab', company_uuid, 'contacts')
+
+
+class AdminShowList(LoginRequiredMixin, ListView):
+
+    model = Show
+    context_object_name = 'shows'
+    template_name = 'program/admin_shows.html'
+
+    def get_queryset(self):
+        return Show.objects.filter(festival=self.request.festival)
+
+
+class AdminShowCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+
+    model = Show
+    form_class = AdminShowForm
+    context_object_name = 'show'
+    template_name = 'program/admin_show.html'
+    success_message = 'Show added'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['festival'] = self.request.festival
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Field('name'),
+            Row(
+                Column('company', css_class='form-group col-md-6 mb-0'),
+                Column('venue', css_class='form-group col-md-6 mb-0'),
+            ),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('cancel', 'Cancel'),
+            ),
+        )
+        return form
+
+    def get_success_url(self):
+        return reverse('program:admin_show_update', args=[self.object.uuid])
+
+
+class AdminShowUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+
+    model = Show
+    form_class = AdminShowForm
+    slug_field = 'uuid'
+    context_object_name = 'show'
+    template_name = 'program/admin_show.html'
+    success_message = 'Show updated'
+    success_url = reverse_lazy('program:admin_shows')
+
+    def dispatch(self, request, *args, **kwargs):
+        self.initial_tab = kwargs.pop('tab', None)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['festival'] = self.request.festival
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.fields['listing'].widget.attrs['rows'] = 4
+        form.fields['listing_short'].widget.attrs['rows'] = 2
+        form.fields['detail'].widget.attrs['rows'] = 16
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Field('name'),
+            TabHolder(
+                Tab ('General',
+                    Row(
+                        Column('company', css_class='form-group col-md-6 mb-0'),
+                        Column('venue', css_class='form-group col-md-6 mb-0'),
+                    ),
+                    'image',
+                    'listing',
+                    'listing_short',
+                ),
+                Tab('Information',
+                    Row(
+                        Column('genres', css_class='form-group col-md-6 mb-0'),
+                        Column('genre_text', css_class='form-group col-md-6 mb-0'),
+                        css_class = 'form-row',
+                    ),
+                    Row(
+                        Column('age_range', css_class='form-group col-md-6 mb-0'),
+                        Column('duration', css_class='form-group col-md-6 mb-0'),
+                        css_class = 'form-row',
+                    ),
+                    Row(
+                        Column('has_warnings', css_class='form-group col-md-4 mb-0'),
+                        Column('is_suspended', css_class='form-group col-md-4 mb-0'),
+                        Column('is_cancelled', css_class='form-group col-md-4 mb-0'),
+                        css_class = 'form-row',
+                    ),
+                    'replaced_by',
+                ),
+                Tab('Details',
+                    'detail',
+                ),
+                Tab('Social Media',
+                    Row(
+                        Column('website', css_class='form-group col-md-6 mb-0'),
+                        Column('twitter', css_class='form-group col-md-6 mb-0'),
+                        css_class = 'form-row',
+                    ),
+                    Row(
+                        Column('facebook', css_class='form-group col-md-6 mb-0'),
+                        Column('instagram', css_class='form-group col-md-6 mb-0'),
+                        css_class = 'form-row',
+                    ),
+                ),
+                Tab('Performances',
+                    HTML('{% include \'program/_admin_show_performances.html\' %}'),
+                ),
+                Tab('Reviews',
+                    HTML('{% include \'program/_admin_show_reviews.html\' %}'),
+                ),
+                Tab('Images',
+                    HTML('{% include \'program/_admin_show_images.html\' %}'),
+                ),
+            ),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('delete', 'Delete'),
+                Button('cancel', 'Cancel', css_class='btn-secondary'),
+            )
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['initial_tab'] = self.initial_tab
+        return context_data
+    
+
+@login_required
+def admin_show_delete(request, slug):
+
+    # Delete show
+    show = get_object_or_404(Show, uuid=slug)
+    show.delete()
+    messages.success(request, 'Show deleted')
+    return redirect('program:admin_shows')
+
+
+class AdminShowPerformanceCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+
+    model = ShowPerformance
+    form_class = AdminShowPerformanceForm
+    context_object_name = 'performance'
+    template_name = 'program/admin_show_performance.html'
+    success_message = 'Show performance added'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.show = get_object_or_404(Show, uuid=kwargs['show_uuid'])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['show'] = self.show
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Row(
+                Column('date', css_class='form-group col-md-6 mb-0'),
+                Column('time', css_class='form-group col-md-6 mb-0'),
+                css_class = 'form-row',
+            ),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('cancel', 'Cancel'),
+            ),
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['show'] = self.show
+        return context_data
+
+    def get_success_url(self):
+        return reverse('program:admin_show_update_tab', args=[self.show.uuid, 'performances'])
+
+
+class AdminShowPerformanceUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+
+    model = ShowPerformance
+    form_class = AdminShowPerformanceForm
+    slug_field = 'uuid'
+    context_object_name = 'performance'
+    template_name = 'program/admin_show_performance.html'
+    success_message = 'Show performance updated'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.show = get_object_or_404(Show, uuid=kwargs['show_uuid'])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['show'] = self.show
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Row(
+                Column('date', css_class='form-group col-md-6 mb-0'),
+                Column('time', css_class='form-group col-md-6 mb-0'),
+                css_class = 'form-row',
+            ),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('delete', 'Delete'),
+                Button('cancel', 'Cancel'),
+            ),
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['show'] = self.show
+        return context_data
+
+    def get_success_url(self):
+        return reverse('program:admin_show_update_tab', args=[self.show.uuid, 'performances'])
+    
+
+@login_required
+def admin_show_performance_delete(request, show_uuid, slug):
+
+    # Delete show performance
+    performance = get_object_or_404(ShowPerformance, uuid=slug)
+    performance.delete()
+    messages.success(request, 'Show performance deleted')
+    return redirect('program:admin_show_update_tab', show_uuid, 'performances')
+
+
+class AdminShowReviewCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+
+    model = ShowReview
+    form_class = AdminShowReviewForm
+    context_object_name = 'review'
+    template_name = 'program/admin_show_review.html'
+    success_message = 'Show review added'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.show = get_object_or_404(Show, uuid=kwargs['show_uuid'])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['show'] = self.show
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Row(
+                Column('date', css_class='form-group col-md-6 mb-0'),
+                Column('time', css_class='form-group col-md-6 mb-0'),
+                css_class = 'form-row',
+            ),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('cancel', 'Cancel'),
+            ),
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['show'] = self.show
+        return context_data
+
+    def get_success_url(self):
+        return reverse('program:admin_show_update_tab', args=[self.show.uuid, 'reviews'])
+
+
+class AdminShowReviewUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+
+    model = ShowReview
+    form_class = AdminShowReviewForm
+    slug_field = 'uuid'
+    context_object_name = 'review'
+    template_name = 'program/admin_show_review.html'
+    success_message = 'Show review updated'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.show = get_object_or_404(Show, uuid=kwargs['show_uuid'])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['show'] = self.show
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Row(
+                Column('date', css_class='form-group col-md-6 mb-0'),
+                Column('time', css_class='form-group col-md-6 mb-0'),
+                css_class = 'form-row',
+            ),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('delete', 'Delete'),
+                Button('cancel', 'Cancel'),
+            ),
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['show'] = self.show
+        return context_data
+
+    def get_success_url(self):
+        return reverse('program:admin_show_update_tab', args=[self.show.uuid, 'reviews'])
+    
+
+@login_required
+def admin_show_review_delete(request, show_uuid, slug):
+
+    # Delete show review
+    review = get_object_or_404(ShowReview, uuid=slug)
+    review.delete()
+    messages.success(request, 'Show review deleted')
+    return redirect('program:admin_show_update_tab', show_uuid, 'reviews')
+
+
+class AdminShowImageCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+
+    model = ShowImage
+    form_class = AdminShowImageForm
+    context_object_name = 'image'
+    template_name = 'program/admin_show_image.html'
+    success_message = 'Show image added'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.show = get_object_or_404(Show, uuid=kwargs['show_uuid'])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['show'] = self.show
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Row(
+                Column('date', css_class='form-group col-md-6 mb-0'),
+                Column('time', css_class='form-group col-md-6 mb-0'),
+                css_class = 'form-row',
+            ),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('cancel', 'Cancel'),
+            ),
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['show'] = self.show
+        return context_data
+
+    def get_success_url(self):
+        return reverse('program:admin_show_update_tab', args=[self.show.uuid, 'images'])
+
+
+class AdminShowImageUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+
+    model = ShowImage
+    form_class = AdminShowImageForm
+    slug_field = 'uuid'
+    context_object_name = 'image'
+    template_name = 'program/admin_show_image.html'
+    success_message = 'Show image updated'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.show = get_object_or_404(Show, uuid=kwargs['show_uuid'])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['show'] = self.show
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Row(
+                Column('date', css_class='form-group col-md-6 mb-0'),
+                Column('time', css_class='form-group col-md-6 mb-0'),
+                css_class = 'form-row',
+            ),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('delete', 'Delete'),
+                Button('cancel', 'Cancel'),
+            ),
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['show'] = self.show
+        return context_data
+
+    def get_success_url(self):
+        return reverse('program:admin_show_update_tab', args=[self.show.uuid, 'images'])
+    
+
+@login_required
+def admin_show_image_delete(request, show_uuid, slug):
+
+    # Delete show image
+    image = get_object_or_404(ShowImage, uuid=slug)
+    image.delete()
+    messages.success(request, 'Show image deleted')
+    return redirect('program:admin_show_update_tab', show_uuid, 'images')

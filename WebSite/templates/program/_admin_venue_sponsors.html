@@ -1,0 +1,22 @@
+﻿<table class="table">
+    <thead class="thead-light">
+        <tr>
+            <th>Name</th>
+            <th>Contact</th>
+            <th>TelNo</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for sponsor in venue.sponsors.all %}
+            <tr>
+                <td><a href="{% url 'program:admin_venue_sponsor_update' venue.uuid sponsor.uuid %}">{{ sponsor.name }}</a></td>
+                <td>{{ sponsor.contact }}</td>
+                <td>{{ sponsor.telno }}</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="mb-4 text-right">
+    <a class="btn btn-primary" href="{% url 'program:admin_venue_sponsor_create' venue.uuid %}">Add Sponsor</a>
+</div>

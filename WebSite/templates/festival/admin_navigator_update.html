@@ -9,10 +9,9 @@
         {% csrf_token %}
         {% include 'bs4_form.html' %}
         <div class="form-group">
-            <button name="Continue" type="submit" class="btn btn-primary">Save and Continue</button>
-            <button name="Exit" type="submit" class="btn btn-primary">Save and Exit</button>
+            <button type="submit" class="btn btn-primary">Save</button>
             <a href="{%url 'festival:admin_navigators' %}" class="btn btn-secondary">Cancel</a>
-            {% if page.can_delete %}
+            {% if navigator.can_delete %}
                 <a class="float-right btn btn-secondary" data-toggle="modal" data-target="#tf-delete-modal">Delete</a>
             {% endif %}
         </div>

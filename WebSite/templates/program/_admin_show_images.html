@@ -1,0 +1,20 @@
+﻿<table class="table">
+    <thead class="thead-light">
+        <tr>
+            <th>Name</th>
+            <th>Image</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for image in show.images.all %}
+            <tr>
+                <td><a href="{% url 'program:admin_show_image_update' show.uuid image.uuid %}">{{ image.name }}</a></td>
+                <td></td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="mb-4 text-right">
+    <a class="btn btn-primary" href="{% url 'program:admin_show_image_create' show.uuid %}">Add Image</a>
+</div>

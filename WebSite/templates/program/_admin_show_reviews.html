@@ -1,0 +1,22 @@
+﻿<table class="table">
+    <thead class="thead-light">
+        <tr>
+            <th>Source</th>
+            <th>Rating</th>
+            <th>URL</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for review in show.reviews.all %}
+            <tr>
+                <td><a href="{% url 'program:admin_show_review_update' show.uuid review.uuid %}">{{ review.source }}</a></td>
+                <td>{{ review.rating }}</td>
+                <td><a href="{{ review.url }}" target="_blank">{{ review.url }}</a></td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="mb-4 text-right">
+    <a class="btn btn-primary" href="{% url 'program:admin_show_review_create' show.uuid %}">Add Review</a>
+</div>

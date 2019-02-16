@@ -29,8 +29,11 @@ class Company(TimeStampedModel):
         ordering = ('festival', 'name')
 
     def __str__(self):
-        return f'{self.name} ({self.festival})'
+        return self.name
 
+    @property
+    def can_delete(self):
+        return self.shows.count() == 0
 
 class CompanyContact(TimeStampedModel):
 
@@ -50,7 +53,11 @@ class CompanyContact(TimeStampedModel):
         ordering = ('company', 'name')
 
     def __str__(self):
-        return f'{self.name}: {self.company})'
+        return self.name
+
+    @property
+    def can_delete(self):
+        return True
 
 
 class Venue(TimeStampedModel):
@@ -83,7 +90,11 @@ class Venue(TimeStampedModel):
         ordering = ('festival', 'name')
 
     def __str__(self):
-        return f'{self.name} ({self.festival})'
+        return self.name
+
+    @property
+    def can_delete(self):
+        return self.shows.count() == 0
 
     @property
     def sponsor(self):
@@ -108,13 +119,20 @@ class VenueContact(TimeStampedModel):
         ordering = ('venue', 'name')
 
     def __str__(self):
-        return f'{self.name} ({self.venue})'
+        return self.name
+
+    @property
+    def can_delete(self):
+        return True
 
 class VenueSponsor(TimeStampedModel):
 
     venue = models.ForeignKey(Venue, on_delete=models.CASCADE, related_name='sponsors')
     name = models.CharField(max_length = 64)
     image = models.ImageField(upload_to = get_image_filename, blank = True, default = '')
+    contact = models.CharField(max_length = 64, blank = True, default = '')
+    telno = models.CharField(max_length = 32, blank = True, default = '')
+    email = models.EmailField(max_length = 64, blank = True, default = '')
     color = models.CharField(max_length = 16, blank = True, default = '')
     background = models.CharField(max_length = 16, blank = True, default = '')
     message = models.CharField(max_length = 32, blank = True, default = '')
@@ -128,7 +146,11 @@ class VenueSponsor(TimeStampedModel):
         ordering = ('venue', 'name')
 
     def __str__(self):
-        return f'{self.name} ({self.venue})'
+        return self.name
+
+    @property
+    def can_delete(self):
+        return True
 
 
 class Genre(TimeStampedModel):
@@ -142,6 +164,10 @@ class Genre(TimeStampedModel):
 
     def __str__(self):
         return self.name
+
+    @property
+    def can_delete(self):
+        return self.shows.count() == 0
 
 
 class Show(TimeStampedModel):
@@ -172,11 +198,15 @@ class Show(TimeStampedModel):
         ordering = ('festival', 'name')
 
     def __str__(self):
-        return f'{self.name} ({self.festival})'
+        return self.name
+
+    @property
+    def can_delete(self):
+        return True
 
     @property
     def is_ticketed(self):
-        return venue.is_ticketed
+        return self.venue.is_ticketed
 
     @cached_property
     def genre_list(self):
@@ -201,7 +231,11 @@ class ShowImage(TimeStampedModel):
         ordering = ('show', 'name')
 
     def __str__(self):
-        return f'{self.name}: {self.show}'
+        return self.name
+
+    @property
+    def can_delete(self):
+        return True
 
 
 class ShowPerformance(TimeStampedModel):
@@ -215,7 +249,11 @@ class ShowPerformance(TimeStampedModel):
         ordering = ('show', 'date', 'time')
 
     def __str__(self):
-        return f'{self.date} at {self.time}: {self.show}'
+        return f'{self.date} at {self.time}'
+
+    @property
+    def can_delete(self):
+        return True
 
     @property
     def is_ticketed(self):
@@ -268,4 +306,8 @@ class ShowReview(TimeStampedModel):
         ordering = ('show', 'source')
 
     def __str__(self):
-        return f'{self.source}: {self.show}'
+        return f'{self.source}'
+
+    @property
+    def can_delete(self):
+        return True

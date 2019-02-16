@@ -1,0 +1,30 @@
+﻿{% extends "base.html" %}
+{% load i18n %}
+
+{% block pagetitle %}Genres{% endblock %}
+
+{% block content %}
+
+    <table class="table">
+        <thead class="thead-light">
+            <tr>
+                <th>Name</th>
+                <th>Shows</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for genre in genres %}
+                <tr>
+                    <td><a href="{% url 'program:admin_genre_update' genre.uuid %}">{{ genre.name }}</a></td>
+                    <td>{{ genre.shows.count }}</td>
+                </tr>
+            {%endfor %}
+        </tbody>
+    </table>
+
+    <div class="row">
+        <div class="col-6"><a href="{% url 'festival:admin' %}" class="btn btn-secondary">Back</a></div>
+        <div class="col-6 text-right"><a href="{% url 'program:admin_genre_create' %}" class="btn btn-primary">Add Genre</a></div>
+    </div>
+
+{% endblock %}

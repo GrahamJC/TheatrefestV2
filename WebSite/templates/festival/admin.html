@@ -1,0 +1,22 @@
+﻿{% extends "base.html" %}
+{% load i18n %}
+
+{% block pagetitle %}Festival Administration{% endblock %}
+
+{% block content %}
+
+    <h4>Program</h4>
+    <ul>
+        <li><a href="{% url 'program:admin_shows' %}">Shows</a></li>
+        <li><a href="{% url 'program:admin_companies' %}">Companies</a></li>
+        <li><a href="{% url 'program:admin_venues' %}">Venues</a></li>
+        <li><a href="{% url 'program:admin_genres' %}">Genres</a></li>
+    </ul>
+
+    <h4>Content and Navigation</h4>
+    <ul>
+        <li><a href="{% url 'festival:admin_pages' %}">Pages</a></li>
+        <li><a href="{% url 'festival:admin_navigators' %}">Navigator</a></li>
+    </ul>
+
+{% endblock %}

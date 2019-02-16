@@ -17,7 +17,7 @@
     <WorkingDirectory>.</WorkingDirectory>
     <LaunchProvider>Django launcher</LaunchProvider>
     <DjangoSettingsModule>website.settings.development</DjangoSettingsModule>
-    <WebBrowserUrl>http://localhost</WebBrowserUrl>
+    <WebBrowserUrl>http://tf2018</WebBrowserUrl>
     <OutputPath>.</OutputPath>
     <SuppressCollectPythonCloudServiceFiles>true</SuppressCollectPythonCloudServiceFiles>
   </PropertyGroup>
@@ -44,6 +44,7 @@
     <Compile Include="content\urls.py" />
     <Compile Include="content\views.py" />
     <Compile Include="content\__init__.py" />
+    <Compile Include="core\widgets.py" />
     <Compile Include="core\templatetags\my_tweaks.py">
       <SubType>Code</SubType>
     </Compile>
@@ -118,9 +119,13 @@
     <Compile Include="venue\__init__.py" />
     <Compile Include="volunteers\admin.py" />
     <Compile Include="volunteers\apps.py" />
+    <Compile Include="volunteers\forms.py" />
+    <Compile Include="volunteers\migrations\0001_initial.py" />
+    <Compile Include="volunteers\migrations\0002_auto_20190203_0939.py" />
     <Compile Include="volunteers\migrations\__init__.py" />
     <Compile Include="volunteers\models.py" />
     <Compile Include="volunteers\tests.py" />
+    <Compile Include="volunteers\urls.py" />
     <Compile Include="volunteers\views.py" />
     <Compile Include="volunteers\__init__.py" />
     <Compile Include="website\settings\base.py" />
@@ -133,9 +138,43 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="content\templates\index.html" />
+    <Content Include="static\select2-bootstrap4.css" />
+    <Content Include="static\select2-bootstrap4.min.css" />
     <Content Include="templates\festival\admin_navigators.html" />
     <Content Include="templates\festival\admin_navigator_create.html" />
     <Content Include="templates\festival\admin_navigator_update.html" />
+    <Content Include="templates\program\admin_company_contact.html" />
+    <Content Include="templates\program\admin_companies.html" />
+    <Content Include="templates\program\admin_show_image.html" />
+    <Content Include="templates\program\admin_show_review.html" />
+    <Content Include="templates\program\admin_show_performance.html" />
+    <Content Include="templates\program\admin_shows.html" />
+    <Content Include="templates\program\admin_genres.html" />
+    <Content Include="templates\program\admin_genre.html" />
+    <Content Include="templates\program\admin_venue_sponsor.html" />
+    <Content Include="templates\program\admin_company.html" />
+    <Content Include="templates\program\admin_show.html" />
+    <Content Include="templates\program\_admin_company_contacts.html" />
+    <Content Include="templates\program\_admin_show_images.html" />
+    <Content Include="templates\program\_admin_show_reviews.html" />
+    <Content Include="templates\program\_admin_show_performances.html" />
+    <Content Include="templates\program\_admin_venue_sponsors.html" />
+    <Content Include="templates\program\_admin_venue_contacts.html" />
+    <Content Include="templates\program\admin_venue_contact.html" />
+    <Content Include="templates\program\admin_venue.html" />
+    <Content Include="templates\program\admin_venues.html" />
+    <Content Include="templates\volunteers\admin.html" />
+    <Content Include="templates\volunteers\admin_locations.html" />
+    <Content Include="templates\volunteers\admin_roles.html" />
+    <Content Include="templates\volunteers\admin_location_create.html" />
+    <Content Include="templates\volunteers\admin_location_update.html" />
+    <Content Include="templates\volunteers\admin_shift_update.html" />
+    <Content Include="templates\volunteers\admin_shift_create.html" />
+    <Content Include="templates\volunteers\admin_role_create.html" />
+    <Content Include="templates\volunteers\admin_role_update.html" />
+    <Content Include="templates\volunteers\admin_shifts.html" />
+    <Content Include="templates\volunteers\admin_volunteer_update.html" />
+    <Content Include="templates\volunteers\admin_volunteers.html" />
     <Content Include="templates\venue\admission_tickets.html" />
     <Content Include="templates\boxoffice\main.html" />
     <Content Include="templates\boxoffice\report_refunds.html" />
@@ -168,7 +207,13 @@
     <Content Include="templates\venue\select.html" />
     <Content Include="templates\venue\_main_sale.html" />
     <Content Include="venue\templates\index.html" />
-    <Content Include="volunteers\templates\index.html" />
+    <Content Include="volunteers\migrations\__pycache__\0001_initial.cpython-36.pyc" />
+    <Content Include="volunteers\migrations\__pycache__\0002_auto_20190203_0939.cpython-36.pyc" />
+    <Content Include="volunteers\migrations\__pycache__\__init__.cpython-36.pyc" />
+    <Content Include="volunteers\__pycache__\admin.cpython-36.pyc" />
+    <Content Include="volunteers\__pycache__\apps.cpython-36.pyc" />
+    <Content Include="volunteers\__pycache__\models.cpython-36.pyc" />
+    <Content Include="volunteers\__pycache__\__init__.cpython-36.pyc" />
     <None Include="compilerconfig.json" />
     <Content Include="compilerconfig.json.defaults">
       <SubType>Content</SubType>
@@ -191,7 +236,7 @@
     <Content Include="templates\django_registration\activation_email_subject.txt" />
     <Content Include="templates\django_registration\registration_complete.html" />
     <Content Include="templates\django_registration\registration_form.html" />
-    <Content Include="templates\festival\admin_main.html" />
+    <Content Include="templates\festival\admin.html" />
     <Content Include="templates\program\schedule.html" />
     <Content Include="templates\program\show.html" />
     <Content Include="templates\program\shows.html" />
@@ -222,6 +267,7 @@
     <Folder Include="templates\django_registration\" />
     <Folder Include="templates\festival\" />
     <Folder Include="templates\content\" />
+    <Folder Include="templates\volunteers\" />
     <Folder Include="templates\venue\" />
     <Folder Include="templates\registration\" />
     <Folder Include="templates\program\" />
@@ -233,7 +279,8 @@
     <Folder Include="venue\templates\" />
     <Folder Include="volunteers\" />
     <Folder Include="volunteers\migrations\" />
-    <Folder Include="volunteers\templates\" />
+    <Folder Include="volunteers\migrations\__pycache__\" />
+    <Folder Include="volunteers\__pycache__\" />
     <Folder Include="website\" />
     <Folder Include="website\settings\" />
   </ItemGroup>

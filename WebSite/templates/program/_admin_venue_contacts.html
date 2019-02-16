@@ -1,0 +1,22 @@
+﻿<table class="table">
+    <thead class="thead-light">
+        <tr>
+            <th>Name</th>
+            <th>Role</th>
+            <th>TelNo</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for contact in venue.contacts.all %}
+            <tr>
+                <td><a href="{% url 'program:admin_venue_contact_update' venue.uuid contact.uuid %}">{{ contact.name }}</a></td>
+                <td>{{ contact.role }}</td>
+                <td>{{ contact.telno }}</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="mb-4 text-right">
+    <a class="btn btn-primary" href="{% url 'program:admin_venue_contact_create' venue.uuid %}">Add Contact</a>
+</div>

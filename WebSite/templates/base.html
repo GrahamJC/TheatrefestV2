@@ -74,7 +74,8 @@
                                                 {% endif %}
                                                 {% if user.is_admin %}
                                                     <div class="dropdown-divider"></div>
-                                                    <a class="dropdown-item" href="/festival/admin">festival admin</a>
+                                                    <a class="dropdown-item" href="{% url 'festival:admin' %}">festival admin</a>
+                                                    <a class="dropdown-item" href="{% url 'volunteers:admin' %}">volunteer admin</a>
                                                     {% if user.is_site_amdin %}
                                                         <a class="dropdown-item" href="#">site admin</a>
                                                     {% endif %}
@@ -86,7 +87,7 @@
                                                 <a class="dropdown-item" href="{% url 'logout' %}">logout</a>
                                             </div>
                                         </li>
-                                    {% else %}
+                                    {% elif not request.festival.is_archived %}
                                         <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">login/register</a></li>
                                     {% endif %}
                                 </ul>

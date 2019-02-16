@@ -1,0 +1,32 @@
+﻿{% extends "base.html" %}
+{% load i18n %}
+
+{% block pagetitle %}Shows{% endblock %}
+
+{% block content %}
+
+    <table class="table">
+        <thead class="thead-light">
+            <tr>
+                <th>Name</th>
+                <th>Company</th>
+                <th>Venue</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for show in shows %}
+                <tr>
+                    <td><a href="{% url 'program:admin_show_update' show.uuid %}">{{ show.name }}</a></td>
+                    <td>{{ show.company.name }}</td>
+                    <td>{{ show.venue.name }}</td>
+                </tr>
+            {%endfor %}
+        </tbody>
+    </table>
+
+    <div class="row">
+        <div class="col-6"><a href="{% url 'festival:admin' %}" class="btn btn-secondary">Back</a></div>
+        <div class="col-6 text-right"><a href="{% url 'program:admin_show_create' %}" class="btn btn-primary">Add Show</a></div>
+    </div>
+
+{% endblock %}

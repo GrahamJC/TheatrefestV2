@@ -1,0 +1,32 @@
+﻿{% extends "base.html" %}
+{% load i18n %}
+
+{% block pagetitle %}Venues{% endblock %}
+
+{% block content %}
+
+    <table class="table">
+        <thead class="thead-light">
+            <tr>
+                <th>Name</th>
+                <th>Capacity</th>
+                <th>Sponsor</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for venue in venues %}
+                <tr>
+                    <td><a href="{% url 'program:admin_venue_update' venue.uuid %}">{{ venue.name }}</a></td>
+                    <td>{{ venue.capacity }}</td>
+                    <td>{% if venue.sponsor %}{{ venue.sponsor.name }}{% endif %}</td>
+                </tr>
+            {%endfor %}
+        </tbody>
+    </table>
+
+    <div class="row">
+        <div class="col-6"><a href="{% url 'festival:admin' %}" class="btn btn-secondary">Back</a></div>
+        <div class="col-6 text-right"><a href="{% url 'program:admin_venue_create' %}" class="btn btn-primary">Add Venue</a></div>
+    </div>
+
+{% endblock %}

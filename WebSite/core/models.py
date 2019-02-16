@@ -29,9 +29,14 @@ class Festival(TimeStampedModel):
     venue_map = models.ImageField(upload_to = get_image_filename, blank = True, default = '')
     online_sales_open = models.DateField(null=True, blank=True)
     online_sales_close = models.DateField(null=True, blank=True)
+    is_archived = models.BooleanField(default=False)
 
     def __str__(self):
         return self.title
+
+    @property
+    def volunteers(self):
+        return self.users.filter(is_volunteer = True).order_by('last_name')
 
 
 class SiteInfo(TimeStampedModel):
@@ -101,8 +106,8 @@ class User(TimeStampedModel, AbstractBaseUser, PermissionsMixin):
         return self.email
 
     @property
-    def is_staff(self):
-        return self.is_admin and not (self.site or self.festival)
+    def is_festival_admin(self):
+        return self.is_admin
 
     @property
     def is_site_admin(self):
@@ -110,11 +115,11 @@ class User(TimeStampedModel, AbstractBaseUser, PermissionsMixin):
 
     @property
     def is_system_admin(self):
-        return self.is_staff
+        return self.is_admin and not (self.site or self.festival)
 
     @property
     def is_staff(self):
-        return self.is_admin and not (self.site or self.festival)
+        return self.is_system_admin
 
     def get_full_name(self):
         return f'{self.first_name} {self.last_name}'

@@ -1,0 +1,15 @@
+﻿{% extends "base.html" %}
+{% load i18n %}
+
+{% block pagetitle %}Volunteers Administration{% endblock %}
+
+{% block content %}
+
+    <ul>
+        <li><a href="{% url 'volunteers:admin_roles' %}">Roles</a></li>
+        <li><a href="{% url 'volunteers:admin_locations' %}">Locations</a></li>
+        <li><a href="{% url 'volunteers:admin_volunteers' %}">Volunteers</a></li>
+        <li><a href="{% url 'volunteers:admin_shifts' %}">Shifts</a></li>
+    </ul>
+
+{% endblock %}

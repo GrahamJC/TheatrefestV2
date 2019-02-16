@@ -1,0 +1,45 @@
+﻿{% extends "base.html" %}
+{% load i18n %}
+{% load widget_tweaks %}
+
+{% block pagetitle %}Volunteers Administration: Volunteers{% endblock %}
+
+{% block content %}
+
+    <p>To add a user as a volunteer enter the first few letters of their e-mail address, select from the drop-down list and click Add.</p>
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-row">
+            <div class="col-10">
+                {{ form.user|add_class:"form-control" }}
+            </div>
+            <div class="col">
+                <button class="btn btn-primary" name="Add" type="submit">Add</button>
+            </div>
+        </div>
+    </form>
+    
+    <table class="table table-striped mt-4">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Roles</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in request.festival.volunteers.all|dictsort:"last_name" %}
+                <tr>
+                    <td><a href="{% url 'volunteers:admin_volunteer_update' user.uuid %}">{{ user.last_name }}, {{ user.first_name }}</a></td>
+                    <td>{{ user.volunteer.roles.all|join:', ' }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{% url 'volunteers:admin' %}" class="btn btn-secondary">Admin Home</a>
+
+{% endblock %}
+
+{% block body-script %}
+    {{ form.media }}
+{% endblock %}

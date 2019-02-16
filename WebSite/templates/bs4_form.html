@@ -15,7 +15,7 @@
 {% for field in form.visible_fields %}
     <div class="form-group">
         {% if field.label %}
-            <label id="{{ field.id_for_label }}">{{ field.label | safe }}</label>
+            <label for="{{ field.id_for_label }}">{{ field.label | safe }}</label>
         {% endif %}
         {% include 'bs4_field.html' %}
         {% for error in field.errors %}

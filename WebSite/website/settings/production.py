@@ -3,7 +3,10 @@ from .base import *
 DEBUG=False
 
 ALLOWED_HOSTS = [
+    'tickets.theatrefest.co.uk',
     'tickets2.theatrefest.co.uk',
+    'tf2019.theatrefest.co.uk',
+    'tf2018.theatrefest.co.uk',
 ]
 INTERNAL_IPS = [
 ]
@@ -40,6 +43,9 @@ AUTH_PASSWORD_VALIDATORS = [
 STATIC_URL = '/static/'
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 MEDIA_URL = "/media/"
+
+# Registration
+REGISTRATION_TWOSTEP = True
 
 # E-mail
 EMAIL_HOST = "smtp.mailgun.org"

@@ -2,22 +2,23 @@ from .base import *
 
 ALLOWED_HOSTS = [
     'localhost',
+    'tf2018',
+    'tf2019',
 ]
 INTERNAL_IPS = [
         '127.0.0.1',
-        'localhost',
 ]
 
 # Database
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'theatrefestV2',
-#        'NAME': 'theatrefest',
+#        'NAME': 'theatrefestV2',
+        'NAME': 'theatrefest',
         'USER': 'theatrefest',
         'PASSWORD': 'barnum',
-        'HOST': 'localhost',
-#        'HOST': 'theatrefestvm.ukwest.cloudapp.azure.com',
+#        'HOST': 'localhost',
+        'HOST': 'theatrefestvm.ukwest.cloudapp.azure.com',
         'PORT': '5432',
     },
 }
@@ -30,6 +31,9 @@ STATIC_ROOT = os.path.join(BASE_DIR, "django_static")
 STATIC_URL = '/static/'
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 MEDIA_URL = "/media/"
+
+# Registration
+REGISTRATION_TWOSTEP = False
 
 # E-mail
 EMAIL_HOST = "smtp.mailgun.org"

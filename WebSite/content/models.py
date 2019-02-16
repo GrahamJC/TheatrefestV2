@@ -56,7 +56,7 @@ class Navigator(TimeStampedModel):
     seqno = models.PositiveIntegerField(blank=True, default=0)
     label = models.CharField(max_length=32)
     type = models.IntegerField(choices=TYPE_CHOICES)
-    url = models.URLField(max_length=32, blank=True, default='')
+    url = models.URLField(max_length=256, blank=True, default='')
     page = models.ForeignKey(Page, null=True, blank=True, on_delete=models.PROTECT, related_name='navigators')
 
     class Meta:
@@ -66,9 +66,9 @@ class Navigator(TimeStampedModel):
     @property
     def href(self):
         if self.type == Navigator.URL and self.url:
-            return self.utl
+            return self.url
         elif self.type == Navigator.PAGE and self.page:
-            return reverse('content:page', kwargs={'page_uuid': self.page.uuid})
+            return reverse('content:page', args=[self.page.uuid])
         elif self.type == Navigator.SHOWS:
             return reverse('program:shows')
         elif self.type == Navigator.SCHEDULE:
@@ -82,4 +82,4 @@ class Navigator(TimeStampedModel):
         return f'{self.festival.name}/{self.label}'
 
     def can_delete(self):
-        return true
+        return True

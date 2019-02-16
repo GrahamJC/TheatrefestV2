@@ -1,8 +1,8 @@
 from django import forms
 from django.core.exceptions import ValidationError
 
+from core.models import User
 from content.models import Page, PageImage, Navigator
-
 
 class PageForm(forms.ModelForm):
 
@@ -17,7 +17,7 @@ class PageForm(forms.ModelForm):
         exclude = self._get_validation_exclusions()
         try:
             self.instance.validate_unique(exclude=exclude)
-        except ValidationError as e:
+        except ValidationError:
             self._update_errors(ValidationError({'name': 'A page with that name already exists'}))
 
 
@@ -31,7 +31,7 @@ class PageImageForm(forms.ModelForm):
         exclude = self._get_validation_exclusions()
         try:
             self.instance.validate_unique(exclude=exclude)
-        except ValidationError as e:
+        except ValidationError:
             self._update_errors(ValidationError({'name': 'An image with that name already exists'}))
 
 
@@ -57,5 +57,5 @@ class NavigatorForm(forms.ModelForm):
         exclude = self._get_validation_exclusions()
         try:
             self.instance.validate_unique(exclude=exclude)
-        except ValidationError as e:
+        except ValidationError:
             self._update_errors(ValidationError({'name': 'A navigator with that name already exists'}))

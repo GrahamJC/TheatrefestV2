@@ -1,0 +1,56 @@
+﻿{% extends "base.html" %}
+{% load i18n %}
+{% load widget_tweaks %}
+
+{% block pagetitle %}Volunteers Administration: Shifts{% endblock %}
+
+{% block content %}
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col-6">
+                Location: {{ form.location|add_class:'form-control' }}
+            </div>
+            <div class="col-4">
+                Date: {{ form.date|add_class:'form-control' }}
+            </div>
+            <div class="col-2">
+                <button class="btn btn-primary" type="submit">Find</button>
+            </div>
+        </div>
+    </form>
+
+    <table class="table table-striped mt-4">
+        <thead>
+            <th>Location</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Role</th>
+            <th>Volunteer</th>
+        </thead>
+        <tbody>
+            {% for shift in shifts %}
+                <tr>
+                    <td>{{ shift.location.description }}</td>
+                    <td>{{ shift.start_time }}</td>
+                    <td>{{ shift.end_time }}</td>
+                    <td><a href="{% url 'volunteers:admin_shift_update' shift_uuid=shift.uuid %}">{{ shift.role.description }}</a></td>
+                    <td>{{ shift.volunteer.last_name }}</td>
+                </tr>
+            {%endfor %}
+        </tbody>
+    </table>
+
+    {% if location and date %}
+        <a href="{% url 'volunteers:admin_shift_create' location_uuid=location.uuid date=date %}" class="btn btn-primary">Add</a>
+    {% else %}
+        <a href="{% url 'volunteers:admin_shift_create' %}" class="btn btn-primary">Add</a>
+    {% endif %}
+    <a href="{% url 'volunteers:admin' %}" class="btn btn-secondary">Admin Home</a>
+
+{% endblock %}
+
+{% block body-script %}
+    {{ form.media }}
+{% endblock %}

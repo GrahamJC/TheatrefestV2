@@ -13,7 +13,7 @@
         {% for show in shows %}
             {% if show.is_cancelled %}
                 <div class="tf-show tf-cancelled row mb-3">
-                    <div class="col-4 col-md-3"><img class="m-1 w-100" src="{{ MEDIA_ROOT }}{{ show.image.url }}" /></div>
+                    <div class="col-4 col-md-3">{% if show.image %}<img class="m-1 w-100" src="{{ MEDIA_ROOT }}{{ show.image.url }}" />{% endif %}</div>
                     <div class="col-8 col-md-9">
                         <h5 class="tf-show-name">{{ show.name }}</h5>
                         <h6 class="tf-company-name">{{ show.company.name }}</h6>

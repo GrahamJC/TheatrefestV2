@@ -32,7 +32,9 @@ USE_TZ = False
 
 # Application definition
 INSTALLED_APPS = [
-    # Add your apps here to enable them
+    'dal',
+    'dal_select2',
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -42,7 +44,10 @@ INSTALLED_APPS = [
     'django.contrib.sites',
 
     'debug_toolbar',
+    'crispy_forms',
     'widget_tweaks',
+    'bootstrap_datepicker_plus',
+    'django_select2',
 
     'core.apps.CoreConfig',
     'content.apps.ContentConfig',
@@ -52,7 +57,7 @@ INSTALLED_APPS = [
     'venue.apps.VenueConfig',
     'boxoffice.apps.BoxOfficeConfig',
     'reports.apps.ReportsConfig',
-    # 'volunteer.apps.VolunteerConfig',
+    'volunteers.apps.VolunteersConfig',
 ]
 
 MIDDLEWARE = [
@@ -120,3 +125,6 @@ ACCOUNT_ACTIVATION_DAYS = 7
 REGISTRATION_AUTO_LOGIN = True
 LOGIN_REDIRECT_URL = "/home"
 LOGOUT_REDIRECT_URL = "/home"
+
+# Crisp forms
+CRISPY_TEMPLATE_PACK = 'bootstrap4'

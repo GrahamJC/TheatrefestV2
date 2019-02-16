@@ -9,7 +9,7 @@ from django_registration.backends.activation.views import ActivationView
 
 import debug_toolbar
 
-from core.views import RegistrationView
+from core.views import OneStepRegistrationView, TwoStepRegistrationView
 from content.views import home
 
 urlpatterns = [
@@ -20,6 +20,7 @@ urlpatterns = [
     path('program/', include('program.urls')),
     path('tickets/', include('tickets.urls')),
     path('venue/', include('venue.urls')),
+    path('volunteers/', include('volunteers.urls')),
     path('boxoffice/', include('boxoffice.urls')),
     path('reports/', include('reports.urls')),
     path('admin', admin.site.urls),
@@ -32,14 +33,16 @@ urlpatterns = [
     path('password_reset/done/', auth_views.PasswordResetDoneView.as_view(), name='password_reset_done'),
     path('reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('reset/done/', auth_views.PasswordResetCompleteView.as_view(), name='password_reset_complete'),
-    # dajngo_registration
+    # Django registration
     path('activate/complete', TemplateView.as_view(template_name='django_registration/activation_complete.html'), name='django_registration_activation_complete'),
     path('activate/<str:activation_key>', ActivationView.as_view(), name='django_registration_activate'),
-    path('register', RegistrationView.as_view(), name='django_registration_register'),
+    path('register', (TwoStepRegistrationView if settings.REGISTRATION_TWOSTEP else OneStepRegistrationView).as_view(), name='django_registration_register'),
     path('register/complete', TemplateView.as_view( template_name='django_registration/registration_complete.html'), name='django_registration_complete'),
     path('register/closed', TemplateView.as_view(template_name='django_registration/registration_closed.html'), name='django_registration_disallowed'),
     # Debug toolbar
     path('__debug__/', include(debug_toolbar.urls)),
+    # Select2
+    path('select2/', include('django_select2.urls')),
 ]
 
 # Serve static and media files
