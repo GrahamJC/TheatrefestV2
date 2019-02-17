@@ -88,7 +88,7 @@ def show(request, show_uuid):
         media_url = getattr(settings, 'MEDIA_URL', '/media')
         image_urls = { image.name:os.path.join(media_url, image.image.url) for image in request.festival.images.all() if image.image }
         image_urls.update({ image.name:os.path.join(media_url, image.image.url) for image in show.images.all() if image.image })
-        document_urls = { document.name:os.path.join(media_url, document.file.url) for document in request.festival.documents.all() if document.file }
+        document_urls = { document.name:reverse('content:document', args=[document.uuid]) for document in request.festival.documents.all() if document.file }
         page_urls = { page.name:reverse('content:page', args=[page.uuid]) for page in request.festival.pages.all() }
         body_context = {
             'show': show,
