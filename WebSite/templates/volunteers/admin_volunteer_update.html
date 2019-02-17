@@ -12,7 +12,7 @@
         <div class="form-group">
             <button name="Save" type="submit" class="btn btn-primary">Save</button>
             <a href="{% url 'volunteers:admin_volunteers' %}" class="btn btn-secondary">Cancel</a>
-            {% if user.volunteer.can_remove %}
+            {% if volunteer.can_remove %}
                 <a class="float-right btn btn-secondary" data-toggle="modal" data-target="#tf-remove-modal">Remove</a>
             {% endif %}
         </div>
@@ -40,7 +40,7 @@
     <script language="javascript">
 
         $('#tf-remove-modal').on('click', '.btn-primary', function () {
-            window.location.href = "{%url 'volunteers:admin_volunteer_remove' user.uuid %}";
+            window.location.href = "{%url 'volunteers:admin_volunteer_remove' volunteer.user.uuid %}";
         });
 
     </script>

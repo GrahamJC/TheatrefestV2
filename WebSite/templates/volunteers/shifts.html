@@ -1,0 +1,68 @@
+﻿{% extends "base.html" %}
+{% load i18n %}
+
+{% block pagetitle %}Shifts{% endblock %}
+
+{% block content %}
+
+    <div class="nav nav-pills nav-justified mb-3">
+        <a class="nav-item nav-link active" href="#tf-tab-my" data-toggle="tab">My Shifts</a>
+        <a class="nav-item nav-link" href="#tf-tab-available" data-toggle="tab">Available Shifts</a>
+    </div>
+
+    <div class="tab-content">
+
+        <div id="tf-tab-my" class="tab-pane fade show active">
+            <table class="table">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Location</th>
+                        <th>Start</th>
+                        <th>End</th>
+                        <th>Role</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for shift in my_shifts %}
+                        <tr>
+                            <td>{{ shift.location.description }}</td>
+                            <td>{{ shift.start_time }}</td>
+                            <td>{{ shift.end_time }}</td>
+                            <td>{{ shift.role.description }}</td>
+                            <td><a href="#">Cancel</a></td>
+                        </tr>
+                    {%endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div id="tf-tab-available" class="tab-pane fade">
+            <table class="table">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Location</th>
+                        <th>Start</th>
+                        <th>End</th>
+                        <th>Role</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for shift in available_shifts %}
+                        <tr>
+                            <td>{{ shift.location.description }}</td>
+                            <td>{{ shift.start_time }}</td>
+                            <td>{{ shift.end_time }}</td>
+                            <td>{{ shift.role.description }}</td>
+                            <td><a href="#">Volunteer</a></td>
+                        </tr>
+                    {%endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+{% endblock %}
+

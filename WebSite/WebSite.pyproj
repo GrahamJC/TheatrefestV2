@@ -171,7 +171,8 @@
     <Content Include="templates\program\admin_venue_contact.html" />
     <Content Include="templates\program\admin_venue.html" />
     <Content Include="templates\program\admin_venue_list.html" />
-    <Content Include="templates\volunteers\admin.html" />
+    <Content Include="templates\volunteers\shifts.html" />
+    <Content Include="templates\volunteers\admin_home.html" />
     <Content Include="templates\volunteers\admin_locations.html" />
     <Content Include="templates\volunteers\admin_roles.html" />
     <Content Include="templates\volunteers\admin_location_create.html" />

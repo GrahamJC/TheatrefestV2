@@ -17,13 +17,24 @@ from .forms import RoleForm, LocationForm, VolunteerAddForm, VolunteerUserForm, 
 
 
 @login_required
+def shifts(request):
+
+    # Render the page
+    context = {
+        'my_shifts': request.user.volunteer.shifts.all(),
+        'available_shifts': Shift.objects.filter(location__festival=request.festival)
+    }
+    return render(request, 'volunteers/shifts.html', context)
+
+
+@login_required
 def admin(request):
 
     # Render the page
     context = {
         'festival': request.site.info.festival,
     }
-    return render(request, 'volunteers/admin.html', context)
+    return render(request, 'volunteers/admin_home.html', context)
 
 
 @login_required
@@ -248,7 +259,7 @@ def admin_volunteer_update(request, user_uuid):
 
     # Create context and render page
     context = {
-        'user': user,
+        'volunteer': user.volunteer,
         'user_form': user_form,
         'roles_form': roles_form,
     }

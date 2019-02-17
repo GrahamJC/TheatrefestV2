@@ -5,8 +5,10 @@ from . import views
 app_name = 'volunteers'
 
 urlpatterns = [
+    # Volunteers
+    path('shifts', views.shifts, name='shifts'),
     # Festival admin
-    path('admin', views.admin, name='admin'),
+    path('admin/home', views.admin, name='admin_home'),
     path('admin/roles', views.admin_roles, name='admin_roles'),
     path('admin/role/create', views.admin_role_create, name='admin_role_create'),
     path('admin/role/<uuid:role_uuid>/update', views.admin_role_update, name='admin_role_update'),
