@@ -1,0 +1,20 @@
+﻿<table class="table">
+    <thead class="thead-light">
+        <tr>
+            <th>Name</th>
+            <th>Image</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for image in page.images.all %}
+            <tr>
+                <td><a href="{% url 'content:admin_page_image_update' page.uuid image.uuid %}">{{ image.name }}</a></td>
+                <td></td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="mb-4 text-right">
+    <a class="btn btn-primary" href="{% url 'content:admin_page_image_create' page.uuid %}">Add Image</a>
+</div>

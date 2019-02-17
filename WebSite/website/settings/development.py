@@ -13,12 +13,11 @@ INTERNAL_IPS = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-#        'NAME': 'theatrefestV2',
         'NAME': 'theatrefest',
         'USER': 'theatrefest',
         'PASSWORD': 'barnum',
-#        'HOST': 'localhost',
-        'HOST': 'theatrefestvm.ukwest.cloudapp.azure.com',
+        'HOST': 'localhost',
+#        'HOST': 'theatrefestvm.ukwest.cloudapp.azure.com',
         'PORT': '5432',
     },
 }
@@ -27,10 +26,10 @@ DATABASES = {
 STATICFILES_DIRS = [
 	os.path.join(BASE_DIR, "static"),
 ]
-STATIC_ROOT = os.path.join(BASE_DIR, "django_static")
+STATIC_ROOT = os.path.join(BASE_DIR, 'django_static')
 STATIC_URL = '/static/'
-MEDIA_ROOT = os.path.join(BASE_DIR, "media")
-MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = '/media/'
 
 # Registration
 REGISTRATION_TWOSTEP = False

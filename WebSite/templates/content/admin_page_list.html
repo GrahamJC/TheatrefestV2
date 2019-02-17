@@ -1,0 +1,30 @@
+﻿{% extends "base.html" %}
+{% load i18n %}
+
+{% block pagetitle %}Pages{% endblock %}
+
+{% block content %}
+
+    <table class="table">
+        <thead class="thead-light">
+            <tr>
+                <th>Page</th>
+                <th>Title</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for page in pages %}
+                <tr>
+                    <td><a href="{% url 'content:admin_page_update' page.uuid %}">{{ page.name }}</a></td>
+                    <td>{{ page.title }}</td>
+                </tr>
+            {%endfor %}
+        </tbody>
+    </table>
+
+    <div class="row">
+        <div class="col-6"><a href="{% url 'festival:admin' %}" class="btn btn-secondary">Back</a></div>
+        <div class="col-6 text-right"><a href="{% url 'content:admin_page_create' %}" class="btn btn-primary">Add Page</a></div>
+    </div>
+
+{% endblock %}

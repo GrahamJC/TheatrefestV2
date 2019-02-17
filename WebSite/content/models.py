@@ -2,7 +2,7 @@ from django.db import models
 from django.urls import reverse
 
 from core.models import TimeStampedModel, Festival
-from core.utils import get_image_filename
+from core.utils import get_image_filename, get_document_filename
 
 
 class Page(TimeStampedModel):
@@ -11,6 +11,7 @@ class Page(TimeStampedModel):
     name = models.CharField(max_length=32)
     title = models.CharField(max_length=64, blank=True, default='')
     body = models.TextField(blank=True, default='')
+    body_test = models.TextField(blank=True, default='')
 
     class Meta:
         ordering = ('festival', 'name')
@@ -35,6 +36,9 @@ class PageImage(TimeStampedModel):
 
     def __str__(self):
         return f'{self.page}/{self.name}'
+
+    def can_delete(self):
+        return True
 
 
 class Navigator(TimeStampedModel):
@@ -80,6 +84,41 @@ class Navigator(TimeStampedModel):
 
     def __str__(self):
         return f'{self.festival.name}/{self.label}'
+
+    def can_delete(self):
+        return True
+
+
+class Image(TimeStampedModel):
+
+    festival = models.ForeignKey(Festival, on_delete=models.CASCADE, related_name='images')
+    name = models.CharField(max_length=32)
+    image = models.ImageField(upload_to = get_image_filename, blank = True, default = '')
+
+    class Meta:
+        ordering = ('festival', 'name')
+        unique_together = ('festival', 'name')
+
+    def __str__(self):
+        return f'{self.festival.name}/{self.name}'
+
+    def can_delete(self):
+        return True
+
+
+class Document(TimeStampedModel):
+
+    festival = models.ForeignKey(Festival, on_delete=models.CASCADE, related_name='documents')
+    name = models.CharField(max_length=32)
+    file = models.FileField(upload_to = get_document_filename, blank = True, default = '')
+    filename = models.CharField(max_length=64, blank = True, default = '')
+
+    class Meta:
+        ordering = ('festival', 'name')
+        unique_together = ('festival', 'name')
+
+    def __str__(self):
+        return f'{self.festival.name}/{self.name}'
 
     def can_delete(self):
         return True

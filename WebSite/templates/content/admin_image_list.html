@@ -1,0 +1,28 @@
+﻿{% extends "base.html" %}
+{% load i18n %}
+
+{% block imagetitle %}Images{% endblock %}
+
+{% block content %}
+
+    <table class="table">
+        <thead class="thead-light">
+            <tr>
+                <th>Name</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for image in images %}
+                <tr>
+                    <td><a href="{% url 'content:admin_image_update' image.uuid %}">{{ image.name }}</a></td>
+                </tr>
+            {%endfor %}
+        </tbody>
+    </table>
+
+    <div class="row">
+        <div class="col-6"><a href="{% url 'festival:admin' %}" class="btn btn-secondary">Back</a></div>
+        <div class="col-6 text-right"><a href="{% url 'content:admin_image_create' %}" class="btn btn-primary">Add Image</a></div>
+    </div>
+
+{% endblock %}

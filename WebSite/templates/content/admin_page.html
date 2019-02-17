@@ -1,0 +1,47 @@
+﻿{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block pagetitle %}Create/Update Page{% endblock %}
+
+{% block content %}
+
+    {% crispy form %}
+
+    {% if page.can_delete %}
+        <div id="tf-delete-modal" class="modal fade" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header"><h5 class="modal-title">Confirm Delete</h5></div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to delete this page?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary">Yes</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+{% endblock %}
+
+{% block body-script %}
+
+    <script language="javascript">
+
+        $('#button-id-cancel').addClass('btn-secondary').on('click', function () { window.location.href = '{% url 'content:admin_pages' %}'; });
+        {% if page.can_delete %}
+            $('#button-id-delete').addClass('btn-danger').on('click', function() { $('#tf-delete-modal').modal('show'); });
+            $('#tf-delete-modal .btn-primary').on('click', function () { window.location.href = "{% url 'content:admin_page_delete' page.uuid %}"; });
+        {% else %}
+            $('#button-id-delete').addClass('btn-secondary').prop('disabled', true)
+        {% endif %}
+        {% if initial_tab %}
+            $('.nav-tabs li a[href="#{{ initial_tab }}"]').tab('show');
+        {% endif %}
+        $('#button-id-show-test').addClass('btn-info').on('click', function () { window.open('{% url 'content:page_test' page.uuid %}', 'TFPageTest'); });
+
+    </script>
+
+{% endblock %}

@@ -5,8 +5,18 @@ from django.db.models.fields.related import OneToOneField, ReverseOneToOneDescri
 
 
 def get_image_filename(instance, filename):
+    if hasattr(instance, 'filename') and not instance.filename:
+        instance.filename = filename
     ext = filename.split('.')[-1]
     return os.path.join('uploads', 'images', f'{uuid.uuid4()}.{ext}')
+
+
+def get_document_filename(instance, filename):
+    if hasattr(instance, 'filename') and not instance.filename:
+        instance.filename = filename
+    ext = filename.split('.')[-1]
+    return os.path.join('uploads', 'documents', f'{uuid.uuid4()}.{ext}')
+
 
 class AutoSingleRelatedObjectDescriptor(ReverseOneToOneDescriptor):
     """

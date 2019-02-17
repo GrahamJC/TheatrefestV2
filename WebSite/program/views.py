@@ -85,19 +85,26 @@ def show(request, show_uuid):
     # Check for HTML description
     html = None
     if show.detail:
-        context = { 'show': show }
-        media_url = getattr(settings, 'MEDIA_URL', '/')
-        for image in show.images.all():
-            context[f"image_{image.name}_url"] = os.path.join(media_url, image.image.url)
+        media_url = getattr(settings, 'MEDIA_URL', '/media')
+        image_urls = { image.name:os.path.join(media_url, image.image.url) for image in request.festival.images.all() if image.image }
+        image_urls.update({ image.name:os.path.join(media_url, image.image.url) for image in show.images.all() if image.image })
+        document_urls = { document.name:os.path.join(media_url, document.file.url) for document in request.festival.documents.all() if document.file }
+        page_urls = { page.name:reverse('content:page', args=[page.uuid]) for page in request.festival.pages.all() }
+        body_context = {
+            'show': show,
+            'image_urls': image_urls,
+            'document_urls': document_urls,
+            'page_urls': page_urls,
+        }
         template = Template(show.detail)
-        html = template.render(Context(context))
+        html = template.render(Context(body_context))
 
     # Render show details
-    context ={
+    page_context ={
         'show': show,
         'html': html,
     }
-    return render(request, 'program/show.html', context)
+    return render(request, 'program/show.html', page_context)
 
 
 def _add_non_scheduled_performances(festival, day):
@@ -331,7 +338,7 @@ class AdminGenreList(LoginRequiredMixin, ListView):
 
     model = Genre
     context_object_name = 'genres'
-    template_name = 'program/admin_genres.html'
+    template_name = 'program/admin_genre_list.html'
 
     def get_queryset(self):
         return Genre.objects.filter(festival=self.request.festival)
@@ -407,7 +414,7 @@ class AdminVenueList(LoginRequiredMixin, ListView):
 
     model = Venue
     context_object_name = 'venues'
-    template_name = 'program/admin_venues.html'
+    template_name = 'program/admin_venue_list.html'
 
     def get_queryset(self):
         return Venue.objects.filter(festival=self.request.festival)
@@ -804,7 +811,7 @@ class AdminCompanyList(LoginRequiredMixin, ListView):
 
     model = Company
     context_object_name = 'companies'
-    template_name = 'program/admin_companies.html'
+    template_name = 'program/admin_company_list.html'
 
     def get_queryset(self):
         return Company.objects.filter(festival=self.request.festival)
@@ -1049,7 +1056,7 @@ class AdminShowList(LoginRequiredMixin, ListView):
 
     model = Show
     context_object_name = 'shows'
-    template_name = 'program/admin_shows.html'
+    template_name = 'program/admin_show_list.html'
 
     def get_queryset(self):
         return Show.objects.filter(festival=self.request.festival)
@@ -1310,11 +1317,10 @@ class AdminShowReviewCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView)
         form = super().get_form()
         form.helper = FormHelper()
         form.helper.layout = Layout(
-            Row(
-                Column('date', css_class='form-group col-md-6 mb-0'),
-                Column('time', css_class='form-group col-md-6 mb-0'),
-                css_class = 'form-row',
-            ),
+            'source',
+            'rating',
+            'body',
+            'url',
             FormActions(
                 Submit('save', 'Save'),
                 Button('cancel', 'Cancel'),
@@ -1353,11 +1359,10 @@ class AdminShowReviewUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView)
         form = super().get_form()
         form.helper = FormHelper()
         form.helper.layout = Layout(
-            Row(
-                Column('date', css_class='form-group col-md-6 mb-0'),
-                Column('time', css_class='form-group col-md-6 mb-0'),
-                css_class = 'form-row',
-            ),
+            'source',
+            'rating',
+            'body',
+            'url',
             FormActions(
                 Submit('save', 'Save'),
                 Button('delete', 'Delete'),
@@ -1406,11 +1411,8 @@ class AdminShowImageCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         form = super().get_form()
         form.helper = FormHelper()
         form.helper.layout = Layout(
-            Row(
-                Column('date', css_class='form-group col-md-6 mb-0'),
-                Column('time', css_class='form-group col-md-6 mb-0'),
-                css_class = 'form-row',
-            ),
+            'name',
+            'image',
             FormActions(
                 Submit('save', 'Save'),
                 Button('cancel', 'Cancel'),
@@ -1449,11 +1451,8 @@ class AdminShowImageUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
         form = super().get_form()
         form.helper = FormHelper()
         form.helper.layout = Layout(
-            Row(
-                Column('date', css_class='form-group col-md-6 mb-0'),
-                Column('time', css_class='form-group col-md-6 mb-0'),
-                css_class = 'form-row',
-            ),
+            'name',
+            'image',
             FormActions(
                 Submit('save', 'Save'),
                 Button('delete', 'Delete'),

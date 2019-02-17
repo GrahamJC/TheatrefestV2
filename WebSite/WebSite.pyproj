@@ -17,7 +17,7 @@
     <WorkingDirectory>.</WorkingDirectory>
     <LaunchProvider>Django launcher</LaunchProvider>
     <DjangoSettingsModule>website.settings.development</DjangoSettingsModule>
-    <WebBrowserUrl>http://tf2018</WebBrowserUrl>
+    <WebBrowserUrl>http://localhost</WebBrowserUrl>
     <OutputPath>.</OutputPath>
     <SuppressCollectPythonCloudServiceFiles>true</SuppressCollectPythonCloudServiceFiles>
   </PropertyGroup>
@@ -38,6 +38,7 @@
     <Compile Include="boxoffice\__init__.py" />
     <Compile Include="content\admin.py" />
     <Compile Include="content\apps.py" />
+    <Compile Include="content\forms.py" />
     <Compile Include="content\migrations\__init__.py" />
     <Compile Include="content\models.py" />
     <Compile Include="content\tests.py" />
@@ -140,16 +141,23 @@
     <Content Include="content\templates\index.html" />
     <Content Include="static\select2-bootstrap4.css" />
     <Content Include="static\select2-bootstrap4.min.css" />
-    <Content Include="templates\festival\admin_navigators.html" />
-    <Content Include="templates\festival\admin_navigator_create.html" />
-    <Content Include="templates\festival\admin_navigator_update.html" />
+    <Content Include="templates\content\admin_document_list.html" />
+    <Content Include="templates\content\admin_document.html" />
+    <Content Include="templates\content\admin_image.html" />
+    <Content Include="templates\content\admin_navigator.html" />
+    <Content Include="templates\content\admin_page.html" />
+    <Content Include="templates\content\admin_page_image.html" />
+    <Content Include="templates\content\admin_navigator_list.html" />
+    <Content Include="templates\content\admin_image_list.html" />
+    <Content Include="templates\content\admin_page_list.html" />
+    <Content Include="templates\content\_admin_page_images.html" />
     <Content Include="templates\program\admin_company_contact.html" />
-    <Content Include="templates\program\admin_companies.html" />
+    <Content Include="templates\program\admin_company_list.html" />
     <Content Include="templates\program\admin_show_image.html" />
     <Content Include="templates\program\admin_show_review.html" />
     <Content Include="templates\program\admin_show_performance.html" />
-    <Content Include="templates\program\admin_shows.html" />
-    <Content Include="templates\program\admin_genres.html" />
+    <Content Include="templates\program\admin_show_list.html" />
+    <Content Include="templates\program\admin_genre_list.html" />
     <Content Include="templates\program\admin_genre.html" />
     <Content Include="templates\program\admin_venue_sponsor.html" />
     <Content Include="templates\program\admin_company.html" />
@@ -162,7 +170,7 @@
     <Content Include="templates\program\_admin_venue_contacts.html" />
     <Content Include="templates\program\admin_venue_contact.html" />
     <Content Include="templates\program\admin_venue.html" />
-    <Content Include="templates\program\admin_venues.html" />
+    <Content Include="templates\program\admin_venue_list.html" />
     <Content Include="templates\volunteers\admin.html" />
     <Content Include="templates\volunteers\admin_locations.html" />
     <Content Include="templates\volunteers\admin_roles.html" />
@@ -189,9 +197,6 @@
     <Content Include="templates\bs4_formset_table.html" />
     <Content Include="templates\content\page.html" />
     <Content Include="templates\content\no_home.html" />
-    <Content Include="templates\festival\admin_pages.html" />
-    <Content Include="templates\festival\admin_page_create.html" />
-    <Content Include="templates\festival\admin_page_update.html" />
     <Content Include="templates\tickets\buy.html" />
     <Content Include="templates\tickets\buy_closed.html" />
     <Content Include="templates\tickets\buy_confirm_fringers.html" />
