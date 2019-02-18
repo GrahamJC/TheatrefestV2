@@ -10,6 +10,7 @@ class Role(TimeStampedModel):
 
     festival = models.ForeignKey(Festival, on_delete=models.CASCADE, related_name='roles')
     description = models.CharField(blank = True, max_length=32, default = '')
+    information = models.TextField(blank=True, default='')
 
     class Meta:
         unique_together = ('festival', 'description')
@@ -26,6 +27,7 @@ class Location(TimeStampedModel):
 
     festival = models.ForeignKey(Festival, on_delete=models.CASCADE, related_name='locations')
     description = models.CharField(blank = True, max_length=32, default = '')
+    information = models.TextField(blank=True, default='')
 
     class Meta:
         unique_together = ('festival', 'description')

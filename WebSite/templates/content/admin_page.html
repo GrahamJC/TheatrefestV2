@@ -30,7 +30,7 @@
 
     <script language="javascript">
 
-        $('#button-id-cancel').addClass('btn-secondary').on('click', function () { window.location.href = '{% url 'content:admin_pages' %}'; });
+        $('#button-id-cancel').addClass('btn-secondary').on('click', function () { window.location.href = '{% url 'content:admin_page_list' %}'; });
         {% if page.can_delete %}
             $('#button-id-delete').addClass('btn-danger').on('click', function() { $('#tf-delete-modal').modal('show'); });
             $('#tf-delete-modal .btn-primary').on('click', function () { window.location.href = "{% url 'content:admin_page_delete' page.uuid %}"; });
@@ -40,7 +40,9 @@
         {% if initial_tab %}
             $('.nav-tabs li a[href="#{{ initial_tab }}"]').tab('show');
         {% endif %}
-        $('#button-id-show-test').addClass('btn-info').on('click', function () { window.open('{% url 'content:page_test' page.uuid %}', 'TFPageTest'); });
+        {% if page %}
+            $('#button-id-show-test').addClass('btn-info').on('click', function () { window.open('{% url 'content:page_test' page.uuid %}', 'TFPageTest'); });
+        {% endif %}
 
     </script>
 

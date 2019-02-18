@@ -7,7 +7,7 @@
 
     {% crispy form %}
 
-    {% if show.can_delete %}
+    {% if company.can_delete %}
         <div id="tf-delete-modal" class="modal fade" tabindex="-1" role="dialog">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
@@ -30,7 +30,7 @@
 
     <script language="javascript">
 
-        $('#button-id-cancel').addClass('btn-secondary').on('click', function () { window.location.href = '{% url 'program:admin_companies' %}'; });
+        $('#button-id-cancel').addClass('btn-secondary').on('click', function () { window.location.href = '{% url 'program:admin_company_list' %}'; });
         {% if company.can_delete %}
             $('#button-id-delete').addClass('btn-danger').on('click', function() { $('#tf-delete-modal').modal('show'); });
             $('#tf-delete-modal .btn-primary').on('click', function () { window.location.href = "{% url 'program:admin_company_delete' company.uuid %}"; });

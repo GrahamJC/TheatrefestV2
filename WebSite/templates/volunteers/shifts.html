@@ -8,6 +8,7 @@
     <div class="nav nav-pills nav-justified mb-3">
         <a class="nav-item nav-link active" href="#tf-tab-my" data-toggle="tab">My Shifts</a>
         <a class="nav-item nav-link" href="#tf-tab-available" data-toggle="tab">Available Shifts</a>
+        <a class="nav-item nav-link" href="#tf-tab-information" data-toggle="tab">Information</a>
     </div>
 
     <div class="tab-content">
@@ -30,7 +31,7 @@
                             <td>{{ shift.start_time }}</td>
                             <td>{{ shift.end_time }}</td>
                             <td>{{ shift.role.description }}</td>
-                            <td><a href="#">Cancel</a></td>
+                            <td><a href="{% url 'volunteers:shift_cancel' shift.uuid %}">Cancel</a></td>
                         </tr>
                     {%endfor %}
                 </tbody>
@@ -55,11 +56,14 @@
                             <td>{{ shift.start_time }}</td>
                             <td>{{ shift.end_time }}</td>
                             <td>{{ shift.role.description }}</td>
-                            <td><a href="#">Volunteer</a></td>
+                            <td><a href="{% url 'volunteers:shift_accept' shift.uuid %}">Accept</a></td>
                         </tr>
                     {%endfor %}
                 </tbody>
             </table>
+        </div>
+
+        <div id="tf-tab-information" class="tab-pane fade">
         </div>
 
     </div>

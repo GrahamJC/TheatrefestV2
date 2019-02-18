@@ -1,0 +1,30 @@
+﻿{% extends "base.html" %}
+{% load i18n %}
+
+{% block pagetitle %}Locations{% endblock %}
+
+{% block content %}
+
+    <table class="table">
+        <thead class="thead-light">
+            <tr>
+                <th>Description</th>
+                <th>Shifts</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for location in locations %}
+                <tr>
+                    <td><a href="{% url 'volunteers:admin_location_update' location.uuid %}">{{ location.description }}</a></td>
+                    <td>{{ location.shifts.count }}</td>
+                </tr>
+            {%endfor %}
+        </tbody>
+    </table>
+
+    <div class="row">
+        <div class="col-6"><a href="{% url 'volunteers:admin_home' %}" class="btn btn-secondary">Back</a></div>
+        <div class="col-6 text-right"><a href="{% url 'volunteers:admin_location_create' %}" class="btn btn-primary">Add Location</a></div>
+    </div>
+
+{% endblock %}

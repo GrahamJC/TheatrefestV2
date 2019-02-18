@@ -1,0 +1,32 @@
+﻿{% extends "base.html" %}
+{% load i18n %}
+
+{% block pagetitle %}Roles{% endblock %}
+
+{% block content %}
+
+    <table class="table">
+        <thead class="thead-light">
+            <tr>
+                <th>Description</th>
+                <th>Shifts</th>
+                <th>Volunteers</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for role in roles %}
+                <tr>
+                    <td><a href="{% url 'volunteers:admin_role_update' role.uuid %}">{{ role.description }}</a></td>
+                    <td>{{ role.shifts.count }}</td>
+                    <td>{{ role.volunteers.count }}</td>
+                </tr>
+            {%endfor %}
+        </tbody>
+    </table>
+
+    <div class="row">
+        <div class="col-6"><a href="{% url 'volunteers:admin_home' %}" class="btn btn-secondary">Back</a></div>
+        <div class="col-6 text-right"><a href="{% url 'volunteers:admin_role_create' %}" class="btn btn-primary">Add Role</a></div>
+    </div>
+
+{% endblock %}

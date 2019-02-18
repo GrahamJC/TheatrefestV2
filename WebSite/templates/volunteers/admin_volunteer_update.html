@@ -12,36 +12,41 @@
         <div class="form-group">
             <button name="Save" type="submit" class="btn btn-primary">Save</button>
             <a href="{% url 'volunteers:admin_volunteers' %}" class="btn btn-secondary">Cancel</a>
-            {% if volunteer.can_remove %}
-                <a class="float-right btn btn-secondary" data-toggle="modal" data-target="#tf-remove-modal">Remove</a>
-            {% endif %}
+            <a id="tf-button-remove" class="float-right btn" data-toggle="modal" data-target="#tf-remove-modal">Remove</a>
         </div>
     </form>
 
-    <div id="tf-remove-modal" class="modal fade" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header"><h5 class="modal-title">Remove volunteer</h5></div>
-                <div class="modal-body">
-                    <p>Are you sure you want to remove this user as a volunteer?</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary">Yes</button>
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+    {% if volunteer.can_remove %}
+        <div id="tf-remove-modal" class="modal fade" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header"><h5 class="modal-title">Remove volunteer</h5></div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to remove this user as a volunteer?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary">Yes</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    {% endif %}
 
 {% endblock %}
 
 {% block body-script %}
 
+    {{ roles_form.media }}
+
     <script language="javascript">
 
-        $('#tf-remove-modal').on('click', '.btn-primary', function () {
-            window.location.href = "{%url 'volunteers:admin_volunteer_remove' volunteer.user.uuid %}";
-        });
+        {% if volunteer.can_remove %}
+            $('#tf-button-remove').addClass('btn-danger').on('click', function() { $('#tf-remove-modal').modal('show'); });
+            $('#tf-remove-modal .btn-primary').on('click', function () { window.location.href = "{% url 'volunteers:admin_volunteer_remove' volunteer.uuid %}"; });
+        {% else %}
+            $('#tf-button-remove').addClass('btn-secondary').prop('disabled', true)
+        {% endif %}
 
     </script>
 

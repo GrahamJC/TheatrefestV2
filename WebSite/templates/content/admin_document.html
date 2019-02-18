@@ -1,7 +1,7 @@
 ﻿{% extends "base.html" %}
 {% load crispy_forms_tags %}
 
-{% block documenttitle %}Create/Update Document{% endblock %}
+{% block pagetitle %}Create/Update Document{% endblock %}
 
 {% block content %}
 
@@ -30,7 +30,7 @@
 
     <script language="javascript">
 
-        $('#button-id-cancel').addClass('btn-secondary').on('click', function () { window.location.href = '{% url 'content:admin_documents' %}'; });
+        $('#button-id-cancel').addClass('btn-secondary').on('click', function () { window.location.href = '{% url 'content:admin_document_list' %}'; });
         {% if document.can_delete %}
             $('#button-id-delete').addClass('btn-danger').on('click', function() { $('#tf-delete-modal').modal('show'); });
             $('#tf-delete-modal .btn-primary').on('click', function () { window.location.href = "{% url 'content:admin_document_delete' document.uuid %}"; });

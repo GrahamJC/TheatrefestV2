@@ -170,6 +170,8 @@ class AdminPageUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
                 Tab ('Test',
                     Field('body_test', css_class='mt-2 tf-nowrap'),
                     Div(
+                        Submit('copy-from-body', 'Copy from Body'),
+                        Submit('copy-to-body', 'Copy to Body'),
                         Submit('save-test', 'Save'),
                         Button('show-test', 'Show'),
                         css_class='text-right',
@@ -187,16 +189,23 @@ class AdminPageUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
         )
         return form
 
+    def form_valid(self, form):
+        if 'copy-from-body' in self.request.POST:
+            form.instance.body_test = form.instance.body
+        elif 'copy-to-body' in self.request.POST:
+            form.instance.body = form.instance.body_test
+        return super().form_valid(form)
+
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
         context_data['initial_tab'] = self.initial_tab
         return context_data
 
     def get_success_url(self):
-        if 'save-test' in self.request.POST:
-            return reverse('content:admin_page_update_tab', args=[self.object.uuid, 'test'])
+        if 'save' in self.request.POST:
+            return reverse('content:admin_page_list')
         else:
-            return reverse('content:admin_pages')
+            return reverse('content:admin_page_update_tab', args=[self.object.uuid, 'test'])
     
 
 @login_required
@@ -206,7 +215,7 @@ def admin_page_delete(request, slug):
     page = get_object_or_404(Page, uuid=slug)
     page.delete()
     messages.success(request, 'Page deleted')
-    return redirect('content:admin_pages')
+    return redirect('content:admin_page_list')
 
 
 class AdminPageImageCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
@@ -316,7 +325,7 @@ class AdminNavigatorCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     context_object_name = 'navigator'
     template_name = 'content/admin_navigator.html'
     success_message = 'Navigator added'
-    success_url = reverse_lazy('content:admin_navigators')
+    success_url = reverse_lazy('content:admin_navigator_list')
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -351,7 +360,7 @@ class AdminNavigatorUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     context_object_name = 'navigator'
     template_name = 'content/admin_navigator.html'
     success_message = 'Navigator updated'
-    success_url = reverse_lazy('content:admin_navigators')
+    success_url = reverse_lazy('content:admin_navigator_list')
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -386,7 +395,7 @@ def admin_navigator_delete(request, slug):
     navigator = get_object_or_404(Navigator, uuid=slug)
     navigator.delete()
     messages.success(request, 'Navigator deleted')
-    return redirect('content:admin_navigators')
+    return redirect('content:admin_navigator_list')
 
 
 class AdminImageList(LoginRequiredMixin, ListView):
@@ -406,7 +415,7 @@ class AdminImageCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     context_object_name = 'image'
     template_name = 'content/admin_image.html'
     success_message = 'Image added'
-    success_url = reverse_lazy('content:admin_images')
+    success_url = reverse_lazy('content:admin_image_list')
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -435,7 +444,7 @@ class AdminImageUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     context_object_name = 'image'
     template_name = 'content/admin_image.html'
     success_message = 'Image updated'
-    success_url = reverse_lazy('content:admin_images')
+    success_url = reverse_lazy('content:admin_image_list')
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -464,7 +473,7 @@ def admin_image_delete(request, slug):
     image = get_object_or_404(Image, uuid=slug)
     image.delete()
     messages.success(request, 'Image deleted')
-    return redirect('content:admin_images')
+    return redirect('content:admin_image_list')
 
 
 class AdminDocumentList(LoginRequiredMixin, ListView):
@@ -484,7 +493,7 @@ class AdminDocumentCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     context_object_name = 'document'
     template_name = 'content/admin_document.html'
     success_message = 'Document added'
-    success_url = reverse_lazy('content:admin_documents')
+    success_url = reverse_lazy('content:admin_document_list')
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -514,7 +523,7 @@ class AdminDocumentUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     context_object_name = 'document'
     template_name = 'content/admin_document.html'
     success_message = 'Document updated'
-    success_url = reverse_lazy('content:admin_documents')
+    success_url = reverse_lazy('content:admin_document_list')
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -544,4 +553,4 @@ def admin_document_delete(request, slug):
     document = get_object_or_404(Document, uuid=slug)
     document.delete()
     messages.success(request, 'Document deleted')
-    return redirect('content:admin_documents')
+    return redirect('content:admin_document_list')

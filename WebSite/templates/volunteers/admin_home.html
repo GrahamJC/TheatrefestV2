@@ -6,10 +6,10 @@
 {% block content %}
 
     <ul>
-        <li><a href="{% url 'volunteers:admin_roles' %}">Roles</a></li>
-        <li><a href="{% url 'volunteers:admin_locations' %}">Locations</a></li>
+        <li><a href="{% url 'volunteers:admin_role_list' %}">Roles</a></li>
+        <li><a href="{% url 'volunteers:admin_location_list' %}">Locations</a></li>
+        <li><a href="{% url 'volunteers:admin_shift_list' %}">Shifts</a></li>
         <li><a href="{% url 'volunteers:admin_volunteers' %}">Volunteers</a></li>
-        <li><a href="{% url 'volunteers:admin_shifts' %}">Shifts</a></li>
     </ul>
 
 {% endblock %}

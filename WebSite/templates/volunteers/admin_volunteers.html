@@ -24,19 +24,21 @@
             <tr>
                 <th>Name</th>
                 <th>Roles</th>
+                <th>Shifts</th>
             </tr>
         </thead>
         <tbody>
             {% for user in request.festival.volunteers.all|dictsort:"last_name" %}
                 <tr>
-                    <td><a href="{% url 'volunteers:admin_volunteer_update' user.uuid %}">{{ user.last_name }}, {{ user.first_name }}</a></td>
+                    <td><a href="{% url 'volunteers:admin_volunteer_update' user.volunteer.uuid %}">{{ user.last_name }}, {{ user.first_name }}</a></td>
                     <td>{{ user.volunteer.roles.all|join:', ' }}</td>
+                    <td>{{ user.volunteer.shifts.count }}</td>
                 </tr>
             {% endfor %}
         </tbody>
     </table>
 
-    <a href="{% url 'volunteers:admin' %}" class="btn btn-secondary">Admin Home</a>
+    <a href="{% url 'volunteers:admin_home' %}" class="btn btn-secondary">Admin Home</a>
 
 {% endblock %}
 

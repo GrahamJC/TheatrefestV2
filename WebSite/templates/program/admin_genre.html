@@ -30,9 +30,9 @@
 
     <script language="javascript">
 
-        $('#button-id-cancel').addClass('btn-secondary').on('click', function () { window.location.href = '{% url 'program:admin_genres' %}'; });
+        $('#button-id-cancel').addClass('btn-secondary').on('click', function () { window.location.href = '{% url 'program:admin_genre_list' %}'; });
         {% if genre.can_delete %}
-            $('#button-id-delete').addClass('btn-danger')
+            $('#button-id-delete').addClass('btn-danger').on('click', function() { $('#tf-delete-modal').modal('show'); });
             $('#tf-delete-modal .btn-primary').on('click', function () { window.location.href = "{% url 'program:admin_genre_delete' genre.uuid %}"; });
         {% else %}
             $('#button-id-delete').addClass('btn-secondary').prop('disabled', true)

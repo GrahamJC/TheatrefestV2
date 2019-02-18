@@ -1,0 +1,38 @@
+﻿{% extends "base.html" %}
+{% load i18n %}
+
+{% block pagetitle %}Shifts{% endblock %}
+
+{% block content %}
+
+    <table class="table">
+        <thead class="thead-light">
+            <tr>
+                <th>Role</th>
+                <th>Location</th>
+                <th>Date</th>
+                <th>Start</th>
+                <th>End</th>
+                <th>Volunteer</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for shift in shifts %}
+                <tr>
+                    <td><a href="{% url 'volunteers:admin_shift_update' shift.uuid %}">{{ shift.role.description }}</a></td>
+                    <td>{{ shift.location.description }}</td>
+                    <td>{{ shift.date }}</td>
+                    <td>{{ shift.start_time }}</td>
+                    <td>{{ shift.end_time }}</td>
+                    <td>{{ shift.volunteer.user.first_name }} {{ shift.volunteer.user.last_name }}</td>
+                </tr>
+            {%endfor %}
+        </tbody>
+    </table>
+
+    <div class="row">
+        <div class="col-6"><a href="{% url 'volunteers:admin_home' %}" class="btn btn-secondary">Back</a></div>
+        <div class="col-6 text-right"><a href="{% url 'volunteers:admin_shift_create' %}" class="btn btn-primary">Add Shift</a></div>
+    </div>
+
+{% endblock %}

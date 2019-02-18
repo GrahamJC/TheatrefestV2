@@ -17,7 +17,6 @@ class AdminPageForm(forms.ModelForm):
             'body_test': '',
         }
 
-
     def __init__(self, festival, *args, **kwargs):
         self.festival = festival
         super().__init__(*args, **kwargs)
@@ -67,6 +66,7 @@ class AdminNavigatorForm(forms.ModelForm):
     def __init__(self, festival, *args, **kwargs):
         self.festival = festival
         super().__init__(*args, **kwargs)
+        self.fields['page'].queryset = Page.objects.filter(festival=festival)
 
     # Same check - different error message (to avoid mention of festival)
     def validate_unique(self):

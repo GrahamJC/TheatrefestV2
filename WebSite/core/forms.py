@@ -13,7 +13,7 @@ class UserCreationForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ('site', 'festival', 'email', 'first_name', 'last_name')
+        fields = ('festival', 'email', 'first_name', 'last_name')
 
     def clean_password2(self):
         password1 = self.cleaned_data.get('password1')
@@ -51,13 +51,11 @@ class RegistrationForm(BaseRegistrationForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['site'].widget = forms.HiddenInput()
         self.fields['festival'].widget = forms.HiddenInput()
 
     class Meta(BaseRegistrationForm.Meta):
         model = User
         fields = [
-            'site',
             'festival',
             User.get_email_field_name(),
             'password1',

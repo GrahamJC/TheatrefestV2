@@ -30,7 +30,7 @@
 
     <script language="javascript">
 
-        $('#button-id-cancel').addClass('btn-secondary').on('click', function () { window.location.href = '{% url 'program:admin_venues' %}'; });
+        $('#button-id-cancel').addClass('btn-secondary').on('click', function () { window.location.href = '{% url 'program:admin_venue_list' %}'; });
         {% if venue.can_delete %}
             $('#button-id-delete').addClass('btn-danger').on('click', function() { $('#tf-delete-modal').modal('show'); });
             $('#tf-delete-modal .btn-primary').on('click', function () { window.location.href = "{% url 'program:admin_venue_delete' venue.uuid %}"; });

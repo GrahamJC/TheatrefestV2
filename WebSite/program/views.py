@@ -351,7 +351,7 @@ class AdminGenreCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     context_object_name = 'genre'
     template_name = 'program/admin_genre.html'
     success_message = 'Genre added'
-    success_url = reverse_lazy('program:admin_genres')
+    success_url = reverse_lazy('program:admin_genre_list')
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -379,7 +379,7 @@ class AdminGenreUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     context_object_name = 'genre'
     template_name = 'program/admin_genre.html'
     success_message = 'Genre updated'
-    success_url = reverse_lazy('program:admin_genres')
+    success_url = reverse_lazy('program:admin_genre_list')
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -407,7 +407,7 @@ def admin_genre_delete(request, slug):
     genre = get_object_or_404(Genre, uuid=slug)
     genre.delete()
     messages.success(request, 'Genre deleted')
-    return redirect('program:admin_genres')
+    return redirect('program:admin_genre_list')
 
 
 class AdminVenueList(LoginRequiredMixin, ListView):
@@ -457,7 +457,7 @@ class AdminVenueUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     context_object_name = 'venue'
     template_name = 'program/admin_venue.html'
     success_message = 'Venue updated'
-    success_url = reverse_lazy('program:admin_venues')
+    success_url = reverse_lazy('program:admin_venue_list')
 
     def dispatch(self, request, *args, **kwargs):
         self.initial_tab = kwargs.pop('tab', None)
@@ -554,7 +554,7 @@ def admin_venue_delete(request, slug):
     venue = get_object_or_404(Venue, uuid=slug)
     venue.delete()
     messages.success(request, 'Venue deleted')
-    return redirect('program:admin_venues')
+    return redirect('program:admin_venue_list')
 
 
 class AdminVenueContactCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
@@ -854,7 +854,7 @@ class AdminCompanyUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     context_object_name = 'company'
     template_name = 'program/admin_company.html'
     success_message = 'Company updated'
-    success_url = reverse_lazy('program:admin_companies')
+    success_url = reverse_lazy('program:admin_company_list')
 
     def dispatch(self, request, *args, **kwargs):
         self.initial_tab = kwargs.pop('tab', None)
@@ -933,7 +933,7 @@ def admin_company_delete(request, slug):
     company = get_object_or_404(Company, uuid=slug)
     company.delete()
     messages.success(request, 'Company deleted')
-    return redirect('program:admin_companies')
+    return redirect('program:admin_company_list')
 
 
 class AdminCompanyContactCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
@@ -1103,7 +1103,7 @@ class AdminShowUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     context_object_name = 'show'
     template_name = 'program/admin_show.html'
     success_message = 'Show updated'
-    success_url = reverse_lazy('program:admin_shows')
+    success_url = reverse_lazy('program:admin_show_list')
 
     def dispatch(self, request, *args, **kwargs):
         self.initial_tab = kwargs.pop('tab', None)
@@ -1197,7 +1197,7 @@ def admin_show_delete(request, slug):
     show = get_object_or_404(Show, uuid=slug)
     show.delete()
     messages.success(request, 'Show deleted')
-    return redirect('program:admin_shows')
+    return redirect('program:admin_show_list')
 
 
 class AdminShowPerformanceCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):

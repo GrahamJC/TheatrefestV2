@@ -33,7 +33,7 @@
         $('#button-id-cancel').addClass('btn-secondary').on('click', function () { window.location.href = '{% url 'program:admin_show_update_tab' show.uuid 'images' %}'; });
         {% if image.can_delete %}
             $('#button-id-delete').addClass('btn-danger').on('click', function() { $('#tf-delete-modal').modal('show'); });
-            $('#tf-delete-modal .btn-primary').on('click', function () { window.location.href = "{% url 'program:admin_show_performance_delete' show.uuid image.uuid %}"; });
+            $('#tf-delete-modal .btn-primary').on('click', function () { window.location.href = "{% url 'program:admin_show_image_delete' show.uuid image.uuid %}"; });
         {% else %}
             $('#button-id-delete').addClass('btn-secondary').prop('disabled', true)
         {% endif %}
