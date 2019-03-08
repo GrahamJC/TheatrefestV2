@@ -1,4 +1,5 @@
 import os
+import datetime
 
 from django.db.models.functions import Lower
 from django.conf import settings
@@ -18,7 +19,7 @@ from crispy_forms.layout import Layout, Field, HTML, Submit, Button, Row, Column
 from crispy_forms.bootstrap import FormActions, TabHolder, Tab
 
 from reportlab.pdfgen.canvas import Canvas
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.enums import TA_LEFT, TA_CENTER
 from reportlab.lib.pagesizes import A4, portrait, landscape
@@ -26,6 +27,7 @@ from reportlab.lib.units import cm
 from reportlab.lib import colors
 
 from core.models import Festival
+from content.models import Image
 from .models import (
     Genre,
     Venue, VenueContact, VenueSponsor,
@@ -90,11 +92,13 @@ def show(request, show_uuid):
         image_urls.update({ image.name:os.path.join(media_url, image.image.url) for image in show.images.all() if image.image })
         document_urls = { document.name:reverse('content:document', args=[document.uuid]) for document in request.festival.documents.all() if document.file }
         page_urls = { page.name:reverse('content:page', args=[page.uuid]) for page in request.festival.pages.all() }
+        resource_urls = { resource.name:reverse('content:resource', args=[resource.uuid]) for resource in request.festival.resources.all() }
         body_context = {
             'show': show,
             'image_urls': image_urls,
             'document_urls': document_urls,
             'page_urls': page_urls,
+            'resource_urls': resource_urls,
         }
         template = Template(show.detail)
         html = template.render(Context(body_context))
@@ -265,7 +269,7 @@ def schedule_pdf(request, festival_uuid=None):
             for v in range(len(venues)):
                 if (i < len(venue_performances[v])):
                     performance = venue_performances[v][i]
-                    slot_data.append(Paragraph(f'{performance.time:%I:%M}', time_style))
+                    slot_data.append(Paragraph(f'{performance.time:%H:%M}', time_style))
                     slot_url = f'http://{ request.get_host() }{ reverse("program:show", args = [performance.show.uuid]) }' 
                     slot_data.append(Paragraph(f'<a href="{ slot_url }">{ performance.show.name }</a>', show_style))
                 else:
@@ -316,6 +320,11 @@ def venues(request, festival_uuid=None):
         'ticketed_venues': Venue.objects.filter(festival=festival, is_ticketed=True).order_by('map_index', 'name'),
         'nonticketed_venues': Venue.objects.filter(festival=festival, is_ticketed=False).order_by('map_index', 'name'),
     }
+
+    # Get venue map
+    venue_map = Image.objects.filter(festival=request.festival, name='VenueMap').first()
+    if venue_map:
+        context['venue_map'] = venue_map.get_absolute_url()
 
     # Render venue list
     return render(request, 'program/venues.html', context)

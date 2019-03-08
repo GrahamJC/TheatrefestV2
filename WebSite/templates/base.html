@@ -14,6 +14,9 @@
         {% if request.site.info.stylesheet %}
             <link rel="stylesheet" href="{% static request.site.info.stylesheet %}">
         {% endif %}
+        {% if request.festival.stylesheet %}
+            <link rel="stylesheet" href="{{ request.festival.stylesheet }}">
+        {% endif %}
     {% endblock %}
     {% block head-script %}
         <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js" ></script>
@@ -33,9 +36,14 @@
                     {% include request.site.info.banner %}
                 {% else %}
                     <div id="tf-banner" class="mb-1">
-                        {% if request.site.info.festival.banner %}
-                            <img class="w-100" src="{{ MEDIA_ROOT }}{{ request.site.info.festival.banner.url }}" />
-                        {% endif %}
+                        <a href="{% url 'home' %}">
+                            {% if request.festival.banner_mobile %}
+                                <img class="d-none d-sm-block w-100" src="{{ request.festival.banner }}" />
+                                <img class="d-block d-sm-none w-100" src="{{ request.festival.banner_mobile }}" />
+                            {% else %}
+                                <img class="w-100" src="{{ request.festival.banner }}" />
+                            {% endif %}
+                        </a>
                     </div>
                 {% endif %}
 
@@ -43,8 +51,7 @@
                     {% include request.site.info.navigator %}
                 {% else %}
                     <div id="tf-navigator" class="mb-2">
-                        <nav class="navbar navbar-expand-md navbar-dark bg-secondary py-1">
-                            <a class="navbar-brand d-inline d-md-none d-lg-inline" href="#">{{ request.festival.name }}</a>
+                        <nav class="navbar navbar-expand-md navbar-dark py-1">
                             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapse" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                                 <span class="navbar-toggler-icon"></span>
                             </button>
@@ -100,7 +107,15 @@
                     {% include request.site.info.header %}
                 {% else %}
                     <div id="tf-header">
-                        <h3 id="tf-page-title">{% block pagetitle %}{% endblock %}</h3>
+                        <h3 id="tf-page-title">
+                            <div class="float-right mb-2">
+                                <a href="https://www.facebook.com/TheatrefestND/"><img src="{% static 'facebook.png' %}"/></a>
+                                <a href="https://twitter.com/@theatrefestND"><img src="{% static 'twitter.png' %}"/></a>
+                                <a href="https://www.instagram.com/theatrefestND"><img src="{% static 'instagram.png' %}"/></a>
+                            </div>
+                            {% block pagetitle %}{% endblock %}
+                        </h3>
+                        <div class="clearfix"></div>
                         {% for msg in messages %}
                             <div class="{{ msg.tags }} alert-dismissible" role="alert">
                                 {{ msg }}

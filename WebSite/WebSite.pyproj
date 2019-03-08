@@ -139,8 +139,13 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="content\templates\index.html" />
+    <Content Include="static\facebook.png" />
+    <Content Include="static\instagram.png" />
     <Content Include="static\select2-bootstrap4.css" />
     <Content Include="static\select2-bootstrap4.min.css" />
+    <Content Include="static\twitter.png" />
+    <Content Include="templates\content\admin_resource.html" />
+    <Content Include="templates\content\admin_resource_list.html" />
     <Content Include="templates\content\admin_document_list.html" />
     <Content Include="templates\content\admin_document.html" />
     <Content Include="templates\content\admin_image.html" />

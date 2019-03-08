@@ -10,6 +10,9 @@ urlpatterns = [
     path('page/<uuid:page_uuid>/test', views.page_test, name='page_test'),
     # Documents
     path('document/<uuid:document_uuid>', views.document, name='document'),
+    # Resources
+    path('resource/<uuid:resource_uuid>', views.resource, name='resource'),
+    path('resource/<uuid:resource_uuid>/test', views.resource_test, name='resource_test'),
     # Administration
     path('admin/page/list', views.AdminPageList.as_view(), name='admin_page_list'),
     path('admin/page/create', views.AdminPageCreate.as_view(), name='admin_page_create'),
@@ -31,4 +34,8 @@ urlpatterns = [
     path('admin/document/create', views.AdminDocumentCreate.as_view(), name='admin_document_create'),
     path('admin/document/<uuid:slug>/update', views.AdminDocumentUpdate.as_view(), name='admin_document_update'),
     path('admin/document/<uuid:slug>/delete', views.admin_document_delete, name='admin_document_delete'),
+    path('admin/resource/list', views.AdminResourceList.as_view(), name='admin_resource_list'),
+    path('admin/resource/create', views.AdminResourceCreate.as_view(), name='admin_resource_create'),
+    path('admin/resource/<uuid:slug>/update', views.AdminResourceUpdate.as_view(), name='admin_resource_update'),
+    path('admin/resource/<uuid:slug>/delete', views.admin_resource_delete, name='admin_resource_delete'),
 ]

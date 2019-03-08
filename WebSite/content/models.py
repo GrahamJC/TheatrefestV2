@@ -1,3 +1,6 @@
+import os
+
+from django.conf import settings
 from django.db import models
 from django.urls import reverse
 
@@ -23,6 +26,11 @@ class Page(TimeStampedModel):
     def can_delete(self):
         return self.navigators.count() == 0
 
+    def get_absolute_url(self):
+        return reverse('content:page', args=[self.uuid])
+
+    def get_test_url(self):
+        return reverse('content:page_test', args=[self.uuid])
 
 class PageImage(TimeStampedModel):
 
@@ -39,6 +47,9 @@ class PageImage(TimeStampedModel):
 
     def can_delete(self):
         return True
+
+    def get_absolute_url(self):
+        return os.path.join(getattr(settings, 'MEDIA_URL', '/media'), self.image.url)
 
 
 class Navigator(TimeStampedModel):
@@ -105,6 +116,9 @@ class Image(TimeStampedModel):
     def can_delete(self):
         return True
 
+    def get_absolute_url(self):
+        return os.path.join(getattr(settings, 'MEDIA_URL', '/media'), self.image.url)
+
 
 class Document(TimeStampedModel):
 
@@ -122,3 +136,37 @@ class Document(TimeStampedModel):
 
     def can_delete(self):
         return True
+
+    def get_absolute_url(self):
+        return reverse('content:document', args=[self.uuid])
+
+
+class Resource(TimeStampedModel):
+
+    CSS = 'text/css'
+    JAVASCRIPT = 'application/javascript'
+    TYPE_CHOICES = (
+        (CSS, 'CSS stylesheet'),
+        (JAVASCRIPT, 'Javascript'),
+    )
+    festival = models.ForeignKey(Festival, on_delete=models.CASCADE, related_name='resources')
+    name = models.CharField(max_length=32)
+    type = models.CharField(max_length=64, choices=TYPE_CHOICES)
+    body = models.TextField(blank=True, default='')
+    body_test = models.TextField(blank=True, default='')
+
+    class Meta:
+        ordering = ('festival', 'name')
+        unique_together = ('festival', 'name')
+
+    def __str__(self):
+        return f'{self.festival.name}/{self.name}'
+
+    def can_delete(self):
+        return True
+
+    def get_absolute_url(self):
+        return reverse('content:resource', args=[self.uuid])
+
+    def get_test_url(self):
+        return reverse('content:resource_test', args=[self.uuid])

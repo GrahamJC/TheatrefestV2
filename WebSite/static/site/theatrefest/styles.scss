@@ -15,6 +15,23 @@ $screen-xl: 1200px;
     color: $secondary-color;
 }
 
+// Navigator
+#tf-navigator .navbar {
+    background-color: $secondary-color;
+
+    .nav-link {
+        color: #fff06d;
+    }
+}
+
+// Page title and social media
+#tf-page-title {
+    color: $primary-color;
+    img {
+        width: 35px;
+    }
+}
+
 // Cancelled items are greyed out
 .tf-cancelled {
     color: darkgrey;

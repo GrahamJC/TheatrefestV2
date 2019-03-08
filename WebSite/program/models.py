@@ -208,6 +208,14 @@ class Show(TimeStampedModel):
     def is_ticketed(self):
         return self.venue.is_ticketed
 
+    @property
+    def is_online_tickets_open(self):
+        return (
+            self.venue.is_ticketed
+            and not (self.is_suspended or self.is_cancelled)
+            and self.festival.is_online_tickets_open
+        )
+
     @cached_property
     def genre_list(self):
         return self.genre_text or ", ".join([genre.name for genre in self.genres.all()])

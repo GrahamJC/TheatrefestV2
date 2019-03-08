@@ -4,6 +4,16 @@
 .tf-company-name {
   color: #fd7f02; }
 
+#tf-navigator .navbar {
+  background-color: #fd7f02; }
+  #tf-navigator .navbar .nav-link {
+    color: #fff06d; }
+
+#tf-page-title {
+  color: #1a7cf3; }
+  #tf-page-title img {
+    width: 35px; }
+
 .tf-cancelled {
   color: darkgrey; }
   .tf-cancelled .tf-show-name, .tf-cancelled .tf-company-name, .tf-cancelled .tf-warning {

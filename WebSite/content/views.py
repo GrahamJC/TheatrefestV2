@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
-from django.http import FileResponse
+from django.http import HttpResponse, FileResponse
 from django.shortcuts import get_object_or_404, render, redirect
 from django.template import Template, Context
 from django.urls import reverse, reverse_lazy
@@ -15,8 +15,8 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Field, HTML, Submit, Button, Row, Column
 from crispy_forms.bootstrap import FormActions, TabHolder, Tab, Div
 
-from .models import Page, PageImage, Navigator, Image, Document
-from .forms import AdminPageForm, AdminPageImageForm, AdminNavigatorForm, AdminImageForm, AdminDocumentForm
+from .models import Page, PageImage, Navigator, Image, Document, Resource
+from .forms import AdminPageForm, AdminPageImageForm, AdminNavigatorForm, AdminImageForm, AdminDocumentForm, AdminResourceForm
 
 def home(request):
 
@@ -35,16 +35,17 @@ def page(request, page_uuid):
     page = get_object_or_404(Page, uuid=page_uuid)
 
     # Render the page body as a Django template
-    media_url = getattr(settings, 'MEDIA_URL', '/media')
-    image_urls = { image.name:os.path.join(media_url, image.image.url) for image in request.festival.images.all() if image.image }
-    image_urls.update({ image.name:os.path.join(media_url, image.image.url) for image in page.images.all() if image.image })
-    document_urls = { document.name:reverse('content:document', args=[document.uuid]) for document in request.festival.documents.all() if document.file }
-    page_urls = { page.name:reverse('content:page', args=[page.uuid]) for page in request.festival.pages.all() }
+    image_urls = { image.name:image.get_absolute_url() for image in request.festival.images.all() if image.image }
+    image_urls.update({ image.name:image.get_absolute_url() for image in page.images.all() if image.image })
+    document_urls = { document.name:document.get_absolute_url() for document in request.festival.documents.all() if document.file }
+    page_urls = { page.name:page.get_absolute_url() for page in request.festival.pages.all() }
+    resource_urls = { resource.name:resource.get_absolute_url() for resource in request.festival.resources.all() }
     body_context = {
         'page': page,
         'image_urls': image_urls,
         'document_urls': document_urls,
         'page_urls': page_urls,
+        'resource_urls': resource_urls,
     }
     template = Template(page.body)
     body_html = template.render(Context(body_context))
@@ -63,18 +64,19 @@ def page_test(request, page_uuid):
     page = get_object_or_404(Page, uuid=page_uuid)
 
     # Render the page body as a Django template
-    media_url = getattr(settings, 'MEDIA_URL', '/media')
-    image_urls = { image.name:os.path.join(media_url, image.image.url) for image in request.festival.images.all() if image.image }
-    image_urls.update({ image.name:os.path.join(media_url, image.image.url) for image in page.images.all() if image.image })
-    document_urls = { document.name:reverse('content:document', args=[document.uuid]) for document in request.festival.documents.all() if document.file }
-    page_urls = { page.name:reverse('content:page', args=[page.uuid]) for page in request.festival.pages.all() }
+    image_urls = { image.name:image.get_absolute_url() for image in request.festival.images.all() if image.image }
+    image_urls.update({ image.name:image.get_absolute_url() for image in page.images.all() if image.image })
+    document_urls = { document.name:document.get_absolute_url() for document in request.festival.documents.all() if document.file }
+    page_urls = { page.name:page.get_test_url() for page in request.festival.pages.all() }
+    resource_urls = { resource.name:resource.get_test_url() for resource in request.festival.resources.all() }
     body_context = {
         'page': page,
         'image_urls': image_urls,
         'document_urls': document_urls,
         'page_urls': page_urls,
+        'resource_urls': resource_urls,
     }
-    template = Template(page.body_test)
+    template = Template(page.body_test or page.body)
     body_html = template.render(Context(body_context))
 
     # Render the page
@@ -93,6 +95,44 @@ def document(request, document_uuid):
     # Return it
     response = FileResponse(document.file, as_attachment=True, filename=document.filename)
     return response
+
+
+def resource(request, resource_uuid):
+
+    # Get the document and return it
+    resource = get_object_or_404(Resource, uuid=resource_uuid)
+    image_urls = { image.name:image.get_absolute_url() for image in request.festival.images.all() if image.image }
+    document_urls = { document.name:document.get_absolute_url() for document in request.festival.documents.all() if document.file }
+    page_urls = { page.name:page.get_absolute_url() for page in request.festival.pages.all() }
+    resource_urls = { resource.name:resource.get_absolute_url() for resource in request.festival.resources.all() }
+    context = {
+        'page': page,
+        'image_urls': image_urls,
+        'document_urls': document_urls,
+        'page_urls': page_urls,
+        'resource_urls': resource_urls,
+    }
+    template = Template(resource.body)
+    return HttpResponse(template.render(Context(context)), content_type=resource.type)
+
+
+def resource_test(request, resource_uuid):
+
+    # Get the document and return it
+    resource = get_object_or_404(Resource, uuid=resource_uuid)
+    image_urls = { image.name:image.get_absolute_url() for image in request.festival.images.all() if image.image }
+    document_urls = { document.name:document.get_absolute_url() for document in request.festival.documents.all() if document.file }
+    page_urls = { page.name:page.get_test_url() for page in request.festival.pages.all() }
+    resource_urls = { resource.name:resource.get_test_url() for resource in request.festival.resources.all() }
+    context = {
+        'page': page,
+        'image_urls': image_urls,
+        'document_urls': document_urls,
+        'page_urls': page_urls,
+        'resource_urls': resource_urls,
+    }
+    template = Template(resource.body_test or resource.body)
+    return HttpResponse(template.render(Context(context)), content_type=resource.type)
 
 
 class AdminPageList(LoginRequiredMixin, ListView):
@@ -554,3 +594,127 @@ def admin_document_delete(request, slug):
     document.delete()
     messages.success(request, 'Document deleted')
     return redirect('content:admin_document_list')
+
+
+class AdminResourceList(LoginRequiredMixin, ListView):
+
+    model = Resource
+    context_object_name = 'resources'
+    template_name = 'content/admin_resource_list.html'
+
+    def get_queryset(self):
+        return Resource.objects.filter(festival=self.request.festival)
+
+
+class AdminResourceCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+
+    model = Resource
+    form_class = AdminResourceForm
+    context_object_name = 'resource'
+    template_name = 'content/admin_resource.html'
+    success_message = 'Resource added'
+    success_url = reverse_lazy('content:admin_resource_list')
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['festival'] = self.request.festival
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Row(
+                Column('name', css_class='col-sm-8'),
+                Column('type', css_class='col-sm-4'),
+                css_class='form-row',
+            ),
+            'body',
+            FormActions(
+                Submit('save', 'Save'),
+                Button('cancel', 'Cancel'),
+            ),
+        )
+        return form
+
+
+class AdminResourceUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+
+    model = Resource
+    form_class = AdminResourceForm
+    slug_field = 'uuid'
+    context_object_name = 'resource'
+    template_name = 'content/admin_resource.html'
+    success_message = 'Resource updated'
+    success_url = reverse_lazy('content:admin_resource_list')
+    
+    def dispatch(self, request, *args, **kwargs):
+        self.initial_tab = kwargs.pop('tab', None)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['festival'] = self.request.festival
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form['body'].label = ''
+        form['body_test'].label = ''
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Row(
+                Column('name', css_class='col-sm-8'),
+                Column('type', css_class='col-sm-4'),
+                css_class='form-row',
+            ),
+            TabHolder(
+                Tab ('Body',
+                    Field('body', css_class='mt-2 tf-nowrap'),
+                ),
+                Tab ('Test',
+                    Field('body_test', css_class='mt-2 tf-nowrap'),
+                    Div(
+                        Submit('copy-from-body', 'Copy from Body'),
+                        Submit('copy-to-body', 'Copy to Body'),
+                        Submit('save-test', 'Save'),
+                        Button('show-test', 'Show'),
+                        css_class='text-right',
+                    )
+                ),
+            ),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('delete', 'Delete'),
+                Button('cancel', 'Cancel'),
+            )
+        )
+        return form
+
+    def form_valid(self, form):
+        if 'copy-from-body' in self.request.POST:
+            form.instance.body_test = form.instance.body
+        elif 'copy-to-body' in self.request.POST:
+            form.instance.body = form.instance.body_test
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['initial_tab'] = self.initial_tab
+        return context_data
+
+    def get_success_url(self):
+        if 'save' in self.request.POST:
+            return reverse('content:admin_resource_list')
+        else:
+            return reverse('content:admin_resource_update_tab', args=[self.object.uuid, 'test'])
+    
+
+@login_required
+def admin_resource_delete(request, slug):
+
+    # Delete resource
+    resource = get_object_or_404(Resource, uuid=slug)
+    resource.delete()
+    messages.success(request, 'Resource deleted')
+    return redirect('content:admin_resource_list')

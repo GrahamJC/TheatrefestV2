@@ -5,7 +5,7 @@
 
 {% block content %}
 
-    <h4>Program</h4>
+    <h5>Program</h5>
     <ul>
         <li><a href="{% url 'program:admin_show_list' %}">Shows</a></li>
         <li><a href="{% url 'program:admin_company_list' %}">Companies</a></li>
@@ -13,11 +13,12 @@
         <li><a href="{% url 'program:admin_genre_list' %}">Genres</a></li>
     </ul>
 
-    <h4>Content and Navigation</h4>
+    <h5>Content and Navigation</h5>
     <ul>
         <li><a href="{% url 'content:admin_page_list' %}">Pages</a></li>
         <li><a href="{% url 'content:admin_navigator_list' %}">Navigators</a></li>
         <li><a href="{% url 'content:admin_image_list' %}">Images</a></li>
+        <li><a href="{% url 'content:admin_resource_list' %}">Resources</a></li>
         <li><a href="{% url 'content:admin_document_list' %}">Documents</a></li>
     </ul>
 

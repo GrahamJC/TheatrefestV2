@@ -1,0 +1,30 @@
+﻿{% extends "base.html" %}
+{% load i18n %}
+
+{% block pagetitle %}Resources{% endblock %}
+
+{% block content %}
+
+    <table class="table">
+        <thead class="thead-light">
+            <tr>
+                <th>Name</th>
+                <th>Type</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for resource in resources %}
+                <tr>
+                    <td><a href="{% url 'content:admin_resource_update' resource.uuid %}">{{ resource.name }}</a></td>
+                    <td>{{ resource.get_type_display }}</td>
+                </tr>
+            {%endfor %}
+        </tbody>
+    </table>
+
+    <div class="row">
+        <div class="col-6"><a href="{% url 'festival:admin' %}" class="btn btn-secondary">Back</a></div>
+        <div class="col-6 text-right"><a href="{% url 'content:admin_resource_create' %}" class="btn btn-primary">Add Resource</a></div>
+    </div>
+
+{% endblock %}

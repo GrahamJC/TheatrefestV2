@@ -1,4 +1,5 @@
 from uuid import uuid4
+from datetime import date
 
 from django.core.mail import send_mail
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
@@ -37,6 +38,14 @@ class Festival(TimeStampedModel):
     @property
     def volunteers(self):
         return self.users.filter(is_volunteer = True).order_by('last_name')
+
+    @property
+    def is_online_sales_open(self):
+        return (self.online_sales_open != None) and (self.online_sales_open <= date.today())
+
+    @property
+    def is_online_sales_closed(self):
+        return (self.online_sales_close != None) and (self.online_sales_close < date.today())
 
 
 class SiteInfo(TimeStampedModel):

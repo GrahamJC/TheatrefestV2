@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block pagetitle %}Venues{% endblock %}
+{% block pagetitle %}venues{% endblock %}
 
 {% block content %}
 
@@ -10,7 +10,7 @@
         <div class="nav nav-pills nav-justified mb-3">
             <a class="nav-item nav-link active" href="#tab-ticketed" data-toggle="tab">Ticketed</a>
             <a class="nav-item nav-link" href="#tab-alt-spaces" data-toggle="tab">Alt Spaces</a>
-            {% if request.site.info.festival.venue_map %}
+            {% if venue_map %}
                 <a class="nav-item nav-link" href="#tab-map" data-toggle="tab">Map</a>
             {% endif %}
         </div>
@@ -31,9 +31,9 @@
                 {% endfor %}
             </div>
 
-            {% if request.site.info.festival.venue_map %}
+            {% if venue_map %}
                 <div id="tab-map" class="tab-pane">
-                    <img class="w-100" src="{{ MEDIA_ROOT }}{{ request.site.info.festival.venue_map.url }}" />
+                    <img class="w-100" src="{{ venue_map }}" />
                 </div>
             {% endif %}
 
