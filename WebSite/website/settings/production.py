@@ -3,8 +3,7 @@ from .base import *
 DEBUG=False
 
 ALLOWED_HOSTS = [
-    'tickets.theatrefest.co.uk',
-    'tickets2.theatrefest.co.uk',
+    'www.theatrefest.co.uk',
     'tf2019.theatrefest.co.uk',
     'tf2018.theatrefest.co.uk',
 ]

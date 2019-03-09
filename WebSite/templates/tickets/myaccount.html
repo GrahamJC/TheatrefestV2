@@ -7,7 +7,7 @@
     <div id="tf-tickets-myaccount">
 
         <div class="nav nav-pills nav-justified mb-3">
-            <a class="nav-item nav-link {% if tab == 'tickets' %}active{% endif %}" href="#tf-tickets-tab" data-toggle="tab">Credit Card</a>
+            <a class="nav-item nav-link {% if tab == 'tickets' %}active{% endif %}" href="#tf-tickets-tab" data-toggle="tab">Tickets</a>
             <a class="nav-item nav-link {% if tab == 'fringers' %}active{% endif %}" href="#tf-fringers-tab" data-toggle="tab">eFringers</a>
             <a class="nav-item nav-link {% if tab == 'faqs' %}active{% endif %}" href="#tf-faqs-tab" data-toggle="tab">FAQs</a>
         </div>
@@ -148,7 +148,9 @@
                         <div class="card">
                             <h6 class="card-header">Buy eFringer Vouchers</h6>
                             <div class="card-body">
-                                {% if sales_open %}
+                                {% if request.festival.is_online_sales_closed %}
+                                    Online sales are now closed.
+                                {% elif request.festival.is_online_sales_open %}
                                     <form method="POST">
                                         {% csrf_token %}
                                         {% include 'bs4_form.html' with form=buy_form %}
@@ -156,8 +158,10 @@
                                             <button type="submit" class="btn btn-primary" name="action" value="AddFringers">Add to Basket</button>
                                         </div>
                                     </form>
+                                {% elif not request.festival.online_sales_open %}
+                                    Online sales are not yet open.
                                 {% else %}
-                                    eFringers Vouchers will be on sale from Friday, June 1st.
+                                    Online sales will open on {{ request.festival.online_sales_open | date:'M d' }}.
                                 {% endif %}
                             </div>
                         </div>
