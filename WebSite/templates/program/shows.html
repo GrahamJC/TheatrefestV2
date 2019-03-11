@@ -36,7 +36,7 @@
                                 CHANGE TO BROCHURE: this show is cancelled.
                             {% endif %}
                         </div>
-                        <div class="tf-info-1">
+                        <div class="tf-info-1 d-none d-sm-block">
                             <h6 class="tf-venue-name d-inline">{{ show.venue.name }}: </h6>
                             <span class="tf-performance-days">
                                 {% for date in show.performance_dates %}
@@ -59,7 +59,7 @@
                         {% else %}
                             <div class="tf-description">{{ show.listing | linebreaks }}</div>
                         {% endif %}
-                        <div class="tf-info1">
+                        <div class="tf-info1 d-none d-sm-block">
                             <h6 class="tf-venue-name d-inline"><a href="{% url 'program:venue' show.venue.uuid %}" {% if show.venue.color %}style="color: {{ show.venue.color }}"{% endif %}>{{ show.venue.name }}</a>: </h6>
                             <span class="tf-performance-days">
                                 {% for date in show.performance_dates %}
@@ -69,7 +69,7 @@
                             </span>
                             <span class="tf-ticket-type">({% if show.venue.is_ticketed %}ticketed{% else %}pay-what-you-will{% endif %})</span>
                         </div>
-                        <div class="tf-info2">
+                        <div class="tf-info2 d-none d-sm-block">
                             {% if show.genre_list %}
                             <span class="tf-genres d-none d-sm-inline">
                                 {{ show.genre_list }}

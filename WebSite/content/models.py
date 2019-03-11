@@ -59,12 +59,16 @@ class Navigator(TimeStampedModel):
     SHOWS = 3
     SCHEDULE = 4
     VENUES = 5
+    ARCHIVE_INDEX = 6
+    ARCHIVE_HOME = 7
     TYPE_CHOICES = (
         (URL, 'URL'),
         (PAGE, 'Content page'),
         (SHOWS, 'List/search shows'),
         (SCHEDULE, 'Schedule'),
         (VENUES, 'List venues'),
+        (ARCHIVE_INDEX, 'Archive index'),
+        (ARCHIVE_HOME, 'Archive home'),
     )
 
     festival = models.ForeignKey(Festival, on_delete=models.CASCADE, related_name='navigators')
@@ -90,6 +94,10 @@ class Navigator(TimeStampedModel):
             return reverse('program:schedule')
         elif self.type == Navigator.VENUES:
             return reverse('program:venues')
+        elif self.type == Navigator.ARCHIVE_INDEX:
+            return reverse('festival:archive_index')
+        elif self.type == Navigator.ARCHIVE_HOME:
+            return reverse('festival:archive_home')
         else:
             return '#'
 
