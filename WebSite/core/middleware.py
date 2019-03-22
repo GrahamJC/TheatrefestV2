@@ -16,15 +16,5 @@ class FestivalMiddleware:
                 request.festival = get_object_or_404(Festival, pk=festival_id)
             else:
                 request.festival = request.site.info.festival
-            if request.festival:
-                stylesheet = Resource.objects.filter(festival=request.festival, name='Stylesheet').first()
-                if stylesheet:
-                    request.festival.stylesheet = stylesheet.get_test_url() if request.path.endswith('test') else stylesheet.get_absolute_url()
-                banner = Image.objects.filter(festival=request.festival, name='Banner').first()
-                if banner:
-                    request.festival.banner = banner.get_absolute_url()
-                banner = Image.objects.filter(festival=request.festival, name='BannerMobile').first()
-                if banner:
-                    request.festival.banner_mobile = banner.get_absolute_url()
         response = self.get_response(request)
         return response

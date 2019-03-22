@@ -46,7 +46,7 @@ from .forms import (
 def shows(request, festival_uuid=None):
 
     # Get festival
-    festival = get_object_or_404(Festival, uuid=festival_uuid) if festival_uuid else request.site.info.festival
+    festival = get_object_or_404(Festival, uuid=festival_uuid) if festival_uuid else request.festival
 
     # Create the search form
     search = SearchForm(festival=festival, data=request.GET)
@@ -133,7 +133,7 @@ def _add_non_scheduled_performances(festival, day):
 def schedule(request, festival_uuid=None):
 
     # Get festival
-    festival = get_object_or_404(Festival, uuid=festival_uuid) if festival_uuid else request.site.info.festival
+    festival = get_object_or_404(Festival, uuid=festival_uuid) if festival_uuid else request.festival
 
     # Build the schedule
     days = []
@@ -196,7 +196,7 @@ def schedule(request, festival_uuid=None):
 def schedule_pdf(request, festival_uuid=None):
 
     # Get festival
-    festival = get_object_or_404(Festival, uuid=festival_uuid) if festival_uuid else request.site.info.festival
+    festival = get_object_or_404(Festival, uuid=festival_uuid) if festival_uuid else request.festival
 
     # Create a Platypus story
     response = HttpResponse(content_type = 'application/pdf')
@@ -313,7 +313,7 @@ def schedule_pdf(request, festival_uuid=None):
 def venues(request, festival_uuid=None):
 
     # Get festival
-    festival = get_object_or_404(Festival, uuid=festival_uuid) if festival_uuid else request.site.info.festival
+    festival = get_object_or_404(Festival, uuid=festival_uuid) if festival_uuid else request.festival
 
     # List ticketd and non-ticketd vebues separately
     context = {

@@ -1,9 +1,11 @@
-from django.core.exceptions import NON_FIELD_ERRORS
+from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django import forms
+from collections import OrderedDict
 
 from bootstrap_datepicker_plus import DatePickerInput, TimePickerInput
 from django_select2.forms import Select2MultipleWidget
 
+from core.forms import MultiModelForm
 from core.models import User
 from core.widgets import ModelSelect2
 
@@ -76,6 +78,7 @@ class AdminShiftForm(forms.ModelForm):
     def __init__(self, festival, *args, **kwargs):
         self.festival = festival
         super().__init__(*args, **kwargs)
+        self.fields['role'].queryset = Role.objects.filter(festival=festival)
         self.fields['location'].queryset = Location.objects.filter(festival=festival)
 
     def validate_unique(self):
@@ -107,16 +110,27 @@ class VolunteerAddForm(forms.Form):
 
 class VolunteerUserForm(forms.ModelForm):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    class Meta:
+        model = User
+        fields = ('email', 'first_name', 'last_name', 'is_boxoffice', 'is_venue')
+        required = ('email', 'first_name', 'last_name')
 
+    def __init__(self, *args, **kwargs):
+        self.festival = kwargs.pop('festival')
+        if self.festival == None:
+            raise ValueError('festival is required')
+        super().__init__(*args, **kwargs)
         for field in self.Meta.required:
             self.fields[field].required = True
 
-    class Meta:
-        model = User
-        fields = ('email', 'first_name', 'last_name')
-        required = ('email', 'first_name', 'last_name')
+    def validate_unique(self):
+        exclude = self._get_validation_exclusions()
+        exclude.remove('site')
+        exclude.remove('festival')
+        try:
+            self.instance.validate_unique(exclude)
+        except ValidationError:
+            self._update_errors(ValidationError({'email': 'A user with that e-mail already exists'}))
 
 
 class VolunteerRolesForm(forms.ModelForm):
@@ -129,6 +143,22 @@ class VolunteerRolesForm(forms.ModelForm):
         widgets = {
             'roles': Select2MultipleWidget(attrs={'style': 'width: 100%'}),
         }
+
+
+    def __init__(self, *args, **kwargs):
+        self.festival = kwargs.pop('festival')
+        if self.festival == None:
+            raise ValueError('festival is required')
+        super().__init__(*args, **kwargs)
+        self.fields['roles'].queryset = Role.objects.filter(festival=self.festival)
+
+
+class AdminVolunteerForm(MultiModelForm):
+
+    form_classes = OrderedDict((
+        ('user', VolunteerUserForm),
+        ('volunteer', VolunteerRolesForm),
+    ))
 
 
 class SelectShiftsForm(forms.Form):

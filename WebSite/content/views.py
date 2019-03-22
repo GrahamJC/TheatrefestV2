@@ -21,7 +21,7 @@ from .forms import AdminPageForm, AdminPageImageForm, AdminNavigatorForm, AdminI
 def home(request):
 
     # Go to first naviator option
-    option = request.site.info.festival.navigators.first()
+    option = request.festival.navigators.first()
     if option:
         return redirect(option.href)
 

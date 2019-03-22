@@ -78,7 +78,7 @@ def _render_sale(request, venue, sale=None, customer_form=None, tickets_form=Non
 @login_required
 def select(request):
     context = {
-        'venues': Venue.objects.filter(festival=request.site.info.festival, is_ticketed=True),
+        'venues': Venue.objects.filter(festival=request.festival, is_ticketed=True),
     }
     return render(request, 'venue/select.html', context)
     

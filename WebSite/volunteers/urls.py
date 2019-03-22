@@ -27,6 +27,6 @@ urlpatterns = [
     path('admin/shift/<uuid:slug>/delete', views.admin_shift_delete, name='admin_shift_delete'),
     path('admin/volunteers', views.admin_volunteers, name='admin_volunteers'),
     path('admin/volunteer/autocomplete', views.VolunteerAutoComplete.as_view(), name='admin_volunteer_autocomplete'),
-    path('admin/volunteer/<uuid:slug>/update', views.admin_volunteer_update, name='admin_volunteer_update'),
+    path('admin/volunteer/<uuid:slug>/update', views.AdminVolunteerUpdate.as_view(), name='admin_volunteer_update'),
     path('admin/volunteer/<uuid:slug>/remove', views.admin_volunteer_remove, name='admin_volunteer_remove'),
 ]

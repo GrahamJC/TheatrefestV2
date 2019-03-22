@@ -2,6 +2,7 @@ from uuid import uuid4
 from datetime import date
 
 from django.core.mail import send_mail
+from django.utils.functional import cached_property
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.contrib.sites.models import Site
 from django.db import models
@@ -46,6 +47,26 @@ class Festival(TimeStampedModel):
     @property
     def is_online_sales_closed(self):
         return (self.online_sales_close != None) and (self.online_sales_close < date.today())
+
+    @cached_property
+    def stylesheet(self):
+        from content.models import Resource
+        return Resource.objects.filter(festival=self, name='Stylesheet').first()
+
+    @cached_property
+    def banner(self):
+        from content.models import Image
+        return Image.objects.filter(festival=self, name='Banner').first()
+
+    @cached_property
+    def banner_mobile(self):
+        from content.models import Image
+        return Image.objects.filter(festival=self, name='BannerMobile').first()
+
+    @cached_property
+    def privacy_policy(self):
+        from content.models import Document
+        return Document.objects.filter(festival=self, name='PrivacyPolicy').first()
 
 
 class SiteInfo(TimeStampedModel):
@@ -124,7 +145,7 @@ class User(TimeStampedModel, AbstractBaseUser, PermissionsMixin):
 
     @property
     def is_system_admin(self):
-        return self.is_admin and not (self.site or self.festival)
+        return self.is_admin and not self.site and not self.festival
 
     @property
     def is_staff(self):

@@ -1,9 +1,8 @@
 ﻿{% extends "base.html" %}
-{% load i18n %}
 
-{% block title %}{% trans "Login" %}{% endblock %}
+{% block title %}Login{% endblock %}
 
-{% block pagetitle %}Login{% endblock %}
+{% block pagetitle %}login{% endblock %}
 
 {% block content %}
 
@@ -13,6 +12,9 @@
             <div class="card mb-2">
                 <div class="card-header">Already Registered</div>
                 <div class="card-body">
+                    <div class="alert alert-info">
+                        All users, including those who used this site last year, must register before they can logon.
+                    </div>
                     <form method="post">
                         {% csrf_token %}
                         <input type="hidden" id="next" value="{{ next }}" />

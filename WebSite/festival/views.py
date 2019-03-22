@@ -36,8 +36,8 @@ def archive_festival(request, festival_name):
     festival = get_object_or_404(Festival, name=festival_name)
     request.session['festival_id'] = festival.id
 
-    # Redirect to home page
-    return redirect('home')
+    # Redirect to show listing
+    return redirect('program:shows')
 
 
 @login_required
@@ -45,6 +45,6 @@ def admin(request):
 
     # Render the page
     context = {
-        'festival': request.site.info.festival,
+        'festival': request.festival,
     }
     return render(request, 'festival/admin.html', context)

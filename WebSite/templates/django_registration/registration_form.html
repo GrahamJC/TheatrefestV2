@@ -1,10 +1,9 @@
 {% extends "base.html" %}
 {% load static %}
-{% load i18n %}
 
-{% block title %}{% trans "Register for an account" %}{% endblock %}
+{% block title %}Register{% endblock %}
 
-{% block pagetitle %}Register{% endblock %}
+{% block pagetitle %}register{% endblock %}
 
 {% block content %}
 
@@ -20,6 +19,7 @@
                         {% include 'bs4_form.html' %}
                         <div class="form-group">
                             <button type="submit" class="btn btn-primary">Register</button>
+                            <a class="btn btn-secondary" href="{% url 'login' %}">Cancel</a>
                         </div>
                     </form>
                 </div>
@@ -41,7 +41,9 @@
                         When you pay by card, the stripe payment site processes your payment details.
                         We have no access to them and do not store them in any form.
                     </p>
-                    <a class="card-link" href="{% static 'PrivacyPolicy.pdf' %}" target="_blank">Privacy Policy</a>
+                    {% if request.festival.privacy_policy %}
+                        <a class="card-link" href="{{ request.festival.privacy_policy.get_absolute_url }}" target="_blank">Privacy Policy</a>
+                    {% endif %}
                 </div>
             </div>
         </div>

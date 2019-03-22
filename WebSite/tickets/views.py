@@ -68,7 +68,7 @@ class MyAccountView(LoginRequiredMixin, View):
         formset = self._create_fringer_formset(request.user)
 
         # Get fringer types and create buy form
-        fringer_types = FringerType.objects.filter(festival=request.site.info.festival, is_online=True)
+        fringer_types = FringerType.objects.filter(festival=request.festival, is_online=True)
         buy_form = self._create_buy_fringer_form(fringer_types, request.user)
 
         # Display tickets and fringers
@@ -89,7 +89,7 @@ class MyAccountView(LoginRequiredMixin, View):
         # Get the action and basket
         action = request.POST.get("action")
         basket = request.user.basket
-        fringer_types = FringerType.objects.filter(festival=request.site.info.festival, is_online=True)
+        fringer_types = FringerType.objects.filter(festival=request.festival, is_online=True)
         formset = None
         buy_form = None
 
@@ -154,7 +154,7 @@ class MyAccountView(LoginRequiredMixin, View):
 
         # Redisplay with confirmation
         context = {
-            'sales_open': request.user.is_admin or (request.site.info.festival.online_slaes_open and (date.today() >= request.site.info.festival.online_slaes_open)),
+            'sales_open': request.user.is_admin or (request.festival.online_slaes_open and (date.today() >= request.festival.online_slaes_open)),
             'tab': 'fringers',
             'performances_current': performances_current,
             'performances_past': performances_past,
@@ -189,8 +189,8 @@ class BuyView(LoginRequiredMixin, View):
         # Get basket and performance
         basket = request.user.basket
         performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
-        ticket_types = TicketType.objects.filter(festival=request.site.info.festival, is_online = True)
-        fringer_types = FringerType.objects.filter(festival=request.site.info.festival, is_online=True)
+        ticket_types = TicketType.objects.filter(festival=request.festival, is_online = True)
+        fringer_types = FringerType.objects.filter(festival=request.festival, is_online=True)
 
         # Check if online ticket sales are still open
         delta = datetime.combine(performance.date, performance.time) - datetime.now()
@@ -209,7 +209,7 @@ class BuyView(LoginRequiredMixin, View):
         # Display buy page
         context = {
             'tab': 'tickets',
-            'sales_open': request.user.is_admin or (request.site.info.festival.online_slaes_open and (date.today() >= request.site.info.festival.online_slaes_open)),
+            'sales_open': request.user.is_admin or (request.festival.online_slaes_open and (date.today() >= request.festival.online_slaes_open)),
             'basket': basket,
             'performance': performance,
             'ticket_formset': ticket_formset,
@@ -224,8 +224,8 @@ class BuyView(LoginRequiredMixin, View):
         # Get basket, performance and ticket/fringer types
         basket = request.user.basket
         performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
-        ticket_types = TicketType.objects.filter(festival=request.site.info.festival, is_online = True)
-        fringer_types = FringerType.objects.filter(festival=request.site.info.festival, is_online=True)
+        ticket_types = TicketType.objects.filter(festival=request.festival, is_online = True)
+        fringer_types = FringerType.objects.filter(festival=request.festival, is_online=True)
 
         # Get the requested action
         action = request.POST.get("action")
@@ -289,7 +289,7 @@ class BuyView(LoginRequiredMixin, View):
 
                 # Create a sale
                 sale = Sale(
-                    festival = request.site.info.festival,
+                    festival = request.festival,
                     user = request.user,
                     customer = request.user.email,
                     completed = datetime.now(),
@@ -488,7 +488,7 @@ class CheckoutView(LoginRequiredMixin, View):
                 with transaction.atomic():
                     # Create a new sale
                     sale = Sale(
-                        festival = request.site.info.festival,
+                        festival = request.festival,
                         user = request.user,
                         customer = request.user.email,
                         amount = basket.total_cost,
@@ -624,7 +624,7 @@ def ticket_cancel(request, ticket_uuid):
 
     # Create a refund and add the ticket
     refund = Refund(
-        festival = request.site.info.festival,
+        festival = request.festival,
         user = request.user,
         customer = request.user.email,
         completed = datetime.now(),

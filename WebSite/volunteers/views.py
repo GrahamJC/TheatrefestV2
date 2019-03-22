@@ -23,7 +23,8 @@ from core.models import User
 from .models import Role, Location, Shift, Volunteer
 from .forms import (
     AdminRoleForm, AdminLocationForm, AdminShiftForm,
-    VolunteerAddForm, VolunteerUserForm, VolunteerRolesForm, SelectShiftsForm,
+    VolunteerAddForm, AdminVolunteerForm, VolunteerUserForm, VolunteerRolesForm,
+    SelectShiftsForm,
 )
 
 
@@ -88,7 +89,7 @@ def admin(request):
 
     # Render the page
     context = {
-        'festival': request.site.info.festival,
+        'festival': request.festival,
     }
     return render(request, 'volunteers/admin_home.html', context)
 
@@ -369,6 +370,7 @@ class VolunteerAutoComplete(Select2QuerySetView):
     def get_result_label(self, item):
         return item.email
 
+
 @login_required
 def admin_volunteers(request):
 
@@ -400,39 +402,45 @@ def admin_volunteers(request):
     return render(request, 'volunteers/admin_volunteers.html', context)
 
 
-@login_required
-def admin_volunteer_update(request, slug):
+class AdminVolunteerUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
 
-    # Get volunteer
-    volunteer = get_object_or_404(Volunteer, uuid=slug)
+    model = Volunteer
+    form_class = AdminVolunteerForm
+    context_object_name = 'volunteer'
+    slug_field = 'uuid'
+    template_name = 'volunteers/admin_volunteer.html'
+    success_message = 'Volunteer updated'
+    success_url = reverse_lazy('volunteers:admin_volunteers')
 
-    # Check request type
-    if request.method == 'GET':
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs.update({
+            'festival': self.request.festival,
+            'instance': { 'user': self.object.user, 'volunteer': self.object },
+        })
+        return kwargs
 
-        # Create forms
-        user_form = VolunteerUserForm(instance=volunteer.user)
-        roles_form = VolunteerRolesForm(instance=volunteer)
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            'user-email',
+            'user-first_name',
+            'user-last_name',
+            'user-is_boxoffice',
+            'user-is_venue',
+            'volunteer-roles',
+            FormActions(
+                Submit('save', 'Save'),
+                Button('remove', 'Remove'),
+                Button('cancel', 'Cancel'),
+            )
+        )
+        return form
 
-    else:
-
-        # Create form, bind to POST data and valdate
-        user_form = VolunteerUserForm(instance=volunteer.user, data=request.POST)
-        roles_form = VolunteerRolesForm(instance=volunteer, data=request.POST)
-        if user_form.is_valid() and roles_form.is_valid():
-
-            # Save changes and return to form
-            user_form.save()
-            roles_form.save()
-            messages.success(request, 'Volunteer updated')
-            return redirect('volunteers:admin_volunteers')
-
-    # Create context and render page
-    context = {
-        'volunteer': volunteer,
-        'user_form': user_form,
-        'roles_form': roles_form,
-    }
-    return render(request, 'volunteers/admin_volunteer_update.html', context)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context
 
 
 @login_required

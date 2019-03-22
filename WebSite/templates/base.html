@@ -15,7 +15,7 @@
             <link rel="stylesheet" href="{% static request.site.info.stylesheet %}">
         {% endif %}
         {% if request.festival.stylesheet %}
-            <link rel="stylesheet" href="{{ request.festival.stylesheet }}">
+            <link rel="stylesheet" href="{{ request.festival.stylesheet.get_absolute_url }}">
         {% endif %}
     {% endblock %}
     {% block head-script %}
@@ -23,7 +23,7 @@
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.1.3/dist/js/bootstrap.min.js" ></script>
         <script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment.min.js" ></script>
     {% endblock %}
-    <title>{% block title %}{{ request.site.info.festival.title }}{% endblock %}</title>
+    <title>{% block title %}{{ request.festival.title }}{% endblock %}</title>
 </head>
 
 <body>
@@ -36,14 +36,18 @@
                     {% include request.site.info.banner %}
                 {% else %}
                     <div id="tf-banner" class="mb-1">
-                        <a href="{% url 'home' %}">
-                            {% if request.festival.banner_mobile %}
-                                <img class="d-none d-sm-block w-100" src="{{ request.festival.banner }}" />
-                                <img class="d-block d-sm-none w-100" src="{{ request.festival.banner_mobile }}" />
-                            {% else %}
-                                <img class="w-100" src="{{ request.festival.banner }}" />
-                            {% endif %}
-                        </a>
+                        {% if not request.festival.is_archived %}
+                            <a href="{% url 'home' %}">
+                        {% endif %}
+                        {% if request.festival.banner_mobile %}
+                            <img class="d-none d-sm-block w-100" src="{{ request.festival.banner.get_absolute_url }}" />
+                            <img class="d-block d-sm-none w-100" src="{{ request.festival.banner_mobile.get_absolute_url }}" />
+                        {% else %}
+                            <img class="w-100" src="{{ request.festival.banner.get_absolute_url }}" />
+                        {% endif %}
+                        {% if not request.festival.is_archived %}
+                            </a>
+                        {% endif %}
                     </div>
                 {% endif %}
 
@@ -93,6 +97,7 @@
                                                     {% endif %}
                                                 {% endif %}
                                                 <div class="dropdown-divider"></div>
+                                                <a class="dropdown-item" href="{% url 'password_change' %}">change password</a>
                                                 <a class="dropdown-item" href="{% url 'logout' %}">logout</a>
                                             </div>
                                         </li>
@@ -122,8 +127,8 @@
                                 <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                             </div>
                         {% endfor %}
-                        {% block basket %}
-                            {% if request.user.is_authenticated and not request.user.basket.is_empty %}
+                        {% if request.user.is_authenticated and not request.festival.is_archived and not request.user.basket.is_empty %}
+                            {% block basket %}
                                 <div class="alert alert-info">
                                     <a class="btn btn-primary pull-right" style="margin-top: -7px;" href="{% url 'tickets:checkout' %}">Go to Checkout</a>
                                     <i class="fa fa-lg fa-shopping-basket" aria-hidden="true"></i>
@@ -138,8 +143,8 @@
                                         &nbsp;&nbsp;Cost: &#163;{{ request.user.basket.total_cost }}
                                     </span>
                                 </div>
-                            {% endif %}
-                        {% endblock %}
+                            {% endblock %}
+                        {% endif %}
                     </div>
                 {% endif %}
 

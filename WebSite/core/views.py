@@ -1,11 +1,12 @@
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model, login
+from django.contrib.auth.views import PasswordResetView as BasePasswordResetView
 
 from django_registration import signals
 import django_registration.backends.one_step.views as OneStepViews
 import django_registration.backends.activation.views as TwoStepViews
 
-from .forms import RegistrationForm
+from .forms import RegistrationForm, PasswordResetForm
 
 User = get_user_model()
 
@@ -14,11 +15,18 @@ class OneStepRegistrationView(OneStepViews.RegistrationView):
     form_class = RegistrationForm
     success_url = '/home'
 
-    def get_initial(self):
-        initial = super().get_initial()
-        #initial['site'] = self.request.site
-        initial['festival'] = self.request.festival
-        return initial
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['site'] = self.request.site
+        kwargs['festival'] = self.request.festival
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context.update({
+        })
+        return context
 
     def register(self, form):
         new_user = form.save()
@@ -28,19 +36,45 @@ class OneStepRegistrationView(OneStepViews.RegistrationView):
         })
         login(self.request, new_user)
         signals.user_registered.send(
-            sender=self.__class__,
-            user=new_user,
-            request=self.request
+            sender = self.__class__,
+            user = new_user,
+            request = self.request
         )
         return new_user
+
 
 class TwoStepRegistrationView(TwoStepViews.RegistrationView):
 
     form_class = RegistrationForm
 
-    def get_initial(self):
-        initial = super().get_initial()
-        initial['site'] = self.request.site
-        initial['festival'] = self.request.festival
-        return initial
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['site'] = self.request.site
+        kwargs['festival'] = self.request.festival
+        return kwargs
+
+
+class TwoStepActivationView(TwoStepViews.ActivationView):
+
+    def get_user(self, email):
+
+        User = get_user_model()
+        try:
+            user = User.objects.get_by_natural_key(self.request.site, self.request.festival, email)
+            if user.is_active:
+                raise ActivationError(self.ALREADY_ACTIVATED_MESSAGE, code='already_activated')
+            return user
+        except User.DoesNotExist:
+            raise ActivationError(self.BAD_USERNAME_MESSAGE, code='bad_username')
+
+
+class PasswordResetView(BasePasswordResetView):
+
+    form_class = PasswordResetForm
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['site'] = self.request.site
+        kwargs['festival'] = self.request.festival
+        return kwargs
 

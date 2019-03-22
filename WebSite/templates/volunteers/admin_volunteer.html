@@ -1,20 +1,11 @@
 ﻿{% extends "base.html" %}
-{% load i18n %}
+{% load crispy_forms_tags %}
 
 {% block pagetitle %}Volunteers Administration: Update Volunteer{% endblock %}
 
 {% block content %}
 
-    <form method="post">
-        {% csrf_token %}
-        {% include 'bs4_form.html' with form=user_form %}
-        {% include 'bs4_form.html' with form=roles_form %}
-        <div class="form-group">
-            <button name="Save" type="submit" class="btn btn-primary">Save</button>
-            <a href="{% url 'volunteers:admin_volunteers' %}" class="btn btn-secondary">Cancel</a>
-            <a id="tf-button-remove" class="float-right btn" data-toggle="modal" data-target="#tf-remove-modal">Remove</a>
-        </div>
-    </form>
+    {% crispy form %}
 
     {% if volunteer.can_remove %}
         <div id="tf-remove-modal" class="modal fade" tabindex="-1" role="dialog">
@@ -41,11 +32,12 @@
 
     <script language="javascript">
 
+        $('#button-id-cancel').addClass('btn-secondary').on('click', function () { window.location.href = '{% url 'volunteers:admin_volunteers' %}'; });
         {% if volunteer.can_remove %}
-            $('#tf-button-remove').addClass('btn-danger').on('click', function() { $('#tf-remove-modal').modal('show'); });
+            $('#button-id-remove').addClass('btn-danger').on('click', function() { $('#tf-remove-modal').modal('show'); });
             $('#tf-remove-modal .btn-primary').on('click', function () { window.location.href = "{% url 'volunteers:admin_volunteer_remove' volunteer.uuid %}"; });
         {% else %}
-            $('#tf-button-remove').addClass('btn-secondary').prop('disabled', true)
+            $('#button-id-remove').addClass('btn-secondary').prop('disabled', true)
         {% endif %}
 
     </script>
