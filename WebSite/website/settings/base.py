@@ -120,7 +120,8 @@ USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
-# Registration
+# Logon and registration
+LOGIN_URL = "/login"
 ACCOUNT_ACTIVATION_DAYS = 7
 REGISTRATION_AUTO_LOGIN = True
 LOGIN_REDIRECT_URL = "/home"

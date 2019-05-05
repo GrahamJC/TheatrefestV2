@@ -3,7 +3,7 @@ from .base import *
 DEBUG=False
 
 ALLOWED_HOSTS = [
-    'www.theatrefest.co.uk',
+    'training.theatrefest.co.uk',
 ]
 INTERNAL_IPS = [
 ]
@@ -12,7 +12,7 @@ INTERNAL_IPS = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'theatrefest',
+        'NAME': 'training',
         'USER': 'theatrefest',
         'PASSWORD': 'barnum',
         'HOST': 'localhost',
@@ -20,29 +20,13 @@ DATABASES = {
     },
 }
 
-# Password validation
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
-]
-
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 MEDIA_URL = "/media/"
 
 # Registration
-REGISTRATION_TWOSTEP = True
+REGISTRATION_TWOSTEP = False
 
 # E-mail
 EMAIL_HOST = "smtp.mailgun.org"
@@ -52,8 +36,8 @@ EMAIL_HOST_PASSWORD = get_secret("MAILGUN_EMAIL_HOST_PASSWORD")
 EMAIL_USE_TLS = True
 
 # Stripe
-STRIPE_PUBLIC_KEY = get_secret("STRIPE_PUBLIC_KEY")
-STRIPE_PRIVATE_KEY = get_secret("STRIPE_PRIVATE_KEY")
+STRIPE_PUBLIC_KEY = get_secret("STRIPE_TEST_PUBLIC_KEY")
+STRIPE_PRIVATE_KEY = get_secret("STRIPE_TEST_PRIVATE_KEY")
 STRIPE_FEE_FIXED = Decimal(0.2)
 STRIPE_FEE_PERCENT = Decimal(0.014)
 
@@ -81,7 +65,7 @@ LOGGING = {
         },
         "theatrefest": {
             "class": "logging.handlers.TimedRotatingFileHandler",
-            "filename": r"/var/log/theatrefest/theatrefest.log",
+            "filename": r"/var/log/theatrefest/theatrefest_training.log",
             "when": "midnight",
             "interval": 1,
             "backupCount": 10,
@@ -90,7 +74,7 @@ LOGGING = {
         },
         "django": {
             "class": "logging.handlers.TimedRotatingFileHandler",
-            "filename": r"/var/log/theatrefest/django.log",
+            "filename": r"/var/log/theatrefest/django_training.log",
             "when": "midnight",
             "interval": 1,
             "backupCount": 10,

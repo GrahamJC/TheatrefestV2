@@ -52,7 +52,7 @@
                                     <tr><td class="row">
                                         <div class="col-12 col-md-8">{{ fringer.name }} ({{ fringer.description }})</div>
                                         <div class="col-10 col-md-3">&#163;{{ fringer.cost }}</div>
-                                        <div class="col-2 col-md-1"><a href="{% url 'tickets:checkout_remove_fringer' fringer.id %}"><i class="fa fa-trash"></i></a></div>
+                                        <div class="col-2 col-md-1"><a href="{% url 'tickets:checkout_remove_fringer' fringer.uuid %}"><i class="fa fa-trash"></i></a></div>
                                     </td></tr>
                                 {% endfor %}
                             </table>

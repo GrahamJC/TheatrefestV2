@@ -1,100 +1,159 @@
 {% extends "base.html" %}
+{% load crispy_forms_tags %}
 
-{% block pagetitle %}Box Office: {{ venue.name }}{% endblock %}
-
+{% block pagetitle %}Venue: {{ venue.name }}{% endblock %}
+{% block banner %}{% endblock %}
 
 {% block content %}
 
+    <form>
+        <div class="form-group">
+            <label>Select performance</label>
+            <select id="select-performance" class="form-control">
+                {% for performance in performances %}
+                    <option value="{{ performance.uuid }}" {% if performance == current_performance %}selected{% endif %} >{{ performance.show.name }} on {{ performance.date }} at {{ performance.time }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
+
     <div class="nav nav-tabs nav-justified mb-3">
-        <a id="sale-tab" class="nav-item nav-link {% if tab == 'sale' %}active"{% endif %}" href="#sale-tab-content" data-toggle="tab">Sale</a>
-        <a id="admission-tab" class="nav-item nav-link {% if tab == 'admission' %}active"{% endif %}" href="#admission-tab-content" data-toggle="tab">Admission</a>
-        <a id="report-tab" class="nav-item nav-link {% if tab == 'report' %}active"{% endif %}" href="#report-tab-content" data-toggle="tab">Report</a>
+        {% if current_performance.has_open_checkpoint %}
+            <a id="open-tab" class="nav-item nav-link {% if tab == 'open' or not tab %}active{% endif %}" href="#open-tab-content" data-toggle="tab">Open</a>
+            <a id="sales-tab" class="nav-item nav-link {% if tab == 'sales' %}active{% endif %}" href="#sales-tab-content" data-toggle="tab">Sales</a>
+            <a id="tickets-tab" class="nav-item nav-link {% if tab == 'tickets' %}active{% endif %}" href="#tickets-tab-content" data-toggle="tab">Tickets</a>
+            <a id="close-tab" class="nav-item nav-link {% if tab == 'close' %}active{% endif %}" href="#close-tab-content" data-toggle="tab">Close</a>
+        {% else %}
+            <a class="nav-item nav-link active" href="#open-tab-content" data-toggle="tab">Open</a>
+            <a class="nav-item nav-link disabled" href="#">Sales</a>
+            <a class="nav-item nav-link disabled" href="#">Tickets</a>
+            <a class="nav-item nav-link disabled" href="#">Close</a>
+        {% endif %}
     </div>
 
     <div class="tab-content">
 
-        <div id="sale-tab-content" class="tab-pane {% if tab == 'sale' %}active{% endif %}">
-            {% include 'venue/_main_sale.html' %}
-        </div>
-
-        <div id="admission-tab-content" class="tab-pane {% if tab == 'admission' %}active{% endif %}">
-            <div class="card mb-2">
-                <h6 class="card-header">Show/Performance</h6>
-                <div class="card-body">
+        <div id="open-tab-content" class="tab-pane {% if not current_performance.has_open_checkpoint or tab == 'open' or not tab %}active{% endif %}">
+            <div class="row">
+                <div class="col-12 col-md-6 mb-2">
+                    <div class="card">
+                        <h6 class="card-header">Checkpoint</h6>
+                        <div class="card-body">
+                            {% if current_performance.has_open_checkpoint %}
+                                <table class="table">
+                                    <tr>
+                                        <th>Cash</th>
+                                        <td>&#163;{{ current_performance.open_checkpoint.cash }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Buttons</th>
+                                        <td>{{ current_performance.open_checkpoint.buttons }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Paper fringers</th>
+                                        <td>&#163;{{ current_performance.open_checkpoint.fringers }}</td>
+                                    </tr>
+                                    {% if current_performance.open_checkpoint.notes %}
+                                        <tr><td colspan="2">
+                                            {{ current_performance.open_checkpoint.notes }}
+                                        </td></tr>
+                                    {% endif %}
+                                </table>
+                            {% elif open_form %}
+                                {% crispy open_form %}
+                            {% else %}
+                                <p>You cannot open this performance until all previous performances have been closed.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 mb-2">
                     <div class="alert alert-info">
+                        <p>
+                            You must complete the open checkpoint before you can make sales and process admissions for this show.
+                            Please record the following for the venue:
+                        </p>
                         <ul>
-                            <li>Select the show and performance for which you want to manage admission.</li>
-                            <li>30 minutes before the performance starts print the ticket list and use it to issue admission tokens.</li>
-                            <li>Issue admission tokens immediately for any tickets sold after the list has been printed.</li>
+                            <li>Cash - the total amount of cash.</li>
+                            <li>Buttons - the number of fringe buttons.</li>
+                            <li>Paper fringers - the number of paper fringers.</li>
                         </ul>
-                    </div>
-                    <form>
-                        <div class="form-group">
-                            <select id="admission-show" class="form-control"></select>
-                        </div>
-                        <div class="form-group">
-                            <select id="admission-performance" class="form-control"></select>
-                        </div>
-                    </form>
-                </div>
-            </div>
-            <div class="card">
-                <h6 class="card-header">Tickets</h6>
-                <div class="card-body">
-                    <div id="admission-tickets"></div>
-                </div>
-            </div>
-        </div>
-
-        <div id="report-tab-content" class="tab-pane {% if tab == 'report' %}active{% endif %}">
-            <form>
-                <div class="form-group">
-                    <label class="col-sm-2 control-label">Select date</label>
-                    <div class="col-sm-4">
-                        <select id="report-date" class="form-control">
-                            <option value="{{ report_today }}" selected>Today</option>
-                            {% for date in report_dates %}
-                                <option value="{{ date.value }}">{{ date.text }}</option>
-                            {% endfor %}
-                        </select>
+                        <p>
+                            You can also add any notes that may be useful.
+                        </p>
                     </div>
                 </div>
-            </form>
-            <div class="card mb-2">
-                <h6 class="card-header">Summary</h6>
-                <div class="card-body">
-                    <div id="report-summary"></div>
-                </div>
-            </div>
-            <div class="card mb-2">
-                <h6 class="card-header">Sales</h6>
-                <div class="card-body">
-                    <div id="report-sales"></div>
-                </div>
-            </div>
-            <div class="card mb-2">
-                <h6 class="card-header">Refunds</h6>
-                <div class="card-body">
-                    <div id="report-refunds"></div>
-                </div>
             </div>
         </div>
 
-    </div>
+        {% if current_performance.has_open_checkpoint %}
 
-    <div id="report-modal" class="modal fade" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">Modal title</h4>
-                </div>
-                <div class="modal-body"></div>
-                <div class="modal-footer">
-                    <a id="report-modal-pdf" class="btn btn-primary" href="#" target="_blank">PDF</a>
-                    <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+            <div id="sales-tab-content" class="tab-pane {% if tab == 'sales' %}active{% endif %}">
+                {% include 'venue/_main_sales.html' %}
+            </div>
+
+            <div id="tickets-tab-content" class="tab-pane {% if tab == 'tickets' %}active{% endif %}">
+                {% include 'venue/_main_tickets.html' %}
+            </div>
+
+            <div id="close-tab-content" class="tab-pane {% if tab == 'close' %}active{% endif %}">
+                <div class="row">
+                    <div class="col-12 col-md-6 mb-2">
+                        <div class="card">
+                            <h6 class="card-header">Checkpoint</h6>
+                            <div class="card-body">
+                                {% if current_performance.has_close_checkpoint %}
+                                    <table class="table">
+                                        <tr>
+                                            <th>Audience</th>
+                                            <td>{{ current_performance.audience }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Cash</th>
+                                            <td>&#163;{{ current_performance.close_checkpoint.cash }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Buttons</th>
+                                            <td>{{ current_performance.close_checkpoint.buttons }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Paper fringers</th>
+                                            <td>&#163;{{ current_performance.close_checkpoint.fringers }}</td>
+                                        </tr>
+                                        {% if current_performance.close_checkpoint.notes %}
+                                            <tr><td colspan="2">
+                                                {{ current_performance.close_checkpoint.notes }}
+                                            </td></tr>
+                                        {% endif %}
+                                    </table>
+                                {% elif close_form %}
+                                    {% crispy close_form %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 mb-2">
+                        <div class="alert alert-info">
+                            <p>
+                                Once the performance has started you must complete the close checkpoint before you can move on to the next show.
+                                Please record:
+                            </p>
+                            <ul>
+                                <li>Number of audience tokens collected (i.e. the number of people admitted to the performance).</li>
+                                <li>Total cash (including the opening float).</li>
+                                <li>Number of buttons remaining.</li>
+                                <li>Number of paper fringers remaining.</li>
+                            </ul>
+                            <p>
+                                You can also add any notes that may be useful.
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
+
+        {% endif %}
+
     </div>
 
 {% endblock %}
@@ -104,33 +163,20 @@
     <script language="javascript">
 
         $( function() {
-            $('#admission-show').load('{% url 'venue:admission_shows' venue.uuid %}');
-
-            $('#admission-show').on('change', function(event) {
-                $('#admission-performance').load('{% url 'venue:admission_show_performances' '00000000-0000-0000-0000-000000000000' %}'.replace('00000000-0000-0000-0000-000000000000', $(this).val()));
+            $('#select-performance').on('change', function() {
+                var uuid = $('#select-performance').val();
+                location.href = '{% url 'venue:performance' venue.uuid '00000000-0000-0000-0000-000000000000' %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
             });
-
-            $('#admission-performance').on('change', function(event) {
-                $('#admission-tickets').load('{% url 'venue:admission_performance_tickets' '00000000-0000-0000-0000-000000000000' %}'.replace('00000000-0000-0000-0000-000000000000', $(this).val()));
-            });
-
-            $('#report-date').on('change', updateReport);
-            $('#report-tab').on('show.bs.tab', updateReport);
+            $('#tickets-tab').on('show.bs.tab', updateTickets);
         });
 
-        function updateReport() {
-            var date = $('#report-date').val()
-            $('#report-summary').load('{% url 'venue:report_summary' venue.uuid 'yyyyMMdd' %}'.replace('yyyyMMdd', date));
-            $('#report-sales').load('{% url 'venue:report_sales' venue.uuid 'yyyyMMdd' %}'.replace('yyyyMMdd', date));
-        };
-
-        function showSaleDetail(sale_id, sale_uuid) {
-            $('#report-modal .modal-title').text('Sale: ' + sale_id);
-            $('#report-modal .modal-body').load('{% url "venue:report_sale_detail" '00000000-0000-0000-0000-000000000000' %}'.replace('00000000-0000-0000-0000-000000000000', sale_uuid));
-            $('#report-modal-pdf').attr('href', '{% url 'reports:sale_pdf' '00000000-0000-0000-0000-000000000000' %}'.replace('00000000-0000-0000-0000-000000000000', sale_uuid));
-            $('#report-modal').modal('show');
+        function updateTickets(event) {
+            $('#tickets-tab-content').load('{% url 'venue:tickets' venue.uuid current_performance.uuid %}', function(response, status, xhr) {
+                if (status != 'success') {
+                    $('#tickets-tab-content').html('Sorry but there was an error. Please refresh the page and try again.');
+                }
+            });
         }
-
     </script>
 
 {% endblock %}

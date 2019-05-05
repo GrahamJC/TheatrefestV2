@@ -1,3 +1,13 @@
 {
-    "python.pythonPath": "env\\Scripts\\python.exe"
+    "python.pythonPath": "env\\Scripts\\python.exe",
+    "python.testing.unittestArgs": [
+        "-v",
+        "-s",
+        ".",
+        "-p",
+        "test*.py"
+    ],
+    "python.testing.pyTestEnabled": false,
+    "python.testing.nosetestsEnabled": false,
+    "python.testing.unittestEnabled": true
 }

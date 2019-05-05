@@ -104,7 +104,7 @@ def _render_refund(request, boxoffice, refund, customer_form = None, ticket_form
 @login_required
 def select(request):
     context = {
-        'boxoffices': BoxOffice.objects.filter(festival=request.user.festival),
+        'boxoffices': BoxOffice.objects.filter(festival=request.festival),
     }
     return render(request, 'boxoffice/select.html', context)
     

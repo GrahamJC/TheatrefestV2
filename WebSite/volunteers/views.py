@@ -1,4 +1,5 @@
 import os
+import datetime
 import arrow
 
 from django.conf import settings
@@ -10,7 +11,7 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404, render, redirect
 from django.template import Template, Context
 from django.urls import reverse, reverse_lazy
-from django.views.generic import ListView, CreateView, UpdateView
+from django.views.generic import View, ListView, CreateView, UpdateView
 
 from dal.autocomplete import Select2QuerySetView
 
@@ -24,14 +25,23 @@ from .models import Role, Location, Shift, Volunteer
 from .forms import (
     AdminRoleForm, AdminLocationForm, AdminShiftForm,
     VolunteerAddForm, AdminVolunteerForm, VolunteerUserForm, VolunteerRolesForm,
-    SelectShiftsForm,
+    AdminShiftSearchForm,
 )
 
 
 def get_shift_list_context(volunteer):
+
+    # Get days that have shifts defined
+    shifts = Shift.objects.filter(location__festival=volunteer.user.festival, volunteer_can_accept=True, volunteer__isnull=True, role__in=volunteer.roles.all())
+    days = []
+    for day in shifts.order_by('date').values('date').distinct():
+        days.append({
+            'date': day['date'],
+            'shifts': [s for s in shifts.filter(date = day['date']).order_by('start_time', 'location__name')]
+        })
     return {
         'my_shifts': volunteer.shifts.all(),
-        'available_shifts': Shift.objects.filter(location__festival=volunteer.user.festival, volunteer__isnull=True, role__in=volunteer.roles.all())
+        'days': days,
     }
 
 @login_required
@@ -254,11 +264,93 @@ def admin_location_delete(request, slug):
     return redirect('volunteers:admin_location_list')
 
 
-class AdminShiftList(LoginRequiredMixin, ListView):
+def create_admin_shift_search_form(festival, initial_data = None, post_data = None):
 
-    model = Shift
-    context_object_name = 'shifts'
+    form = AdminShiftSearchForm(festival, post_data, initial = initial_data)
+    form.helper = FormHelper()
+    form.helper.form_class = 'form-horizontal'
+    form.helper.label_class = 'col-2'
+    form.helper.field_class = 'col-10'
+    form.helper.layout = Layout(
+        Field('date'),
+        Field('location'),
+        Field('role'),
+        Submit('shift-search', 'Search', css_class='btn-primary'),
+    )
+    return form
+
+
+def admin_get_shifts(festival, date_str, location_id_str, role_id_str):
+
+    # Get shifts meeting criteria
+    shifts = Shift.objects.filter(location__festival = festival)
+    date = datetime.datetime.strptime(date_str, '%Y%m%d')
+    if date != datetime.datetime(2000, 1, 1):
+        shifts = shifts.filter(date = date)
+    location_id = int(location_id_str)
+    if location_id != 0:
+        shifts = shifts.filter(location_id = location_id)
+    role_id = int(role_id_str)
+    if role_id != 0:
+        shifts = shifts.filter(role_id = role_id)
+    shifts = list(shifts.order_by('date', 'start_time', 'location__description', 'role__description'))
+    return shifts
+
+
+class AdminShiftList(LoginRequiredMixin, View):
+
     template_name = 'volunteers/admin_shift_list.html'
+
+    def get(self, request, *args, **kwargs):
+
+        # Get search criteria from session
+        date_str = request.session.get('shift_search_date', '20000101')
+        location_id_str = request.session.get('shift_search_location_id', '0')
+        role_id_str = request.session.get('shift_search_role_id', '0')
+
+        # Create search form
+        initial_data = {
+            'date': date_str,
+            'location': location_id_str,
+            'role': role_id_str,
+        }
+        search_form = create_admin_shift_search_form(request.festival, initial_data = initial_data)
+
+        # Get shifts that meet criteria
+        shifts = admin_get_shifts(request.festival, date_str, location_id_str, role_id_str)
+
+        # Render page
+        context = {
+            'search_form': search_form,
+            'shifts': shifts,
+        }
+        return render(request, 'volunteers/admin_shift_list.html', context)
+
+    def post(self, request, *args, **kwargs):
+
+        # Handle search form
+        search_form = create_admin_shift_search_form(request.festival, post_data = request.POST)
+        shifts = None
+        if search_form.is_valid():
+
+            # Get shifts that meet selection criteria
+            date_str = search_form.cleaned_data['date']
+            location_id_str = search_form.cleaned_data['location']
+            role_id_str = search_form.cleaned_data['role']
+            shifts = admin_get_shifts(request.festival, date_str, location_id_str, role_id_str)
+
+            # Save search criteria in session
+            request.session['shift_search_date'] = date_str
+            request.session['shift_search_location_id'] = location_id_str
+            request.session['shift_search_role_id'] = role_id_str
+        
+        # Render page
+        context = {
+            'search_form': search_form,
+            'shifts': shifts,
+        }
+        return render(request, 'volunteers/admin_shift_list.html', context)
+
 
     def get_queryset(self):
         queryset = Shift.objects.filter(location__festival=self.request.festival)
@@ -303,7 +395,9 @@ class AdminShiftCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
                 Column('end_time', css_class='col-sm-4'),
                 css_class='form-row',
             ),
-            'volunteer',
+            Field('volunteer_can_accept'),
+            Field('volunteer'),
+            Field('notes'),
             FormActions(
                 Submit('save', 'Save'),
                 Button('cancel', 'Cancel'),
@@ -339,7 +433,9 @@ class AdminShiftUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
                 Column('end_time', css_class='col-sm-4'),
                 css_class='form-row',
             ),
-            'volunteer',
+            Field('volunteer_can_accept'),
+            Field('volunteer'),
+            Field('notes'),
             FormActions(
                 Submit('save', 'Save'),
                 Button('delete', 'Delete'),
@@ -359,7 +455,7 @@ def admin_shift_delete(request, slug):
     return redirect('volunteers:admin_shift_list')
 
 
-class VolunteerAutoComplete(Select2QuerySetView):
+class AdminVolunteerAutoComplete(Select2QuerySetView):
 
     def get_queryset(self):
         qs = User.objects.filter(festival = self.request.festival, is_volunteer=False)

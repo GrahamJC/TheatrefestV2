@@ -2,8 +2,8 @@ from .base import *
 
 ALLOWED_HOSTS = [
     'localhost',
-    'tf2018',
-    'tf2019',
+    '127.0.0.1',
+    'grahampc',
 ]
 INTERNAL_IPS = [
         '127.0.0.1',

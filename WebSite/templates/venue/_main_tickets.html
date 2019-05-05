@@ -1,8 +1,3 @@
-<a class="btn btn-primary float-right" href="{% url 'reports:admission_pdf' performance.uuid %}" target="_blank">PDF</a>
-
-<h5 class="tf-show-name"><a href="{% url 'program:show_detail' performance.show.id %}">{{ performance.show.name }}</a></h5>
-<h6>{{ performance.date|date:'D, j M' }} at {{ performance.time|time:'P' }}</h6>
-
 <table class="table table-striped">
     <tr>
         <th>Number</th>

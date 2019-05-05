@@ -251,6 +251,7 @@ class ShowPerformance(TimeStampedModel):
     show = models.ForeignKey(Show, on_delete = models.CASCADE, related_name = 'performances')
     date = models.DateField()
     time = models.TimeField()
+    audience = models.IntegerField(blank = True, default = 0)
 
     class Meta:
         unique_together = ('show', 'date', 'time')
@@ -287,6 +288,14 @@ class ShowPerformance(TimeStampedModel):
     def tickets_available(self):
         available = self.show.venue.capacity - self.tickets_sold + self.tickets_refunded if self.show.venue.capacity else 0
         return available if available > 0 else 0
+
+    @property
+    def has_open_checkpoint(self):
+        return hasattr(self, 'open_checkpoint')
+
+    @property
+    def has_close_checkpoint(self):
+        return hasattr(self, 'close_checkpoint')
 
 
 class ShowReview(TimeStampedModel):

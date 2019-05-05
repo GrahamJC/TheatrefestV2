@@ -38,7 +38,7 @@ class Sale(TimeStampedModel):
     def customer_user(self):
         user_model = get_user_model()
         try:
-            user = user_model.objects.get(email = self.customer)
+            user = user_model.objects.get(festival = self.festival, email = self.customer)
         except user_model.DoesNotExist:
             user = None
         return user
@@ -274,10 +274,10 @@ class Fringer(TimeStampedModel):
         return self.tickets.exclude(refund__isnull = False)
 
     def is_available(self, performance = None):
-        return (self.available > 0) and ((performance == None) or (performance not in [t.performance for t in self.tickets.filter(refund = None)]))
+        return (self.available > 0) and ((performance == None) or (performance not in [t.performance for t in self.tickets.filter(refund__isnull = True)]))
 
-    def get_available(user, performance = None):
-        return [f for f in user.fringers.exclude(sale__completed__isnull = True) if f.is_available(performance)]
+    #def get_available(user, performance = None):
+    #    return [f for f in user.fringers.exclude(sale__completed__isnull = True) if f.is_available(performance)]
 
 
 class TicketType(TimeStampedModel):
@@ -331,3 +331,16 @@ class Ticket(TimeStampedModel):
     @property
     def is_cancelled(self):
         return (self.refund != None)
+
+
+class Checkpoint(TimeStampedModel):
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, null = True, on_delete = models.PROTECT, related_name = 'checkpoints')
+    boxoffice = models.ForeignKey(BoxOffice, null = True, blank = True, on_delete = models.PROTECT, related_name = 'checkpoints')
+    venue = models.ForeignKey(Venue, null = True, blank = True, on_delete = models.PROTECT, related_name = 'checkpoints')
+    open_performance = models.OneToOneField(ShowPerformance, null = True, on_delete = models.PROTECT, related_name = 'open_checkpoint')
+    close_performance = models.OneToOneField(ShowPerformance, null = True, on_delete = models.PROTECT, related_name = 'close_checkpoint')
+    cash = models.DecimalField(max_digits = 5, decimal_places = 2)
+    buttons = models.IntegerField()
+    fringers = models.IntegerField()
+    notes = models.TextField(blank = True, default = '')

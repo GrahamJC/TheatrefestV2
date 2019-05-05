@@ -39,6 +39,7 @@ class MyAccountView(LoginRequiredMixin, View):
             tickets = user.tickets.filter(performance_id = ticket['performance_id'], sale__completed__isnull = False, refund__isnull = True)
             p = {
                 'id': performance.id,
+                'uuid': performance.uuid,
                 'show': performance.show.name,
                 'date' : performance.date,
                 'time': performance.time,
@@ -209,7 +210,7 @@ class BuyView(LoginRequiredMixin, View):
         # Display buy page
         context = {
             'tab': 'tickets',
-            'sales_open': request.user.is_admin or (request.festival.online_slaes_open and (date.today() >= request.festival.online_slaes_open)),
+            'sales_open': request.user.is_admin or (request.festival.online_sales_open and (date.today() >= request.festival.online_sales_open)),
             'basket': basket,
             'performance': performance,
             'ticket_formset': ticket_formset,

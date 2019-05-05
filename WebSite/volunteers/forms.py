@@ -56,7 +56,28 @@ class AdminLocationForm(forms.ModelForm):
             self.instance.validate_unique(exclude)
         except ValidationError:
             self._update_errors(ValidationError({'description': 'A location with that description already exists'}))
-            
+
+
+class AdminShiftSearchForm(forms.Form):
+
+    def __init__(self, festival, *args, **kwargs):
+
+        # Save festival
+        self.festival = festival
+        super().__init__(*args, **kwargs)
+
+        # Create fields
+        shift_dates = Shift.objects.filter(location__festival = self.festival).values('date').order_by('date').distinct()
+        date_choices = [('20000101', 'All dates')]
+        date_choices.extend([(sd['date'].strftime('%Y%m%d'), sd['date'].strftime('%A, %d %B')) for sd in shift_dates])
+        self.fields['date'] = forms.ChoiceField(choices = date_choices, required = False)
+        location_choices = [('0', 'All locations')]
+        location_choices.extend([(l.id, l.description) for l in Location.objects.filter(festival = festival).order_by('description')])
+        self.fields['location'] = forms.ChoiceField(choices = location_choices, required = False)
+        role_choices = [('0', 'All roles')]
+        role_choices.extend([(r.id, r.description) for r in Role.objects.filter(festival = festival).order_by('description')])
+        self.fields['role'] = forms.ChoiceField(choices = role_choices, required = False)
+
 
 class AdminShiftForm(forms.ModelForm):
 
@@ -66,7 +87,9 @@ class AdminShiftForm(forms.ModelForm):
             'location', 
             'date', 'start_time', 'end_time',
             'role',
-            'volunteer'
+            'volunteer_can_accept',
+            'volunteer',
+            'notes',
         ]
         widgets = {
             'date': DatePickerInput(),
@@ -159,23 +182,3 @@ class AdminVolunteerForm(MultiModelForm):
         ('user', VolunteerUserForm),
         ('volunteer', VolunteerRolesForm),
     ))
-
-
-class SelectShiftsForm(forms.Form):
-
-    location = forms.ModelChoiceField(
-        queryset = Location.objects.none(),
-        required = False,
-    )
-    date = forms.DateField(
-        widget = DatePickerInput(),
-        required = False,
-    )
-
-    def __init__(self, festival, *args, **kwargs):
-
-        # Call base class
-        super().__init__(*args, **kwargs)
-
-        # Restrict locations to current festival
-        self.fields['location'].queryset = Location.objects.filter(festival=festival)

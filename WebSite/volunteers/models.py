@@ -45,6 +45,9 @@ class Volunteer(TimeStampedModel):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='volunteer')
     roles = models.ManyToManyField(Role, related_name = 'volunteers', blank = True)
 
+    def __str__(self):
+        return f'{self.user.get_full_name()}'
+
     def can_remove(self):
         return self.shifts.count() == 0
 
@@ -57,6 +60,8 @@ class Shift(TimeStampedModel):
     end_time = models.TimeField()
     role = models.ForeignKey(Role, on_delete=models.PROTECT, related_name='shifts')
     volunteer = models.ForeignKey(Volunteer, null=True, blank=True, on_delete=models.PROTECT, related_name='shifts')
+    volunteer_can_accept = models.BooleanField(blank = True, default = True)
+    notes = models.TextField(blank = True, default = '')
 
     class Meta:
         unique_together = ('location', 'date', 'start_time', 'role')
