@@ -1,6 +1,6 @@
 import os
 
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import get_object_or_404, redirect, render
 
 from core.models import Festival
@@ -40,6 +40,7 @@ def archive_festival(request, festival_name):
     return redirect('program:shows')
 
 
+@user_passes_test(lambda u: u.is_admin)
 @login_required
 def admin(request):
 
@@ -48,3 +49,14 @@ def admin(request):
         'festival': request.festival,
     }
     return render(request, 'festival/admin.html', context)
+
+
+@user_passes_test(lambda u: u.is_admin)
+@login_required
+def reports_venue(request):
+
+    # Render the page
+    context = {
+        'festival': request.festival,
+    }
+    return render(request, 'festival/reports_venue.html', context)

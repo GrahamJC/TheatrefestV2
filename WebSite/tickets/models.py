@@ -276,8 +276,9 @@ class Fringer(TimeStampedModel):
     def is_available(self, performance = None):
         return (self.available > 0) and ((performance == None) or (performance not in [t.performance for t in self.tickets.filter(refund__isnull = True)]))
 
-    #def get_available(user, performance = None):
-    #    return [f for f in user.fringers.exclude(sale__completed__isnull = True) if f.is_available(performance)]
+    @staticmethod
+    def get_available(user, performance = None):
+        return [f for f in user.fringers.exclude(sale__completed__isnull = True) if f.is_available(performance)]
 
 
 class TicketType(TimeStampedModel):

@@ -1,0 +1,4 @@
+[
+  "core/tests/test_models.py::FestivalTest::test_festival_sales_open",
+  "core/tests/test_models.py::SiteInfoTest::test_festival_sales_open"
+]

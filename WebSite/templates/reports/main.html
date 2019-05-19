@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block pagetitle %}{{ category | capfirst }} Reports{% endblock %}
+
+{% block banner %}{% endblock %}
+
+{% block content %}
+
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'festival:admin' %}">Festival Admin</a></li>
+            <li class="breadcrumb-item active">{{ category | capfirst }} Reports</a></li>
+        </ol>
+    </nav>
+
+    <h5>{{ festival.title }}</h5>
+
+    <div class="form-group">
+        <select id="tf-select-report" class="form-control">
+            <option value="" {% if not selected_report %}selected{% endif %}>Select report</option>
+            {% for name, report in reports.items %}
+                <option value="{{ name }}" {% if name == selected_report %}selected{% endif %}>{{ report.title }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    {% if select_form %}
+        {% crispy select_form %}
+    {% endif %}
+
+    {% if report_html_url or report_pdf_url %}
+
+        <div class="card mt-4">
+
+            <div class="card-header">
+                {% if report_pdf_url %}
+                    <a class="btn btn-primary float-right" href="{{ report_pdf_url }}">Print</a>
+                {% endif %}
+                <h5>Report</h5>
+            </div>
+
+            {% if report_html_url %}
+                <div id="tf-report-html"></div>
+            {% endif %}
+        </div>
+
+    {% endif %}
+
+{% endblock %}
+
+{% block body-script %}
+
+    <script language="javascript">
+
+        $(function() {
+            $('#tf-select-report').on('change', function(event) {
+                if (event.target.value) {
+                    window.location.href = '{% url "reports:select_report" category "$report" %}'.replace('$report', event.target.value); 
+                }
+            });
+            {% if report_html_url %}
+                $('#tf-report-html').load('{{ report_html_url }}');
+            {% endif %}
+        });
+
+    </script>
+
+{% endblock %}

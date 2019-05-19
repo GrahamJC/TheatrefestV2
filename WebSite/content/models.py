@@ -124,6 +124,9 @@ class Image(TimeStampedModel):
     def can_delete(self):
         return True
 
+    def get_absolute_path(self):
+        return self.image.path
+
     def get_absolute_url(self):
         return os.path.join(getattr(settings, 'MEDIA_URL', '/media'), self.image.url)
 

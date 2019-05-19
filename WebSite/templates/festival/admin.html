@@ -5,21 +5,38 @@
 
 {% block content %}
 
-    <h5>Program</h5>
-    <ul>
-        <li><a href="{% url 'program:admin_show_list' %}">Shows</a></li>
-        <li><a href="{% url 'program:admin_company_list' %}">Companies</a></li>
-        <li><a href="{% url 'program:admin_venue_list' %}">Venues</a></li>
-        <li><a href="{% url 'program:admin_genre_list' %}">Genres</a></li>
-    </ul>
+    <div class="row">
 
-    <h5>Content and Navigation</h5>
-    <ul>
-        <li><a href="{% url 'content:admin_page_list' %}">Pages</a></li>
-        <li><a href="{% url 'content:admin_navigator_list' %}">Navigators</a></li>
-        <li><a href="{% url 'content:admin_image_list' %}">Images</a></li>
-        <li><a href="{% url 'content:admin_resource_list' %}">Resources</a></li>
-        <li><a href="{% url 'content:admin_document_list' %}">Documents</a></li>
-    </ul>
+        <div class="col">
+
+            <h5>Program</h5>
+            <ul>
+                <li><a href="{% url 'program:admin_show_list' %}">Shows</a></li>
+                <li><a href="{% url 'program:admin_company_list' %}">Companies</a></li>
+                <li><a href="{% url 'program:admin_venue_list' %}">Venues</a></li>
+                <li><a href="{% url 'program:admin_genre_list' %}">Genres</a></li>
+            </ul>
+        
+            <h5>Content and Navigation</h5>
+            <ul>
+                <li><a href="{% url 'content:admin_page_list' %}">Pages</a></li>
+                <li><a href="{% url 'content:admin_navigator_list' %}">Navigators</a></li>
+                <li><a href="{% url 'content:admin_image_list' %}">Images</a></li>
+                <li><a href="{% url 'content:admin_resource_list' %}">Resources</a></li>
+                <li><a href="{% url 'content:admin_document_list' %}">Documents</a></li>
+            </ul>
+        
+        </div>
+
+        <div class="col">
+
+            <h5>Reports</h5>
+            <ul>
+                <li><a href="{% url 'reports:select' 'finance' %}">Finance</a></li>
+            </ul>
+            
+        </div>
+
+    </div>
 
 {% endblock %}

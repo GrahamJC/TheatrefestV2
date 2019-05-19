@@ -6,10 +6,15 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import get_object_or_404, render, redirect
 from django.template import Template, Context
 from django.views import View
-from django.urls import reverse
+from django.views.decorators.http import require_http_methods, require_GET
+from django.urls import reverse, reverse_lazy
 from django.http import HttpResponse
 
 import arrow
+
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Layout, Field, Fieldset, HTML, Submit, Button, Row, Column
+from crispy_forms.bootstrap import FormActions, TabHolder, Tab, Div
 
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
@@ -18,11 +23,162 @@ from reportlab.lib.pagesizes import A4, portrait
 from reportlab.lib.units import cm
 from reportlab.lib import colors
 
-from program.models import Show, ShowPerformance
+from program.models import Venue, Show, ShowPerformance
 from tickets.models import BoxOffice, Sale, Refund, Ticket
 
-@user_passes_test(lambda u: u.is_volunteer or u.is_admin)
+from .forms import SelectForm
+
+# Report definitions
+reports = {
+    'finance': {
+        'venue_summary': {
+            'title': 'Venue summary',
+            'select_form': SelectForm,
+            'select_fields': ['ticketed_venue', 'performance_date'],
+            'select_required': [],
+            'report_url': reverse_lazy('reports:finance__venue_summary'),
+        }
+    }
+}
+
+
+# Helpers
+def get_select_form(festival, report, post_data = None):
+
+    # Create form
+    form = report['select_form'](festival, report['select_fields'], report['select_required'], data = post_data)
+
+    # Create crispy forms helper
+    helper = FormHelper()
+    layout_items = []
+    for field in report['select_fields']:
+        layout_items.append(Field(field))
+    layout_items.append(Submit('create', 'Create Report'))
+    helper.layout = Layout(*layout_items)
+    form.helper = helper
+
+    # Return form
+    return form
+
+
+@require_http_methods(["GET", "POST"])
 @login_required
+@user_passes_test(lambda u: u.is_volunteer or u.is_admin)
+def select(request, category, report_name = None):
+
+    # Check parameters
+    assert category in reports
+    report = None
+    if report_name:
+        assert report_name in reports[category]
+        report = reports[category][report_name]
+
+    # Initialize selection form and report URLs
+    select_form = None
+    report_html_url = ''
+    report_pdf_url = ''
+
+    # Report selection
+    if request.method == 'GET':
+
+        # If there is a selected report create the selection form
+        if report:
+            select_form = get_select_form(request.festival, report)
+
+    # Report creation
+    else:
+
+        # Create, bind and validate form
+        assert report
+        select_form = get_select_form(request.festival, report, request.POST)
+        if select_form.is_valid():
+
+            # Get report URL and add selection parameters
+            report_url = report['report_url']
+            seperator = '?'
+            for field in report['select_fields']:
+                report_url += seperator + field + '=' + select_form.cleaned_data[field]
+                seperator = '&'
+            report_html_url = report_url + seperator + 'format=HTML'
+            report_pdf_url = report_url + seperator + 'format=PDF'
+
+    # Render selection page
+    context = {
+        'festival': request.festival,
+        'category': category,
+        'reports': reports[category],
+        'selected_report': report_name,
+        'select_form': select_form,
+        'report_html_url': report_html_url,
+        'report_pdf_url': report_pdf_url,
+    }
+    return render(request, 'reports/main.html', context)
+
+
+# Finance reports
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_volunteer or u.is_admin)
+def venue_summary(request):
+
+    # Get selection criteria
+    venue_id = request.GET['ticketed_venue']
+    venue = Venue.objects.get(id = int(venue_id)) if venue_id else None
+    date_str = request.GET['performance_date']
+    date = datetime.datetime.strptime(date_str, '%Y%m%d') if date_str else None
+
+    # Get format and render report
+    format = request.GET['format']
+    if format == 'HTML':
+
+        # Render HTML
+        context = {
+            'venue': venue,
+            'date': date,
+        }
+        return render(request, 'reports/finance/venue_summary.html', context)
+
+    elif format == 'PDF':
+
+        # Create Platypus story
+        response = HttpResponse(content_type = 'application/pdf')
+        response['Content-Disposition'] = 'venue_summary.pdf'
+        doc = SimpleDocTemplate(
+            response,
+            pagesize = portrait(A4),
+            leftMargin = 2.5*cm,
+            rightMargin = 2.5*cm,
+            topMargin = 2.5*cm,
+            bottomMargin = 2.5*cm,
+        )
+        styles = getSampleStyleSheet()
+        story = []
+
+        # Festival banner
+        if request.festival.banner:
+            banner = Image(request.festival.banner.get_absolute_path(), width = 16*cm, height = 4*cm)
+            banner.hAlign = 'CENTER'
+            story.append(banner)
+            story.append(Spacer(1, 1*cm))
+
+        # Venue and date
+        table = Table(
+            (
+                (Paragraph("<para><b>Venue:</b></para>", styles['Normal']), venue.name),
+                (Paragraph("<para><b>Date:</b></para>", styles['Normal']), f"{date:%A, %d %B}"),
+            ),
+            colWidths = (4*cm, 12*cm),
+            hAlign = 'LEFT'
+        )
+        story.append(table)
+        story.append(Spacer(1, 1*cm))
+
+        # Render PDF document and return it
+        doc.build(story)
+        return response
+
+@login_required
+@user_passes_test(lambda u: u.is_volunteer or u.is_admin)
 def sale_pdf(request, sale_uuid):
 
     # Get sale to be printed
