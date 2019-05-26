@@ -3,6 +3,7 @@ import datetime
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db.models.aggregates import Sum
 from django.shortcuts import get_object_or_404, render, redirect
 from django.template import Template, Context
 from django.views import View
@@ -24,7 +25,7 @@ from reportlab.lib.units import cm
 from reportlab.lib import colors
 
 from program.models import Venue, Show, ShowPerformance
-from tickets.models import BoxOffice, Sale, Refund, Ticket
+from tickets.models import BoxOffice, Sale, Refund, Fringer, Ticket
 
 from .forms import SelectForm
 
@@ -35,7 +36,7 @@ reports = {
             'title': 'Venue summary',
             'select_form': SelectForm,
             'select_fields': ['ticketed_venue', 'performance_date'],
-            'select_required': [],
+            'select_required': ['ticketed_venue', 'performance_date'],
             'report_url': reverse_lazy('reports:finance__venue_summary'),
         }
     }
@@ -75,6 +76,7 @@ def select(request, category, report_name = None):
 
     # Initialize selection form and report URLs
     select_form = None
+    report_title = ''
     report_html_url = ''
     report_pdf_url = ''
 
@@ -93,7 +95,8 @@ def select(request, category, report_name = None):
         select_form = get_select_form(request.festival, report, request.POST)
         if select_form.is_valid():
 
-            # Get report URL and add selection parameters
+            # Get report title and URL with selection parameters
+            report_title = report['title']
             report_url = report['report_url']
             seperator = '?'
             for field in report['select_fields']:
@@ -104,11 +107,16 @@ def select(request, category, report_name = None):
 
     # Render selection page
     context = {
+        'breadcrumbs': [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': category.capitalize() + ' Reports' },
+        ],
         'festival': request.festival,
         'category': category,
         'reports': reports[category],
         'selected_report': report_name,
         'select_form': select_form,
+        'report_title': report_title,
         'report_html_url': report_html_url,
         'report_pdf_url': report_pdf_url,
     }
@@ -122,12 +130,44 @@ def select(request, category, report_name = None):
 def venue_summary(request):
 
     # Get selection criteria
-    venue_id = request.GET['ticketed_venue']
-    venue = Venue.objects.get(id = int(venue_id)) if venue_id else None
-    date_str = request.GET['performance_date']
-    date = datetime.datetime.strptime(date_str, '%Y%m%d') if date_str else None
+    venue = Venue.objects.get(id = int(request.GET['ticketed_venue']))
+    date = datetime.datetime.strptime(request.GET['performance_date'], '%Y%m%d')
 
-    # Get format and render report
+    # Fetch data
+    performances = []
+    for performance in ShowPerformance.objects.filter(show__venue = venue, date = date).order_by('time'):
+        open = performance.open_checkpoint if performance.has_open_checkpoint else None
+        close = performance.close_checkpoint if performance.has_close_checkpoint else None
+        if open and close:
+            #sales_cash = sum([sale.total_cost for sale in Sale.objects.filter(venue = venue, created__gt = open.created, created__lt = close.created)])
+            sales_cash = Sale.objects.filter(venue = venue, created__gt = open.created, created__lt = close.created).aggregate(Sum('amount'))['amount__sum']
+            sales_fringers = Fringer.objects.filter(sale__venue = venue, sale__created__gt = open.created, sale__created__lt = close.created).count()
+            sales_buttons = Sale.objects.filter(venue = venue, created__gt = open.created, created__lt = close.created).aggregate(Sum('buttons'))['buttons__sum']
+            performances.append({
+                'show': performance.show.name,
+                'time': performance.time, 
+                'open': open,
+                'close': close,
+                'sales': {
+                    'cash': sales_cash,
+                    'fringers': sales_fringers,
+                    'buttons': sales_buttons,
+                },
+                'variance': {
+                    'cash': close.cash - open.cash - sales_cash,
+                    'fringers': close.fringers - open.fringers + sales_fringers,
+                    'buttons': close.buttons - open.buttons + sales_buttons,
+                },
+            })
+        else:
+            performances.append({
+                'show': performance.show.name,
+                'time': performance.time, 
+                'open': open,
+                'close': close,
+            })
+
+    # Check for HTML
     format = request.GET['format']
     if format == 'HTML':
 
@@ -135,47 +175,97 @@ def venue_summary(request):
         context = {
             'venue': venue,
             'date': date,
+            'performances': performances,
         }
         return render(request, 'reports/finance/venue_summary.html', context)
 
-    elif format == 'PDF':
+    # Render PDF
+    response = HttpResponse(content_type = 'application/pdf')
+    #response['Content-Disposition'] = 'venue_summary.pdf'
+    doc = SimpleDocTemplate(
+        response,
+        pagesize = portrait(A4),
+        leftMargin = 2.5*cm,
+        rightMargin = 2.5*cm,
+        topMargin = 2.5*cm,
+        bottomMargin = 2.5*cm,
+    )
+    styles = getSampleStyleSheet()
+    story = []
 
-        # Create Platypus story
-        response = HttpResponse(content_type = 'application/pdf')
-        response['Content-Disposition'] = 'venue_summary.pdf'
-        doc = SimpleDocTemplate(
-            response,
-            pagesize = portrait(A4),
-            leftMargin = 2.5*cm,
-            rightMargin = 2.5*cm,
-            topMargin = 2.5*cm,
-            bottomMargin = 2.5*cm,
-        )
-        styles = getSampleStyleSheet()
-        story = []
-
-        # Festival banner
-        if request.festival.banner:
-            banner = Image(request.festival.banner.get_absolute_path(), width = 16*cm, height = 4*cm)
-            banner.hAlign = 'CENTER'
-            story.append(banner)
-            story.append(Spacer(1, 1*cm))
-
-        # Venue and date
-        table = Table(
-            (
-                (Paragraph("<para><b>Venue:</b></para>", styles['Normal']), venue.name),
-                (Paragraph("<para><b>Date:</b></para>", styles['Normal']), f"{date:%A, %d %B}"),
-            ),
-            colWidths = (4*cm, 12*cm),
-            hAlign = 'LEFT'
-        )
-        story.append(table)
+    # Festival banner
+    if request.festival.banner:
+        banner = Image(request.festival.banner.get_absolute_path(), width = 16*cm, height = 4*cm)
+        banner.hAlign = 'CENTER'
+        story.append(banner)
         story.append(Spacer(1, 1*cm))
 
-        # Render PDF document and return it
-        doc.build(story)
-        return response
+    # Venue and date
+    table = Table(
+        (
+            (Paragraph('<para><b>Venue:</b></para>', styles['Normal']), venue.name),
+            (Paragraph('<para><b>Date:</b></para>', styles['Normal']), f"{date:%A, %d %B}"),
+        ),
+        colWidths = (4*cm, 12*cm),
+        hAlign = 'LEFT'
+    )
+    story.append(table)
+    story.append(Spacer(1, 0.5*cm))
+
+    # Performances
+    for performance in performances:
+        table_data = []
+        table_data.append((
+            Paragraph(f"<para><b>{ performance['time']:%I:%M%p } { performance['show'] }</b></para>", styles['Normal']),
+            '',
+            '',
+            '',
+            '',
+        ))
+        table_data.append((
+            '',
+            'Open',
+            'Sales',
+            'Close',
+            'Variance',
+        ))
+        table_data.append((
+            'Cash',
+            f"£{ performance['open'].cash }" if performance.get('open', None) else '',
+            f"£{ performance['sales']['cash'] }" if performance.get('sales', None) else '',
+            f"£{ performance['close'].cash }" if performance.get('close', None) else '',
+            f"£{ performance['variance']['cash'] }" if performance.get('variance', None) else '',
+        ))
+        table_data.append((
+            'Fringers',
+            performance['open'].fringers if performance.get('open', None) else '',
+            performance['sales']['fringers'] if performance.get('sales', None) else '',
+            performance['close'].fringers if performance.get('close', None) else '',
+            performance['variance']['fringers'] if performance.get('variance', None) else '',
+        ))
+        table_data.append((
+            'Buttons',
+            performance['open'].buttons if performance.get('open', None) else '',
+            performance['sales']['buttons'] if performance.get('sales', None) else '',
+            performance['close'].buttons if performance.get('close', None) else '',
+            performance['variance']['buttons'] if performance.get('variance', None) else '',
+        ))
+        table = Table(
+            table_data,
+            colWidths = (3*cm, 3*cm, 3*cm, 3*cm, 3*cm),
+            hAlign = 'LEFT',
+            style = (
+                ('SPAN', (0, 0), (4, 0)),
+                ('ALIGN', (0, 1), (4, -1), 'RIGHT'),
+            )
+        )
+        story.append(table)
+        story.append(Spacer(1, 0.5*cm))
+
+    # Render PDF document and return it
+    doc.build(story)
+    return response
+
 
 @login_required
 @user_passes_test(lambda u: u.is_volunteer or u.is_admin)

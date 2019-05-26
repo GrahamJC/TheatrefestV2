@@ -1,12 +1,45 @@
-<table class="table table-striped">
-    <tbody>
+<div class="alert alert-info">
+    <div class="row">
+        <div class="col-2"><b>Venue</b></div>
+        <div class="col-10">{{ venue.name }}</div>
+    </div>
+    <div class="row">
+        <div class="col-2"><b>Date</b></div>
+        <div class="col-10">{{ date | date:'l, d F' }}</div>
+    </div>
+</div>
+
+<table class="table table-sm">
+    <tr>
+        <th></th>
+        <th class="text-right">Open</th>
+        <th class="text-right">Sales</th>
+        <th class="text-right">Close</th>
+        <th class="text-right">Variance</th>
+    </tr>
+    {% for performance in performances %}
+        <tr><th colspan="5">{{ performance.time | date:'g:ia' }} {{ performance.show }}</th></tr>
         <tr>
-            <th>Venue</th>
-            <td>{{ venue.name }}</td>
+            <td class="text-right">Cash</td>
+            <td class="text-right">{% if performance.open %}&#163;{{ performance.open.cash }}{% endif %}</td>
+            <td class="text-right">{% if performance.sales %}&#163;{{ performance.sales.cash }}{% endif %}</td>
+            <td class="text-right">{% if performance.close %}&#163;{{ performance.close.cash }}{% endif %}</td>
+            <td class="text-right">{% if performance.variance %}&#163;{{ performance.variance.cash }}{% endif %}</td>
         </tr>
         <tr>
-            <th>Date</th>
-            <td>{{ date }}</td>
+            <td class="text-right">Fringers</td>
+            <td class="text-right">{% if performance.open %}{{ performance.open.fringers }}{% endif %}</td>
+            <td class="text-right">{% if performance.sales %}{{ performance.sales.fringers }}{% endif %}</td>
+            <td class="text-right">{% if performance.close %}{{ performance.close.fringers }}{% endif %}</td>
+            <td class="text-right">{% if performance.variance %}{{ performance.variance.fringers }}{% endif %}</td>
         </tr>
-    </tbody>
+        <tr>
+            <td class="text-right">Buttons</td>
+            <td class="text-right">{% if performance.open %}{{ performance.open.buttons }}{% endif %}</td>
+            <td class="text-right">{% if performance.sales %}{{ performance.sales.buttons }}{% endif %}</td>
+            <td class="text-right">{% if performance.close %}{{ performance.close.buttons }}{% endif %}</td>
+            <td class="text-right">{% if performance.variance %}{{ performance.variance.buttons }}{% endif %}</td>
+        </tr>
+        <tr><th colspan="5">&nbsp;</th></tr>
+    {% endfor %}
 </table>

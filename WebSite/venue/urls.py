@@ -20,5 +20,5 @@ urlpatterns = [
     path('<uuid:venue_uuid>/performance/<uuid:performance_uuid>/sale/<uuid:sale_uuid>/complete', views.sale_complete, name = 'sale_complete'),
     path('<uuid:venue_uuid>/performance/<uuid:performance_uuid>/sale/<uuid:sale_uuid>/cancel', views.sale_cancel, name = 'sale_cancel'),
     # Tickets API
-    path('<uuid:venue_uuid>/performance/<uuid:performance_uuid>/tickets', views.tickets, name = 'tickets'),
+    path('<uuid:venue_uuid>/performance/<uuid:performance_uuid>/tickets/<str:format>', views.tickets, name = 'tickets'),
 ]

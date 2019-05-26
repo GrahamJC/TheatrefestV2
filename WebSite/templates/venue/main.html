@@ -171,7 +171,7 @@
         });
 
         function updateTickets(event) {
-            $('#tickets-tab-content').load('{% url 'venue:tickets' venue.uuid current_performance.uuid %}', function(response, status, xhr) {
+            $('#tickets-tab-content').load('{% url 'venue:tickets' venue.uuid current_performance.uuid 'html' %}', function(response, status, xhr) {
                 if (status != 'success') {
                     $('#tickets-tab-content').html('Sorry but there was an error. Please refresh the page and try again.');
                 }

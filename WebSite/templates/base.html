@@ -121,6 +121,19 @@
                             {% block pagetitle %}{% endblock %}
                         </h3>
                         <div class="clearfix"></div>
+                        {% if breadcrumbs %}
+                            <nav aria-label="breadcrumb">
+                                <ol class="breadcrumb">
+                                    {% for breadcrumb in breadcrumbs %}
+                                        {% if breadcrumb.url %}
+                                            <li class="breadcrumb-item"><a href="{{ breadcrumb.url }}">{{ breadcrumb.text }}</a></li>
+                                        {% else %}
+                                            <li class="breadcrumb-item active">{{ breadcrumb.text }}</li>
+                                        {% endif %}
+                                    {% endfor %}
+                                </ol>
+                            </nav>
+                        {% endif %}
                         {% for msg in messages %}
                             <div class="{{ msg.tags }} alert-dismissible" role="alert">
                                 {{ msg }}
