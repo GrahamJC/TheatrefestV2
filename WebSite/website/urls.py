@@ -9,7 +9,7 @@ from django_registration.backends.activation.views import ActivationView
 
 import debug_toolbar
 
-from core.views import OneStepRegistrationView, TwoStepRegistrationView, TwoStepActivationView, PasswordResetView
+from core.views import OneStepRegistrationView, TwoStepRegistrationView, TwoStepActivationView, PasswordResetView, ResendActivationView
 from content.views import home
 
 urlpatterns = [
@@ -31,14 +31,16 @@ urlpatterns = [
     path('password_change/done/', auth_views.PasswordChangeDoneView.as_view(), name='password_change_done'),
     path('password_reset/', PasswordResetView.as_view(), name='password_reset'),
     path('password_reset/done/', auth_views.PasswordResetDoneView.as_view(), name='password_reset_done'),
-    path('reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+    path('reset/<str:uidb64>/<str:token>/', auth_views.PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('reset/done/', auth_views.PasswordResetCompleteView.as_view(), name='password_reset_complete'),
     # Django registration
     path('activate/complete', TemplateView.as_view(template_name='django_registration/activation_complete.html'), name='django_registration_activation_complete'),
     path('activate/<str:activation_key>', TwoStepActivationView.as_view(), name='django_registration_activate'),
     path('register', (TwoStepRegistrationView if settings.REGISTRATION_TWOSTEP else OneStepRegistrationView).as_view(), name='django_registration_register'),
-    path('register/complete', TemplateView.as_view( template_name='django_registration/registration_complete.html'), name='django_registration_complete'),
+    path('register/complete', TemplateView.as_view(template_name='django_registration/registration_complete.html'), name='django_registration_complete'),
     path('register/closed', TemplateView.as_view(template_name='django_registration/registration_closed.html'), name='django_registration_disallowed'),
+    # Extension to resend activation e-mail
+    path('register/resend/<uuid:user_uuid>', ResendActivationView.as_view(), name='resend_activation_email'),
     # Debug toolbar
     path('__debug__/', include(debug_toolbar.urls)),
     # Select2

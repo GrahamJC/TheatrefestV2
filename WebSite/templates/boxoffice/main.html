@@ -8,6 +8,7 @@
     <div class="nav nav-tabs nav-justified mb-3">
         <a id="sale-tab" class="nav-item nav-link {% if tab == 'sale' %}active{% endif %}" href="#sale-tab-content" data-toggle="tab">Sale</a>
         <a id="refund-tab" class="nav-item nav-link {% if tab == 'refund' %}active{% endif %}" href="#refund-tab-content" data-toggle="tab">Refund</a>
+        <a id="checkpoint-tab" class="nav-item nav-link {% if tab == 'checkpoint' %}active{% endif %}" href="#checkpoint-tab-content" data-toggle="tab">Checkpoint</a>
         <a id="report-tab" class="nav-item nav-link {% if tab == 'report' %}active{% endif %}" href="#report-tab-content" data-toggle="tab">Report</a>
     </div>
 
@@ -19,6 +20,10 @@
 
         <div id="refund-tab-content" class="tab-pane {% if tab == 'refund' %}active{% endif %}">
             {% include 'boxoffice/_main_refund.html' %}
+        </div>
+
+        <div id="checkpoint-tab-content" class="tab-pane {% if tab == 'checkpoint' %}active{% endif %}">
+            {% include 'boxoffice/_main_checkpoint.html' %}
         </div>
 
         <div id="report-tab-content" class="tab-pane {% if tab == 'report' %}active{% endif %}">

@@ -23,7 +23,11 @@
                             <button type="submit" class="btn btn-primary">Login</button>
                         </div>
                     </form>
-                    <a class="card-link" href="{% url 'password_reset' %}">Forgotten password?</a>
+                    {% if form.get_user and not form.get_user.is_active %}
+                        <a class="card-link" href="{% url 'resend_activation_email' form.get_user.uuid %}">Resend activation e-mail</a>
+                    {% else %}
+                        <a class="card-link" href="{% url 'password_reset' %}">Forgotten password?</a>
+                    {% endif %}
                 </div>
             </div>
         </div>

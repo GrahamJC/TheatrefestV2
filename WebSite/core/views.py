@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model, login
-from django.contrib.auth.views import PasswordResetView as BasePasswordResetView
+from django.contrib.auth.views import PasswordResetView as AuthPasswordResetView
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse
 
 from django_registration import signals
 import django_registration.backends.one_step.views as OneStepViews
@@ -9,6 +11,7 @@ import django_registration.backends.activation.views as TwoStepViews
 from .forms import RegistrationForm, PasswordResetForm
 
 User = get_user_model()
+
 
 class OneStepRegistrationView(OneStepViews.RegistrationView):
 
@@ -68,7 +71,7 @@ class TwoStepActivationView(TwoStepViews.ActivationView):
             raise ActivationError(self.BAD_USERNAME_MESSAGE, code='bad_username')
 
 
-class PasswordResetView(BasePasswordResetView):
+class PasswordResetView(AuthPasswordResetView):
 
     form_class = PasswordResetForm
 
@@ -77,4 +80,13 @@ class PasswordResetView(BasePasswordResetView):
         kwargs['site'] = self.request.site
         kwargs['festival'] = self.request.festival
         return kwargs
+
+
+class ResendActivationView(TwoStepViews.RegistrationView):
+
+    def get(self, request, *args, **kwargs):
+        user_uuid = self.kwargs['user_uuid']
+        user = get_object_or_404(User, uuid = user_uuid)
+        self.send_activation_email(user)
+        return redirect(reverse('django_registration_complete'))
 

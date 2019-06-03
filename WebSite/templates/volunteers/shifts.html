@@ -6,10 +6,12 @@
 
 {% block content %}
 
+    <p>Selet a day to view and volunteer for shifts on that day.</p>
+
     <div class="nav nav-pills nav-justified mb-3">
-        <a class="nav-item nav-link active" href="#tf-tab-myshifts" data-toggle="tab">My Shifts</a>
+        <a class="nav-item nav-link active" href="#tf-tab-myshifts" data-toggle="tab">My<br>Shifts</a>
         {% for day in days %}
-            <a class="nav-item nav-link" href="#tf-tab-{{ day.date | date:'Ymd' }}" data-toggle="tab">{{ day.date | date:'l' }}</a>
+            <a class="nav-item nav-link" href="#tf-tab-{{ day.date | date:'Ymd' }}" data-toggle="tab">{{ day.date | date:'l' }}<br>{{ day.date | date:'j F' }}</a>
         {% endfor %}
     </div>
 
@@ -19,23 +21,25 @@
             <table class="table accordion">
                 <thead class="thead-light">
                     <tr>
-                        <th></th>
+                        <th>Date</th>
                         <th>Location</th>
                         <th>Start</th>
                         <th>End</th>
                         <th>Role</th>
+                        <th></th>
                         <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for shift in my_shifts %}
                         <tr>
-                            <td>{% if shift.notes %}<a href="#tf-tab-myshifts-{{ shift.id }}-notes" data-toggle="collapse"><i class="fa fa-info-circle"></i></a>{% endif %}</td>
+                            <td>{{ shift.date | date:'D, j M' }}</td>
                             <td>{{ shift.location.description }}</td>
                             <td>{{ shift.start_time }}</td>
                             <td>{{ shift.end_time }}</td>
                             <td>{{ shift.role.description }}</td>
                             <td><a href="{% url 'volunteers:shift_cancel' shift.uuid %}">Cancel</a></td>
+                            <td>{% if shift.notes %}<a href="#tf-tab-myshifts-{{ shift.id }}-notes" data-toggle="collapse"><i class="fa fa-info-circle"></i></a>{% endif %}</td>
                         </tr>
                         {% if shift.notes %}
                             <tr id="tf-tab-myshifts-{{ shift.id }}-notes" class="collapse" data-parent="#tf-tab-myshifts">
