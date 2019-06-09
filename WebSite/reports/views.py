@@ -194,8 +194,8 @@ def venue_summary(request):
     story = []
 
     # Festival banner
-    if request.festival.banner:
-        banner = Image(request.festival.banner.get_absolute_path(), width = 16*cm, height = 4*cm)
+    if venue.festival.banner:
+        banner = Image(venue.festival.banner.get_absolute_path(), width = 16*cm, height = 4*cm)
         banner.hAlign = 'CENTER'
         story.append(banner)
         story.append(Spacer(1, 1*cm))
@@ -290,7 +290,7 @@ def sale_pdf(request, sale_uuid):
 
     # Festival banner
     if sale.festival.banner:
-        banner = Image(os.path.join(settings.MEDIA_ROOT, sale.festival.banner.path), width = 16*cm, height = 4*cm)
+        banner = Image(sale.festival.banner.get_absolute_path(), width = 16*cm, height = 4*cm)
         banner.hAlign = 'CENTER'
         story.append(banner)
         story.append(Spacer(1, 1*cm))
@@ -388,7 +388,7 @@ def refund_pdf(request, refund_uuid):
 
     # Festival banner
     if refund.festival.banner:
-        banner = Image(os.path.join(settings.MEDIA_ROOT, refund.festival.banner.path), width = 16*cm, height = 4*cm)
+        banner = Image(refund.festival.banner.get_absolute_path(), width = 16*cm, height = 4*cm)
         banner.hAlign = 'CENTER'
         story.append(banner)
         story.append(Spacer(1, 1*cm))

@@ -89,9 +89,26 @@
     <div class="col-6">
         {% if not sale %}
             <div class="card">
-                <h6 class="card-header">Information</h6>
+                <h6 class="card-header">Sales Today</h6>
                 <div class="card-body">
-                    This area will be used to display notifications from the system administrator.
+                    <table class="table table-striped">
+                        <thhead>
+                            <tr>
+                                <th>Sale No</th>
+                                <th>Customer</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thhead>
+                        <tbody>
+                            {% for sale in sales %}
+                                <tr>
+                                    <td><a href="javascript: showSaleDetail({{ sale.id }}, '{{ sale.uuid }}')">{{ sale.id }}</a></td>
+                                    <td>{{ sale.customer }}</td>
+                                    <td>&#163;{{ sale.amount }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         {% else %}
@@ -118,7 +135,7 @@
                             <div class="col-3"><a href="#tf-boxoffice-sale-tickets-{{ forloop.counter }}" data-toggle="collapse">{{ performance.tickets | length }} Tickets</a></div>
                             <div class="col-3 text-right">
                                 {% if not sale.completed %}
-                                    <a href="#" onclick="$('#sale-tab-content').load('{% url "boxoffice:sale_remove_performance" sale.uuid performance.uuid %}')">Remove</a>
+                                    <a href="#" onclick="$('#sales-tab-content').load('{% url "boxoffice:sale_remove_performance" sale.uuid performance.uuid %}')">Remove</a>
                                 {% endif %}
                             </div>
                             <div id="tf-boxoffice-sale-tickets-{{ forloop.counter }}" class="col-12 collapse">
@@ -129,7 +146,7 @@
                                         <div class="col-2 text-right">{% if ticket.cost %}&#163;{{ ticket.cost }}{% endif %}</div>
                                         <div class="col-3">
                                             {% if not sale.completed %}
-                                                <a href="#" onclick="$('#sale-tab-content').load('{% url "boxoffice:sale_remove_ticket" sale.uuid ticket.uuid %}')">Remove</a>
+                                                <a href="#" onclick="$('#sales-tab-content').load('{% url "boxoffice:sale_remove_ticket" sale.uuid ticket.uuid %}')">Remove</a>
                                             {% endif %}
                                         </div>
                                     </div>
@@ -146,9 +163,10 @@
                             {% if sale.completed %}
                                 <button class="btn btn-primary">E-mail</button>
                                 <a class="btn btn-primary" href="{% url 'reports:sale_pdf' sale.uuid %}" target="_blank">PDF</a>
+                                <a class="btn btn-secondary" href="#" onclick="$('#sales-tab-content').load('{% url "boxoffice:sale_close" sale.uuid %}')">Close</a>
                             {% else %}
-                                <a class="btn btn-primary" href="#" onclick="$('#sale-tab-content').load('{% url "boxoffice:sale_complete" sale.uuid %}')">Complete</a>
-                                <a class="btn btn-primary" href="#" onclick="$('#sale-tab-content').load('{% url "boxoffice:sale_cancel" sale.uuid %}')">Cancel</a>
+                                <a class="btn btn-primary" href="#" onclick="$('#sales-tab-content').load('{% url "boxoffice:sale_complete" sale.uuid %}')">Complete</a>
+                                <a class="btn btn-primary" href="#" onclick="$('#sales-tab-content').load('{% url "boxoffice:sale_cancel" sale.uuid %}')">Cancel</a>
                             {% endif %}
                         </div>
                     </div>
@@ -165,7 +183,7 @@
             $('#sale-customer-form').submit(function (event) {
                 event.preventDefault();
                 var postData = $('#sale-customer-form').serializeArray()
-                $('#sale-tab-content').load('{% url "boxoffice:sale_start" boxoffice.uuid %}', postData);
+                $('#sales-tab-content').load('{% url "boxoffice:sale_start" boxoffice.uuid %}', postData);
             });
         {% else %}
             $('#{{ sale_tickets_form.show.auto_id }}').on('change', function() {
@@ -174,14 +192,21 @@
             $('#sale-tickets-form').submit(function (event) {
                 event.preventDefault();
                 var postData = $('#sale-tickets-form').serializeArray()
-                $('#sale-tab-content').load('{% url "boxoffice:sale_add_tickets" sale.uuid %}', postData);
+                $('#sales-tab-content').load('{% url "boxoffice:sale_add_tickets" sale.uuid %}', postData);
             });
             $('#sale-extras-form').submit(function (event) {
                 event.preventDefault();
                 var postData = $('#sale-extras-form').serializeArray()
-                $('#sale-tab-content').load('{% url "boxoffice:sale_update_extras" sale.uuid %}', postData);
+                $('#sales-tab-content').load('{% url "boxoffice:sale_update_extras" sale.uuid %}', postData);
             });
         {% endif %}
     });
+
+    function showSaleDetail(sale_id, sale_uuid) {
+        $('#main-modal .modal-title').text('Sale: ' + sale_id);
+        $('#main-modal .modal-body').load('{% url "boxoffice:sale_report" '00000000-0000-0000-0000-000000000000' %}'.replace('00000000-0000-0000-0000-000000000000', sale_uuid));
+        $('#main-modal-pdf').attr('href', '{% url 'reports:sale_pdf' '00000000-0000-0000-0000-000000000000' %}'.replace('00000000-0000-0000-0000-000000000000', sale_uuid));
+        $('#main-modal').modal('show');
+    }
 
 </script>

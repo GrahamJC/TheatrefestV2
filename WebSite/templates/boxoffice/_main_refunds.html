@@ -36,9 +36,26 @@
     <div class="col-6">
         {% if not refund %}
             <div class="card">
-                <h6 class="card-header">Information</h6>
+                <h6 class="card-header">Refunds Today</h6>
                 <div class="card-body">
-                    This area will be used to display notifications from the system administrator.
+                    <table class="table table-striped">
+                        <thhead>
+                            <tr>
+                                <th>Refund No</th>
+                                <th>Customer</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thhead>
+                        <tbody>
+                            {% for refund in refunds %}
+                                <tr>
+                                    <td><a href="javascript: showRefundDetail({{ refund.id }}, '{{ refund.uuid }}')">{{ refund.id }}</a></td>
+                                    <td>{{ refund.customer }}</td>
+                                    <td>&#163;{{ refund.amount }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         {% else %}
@@ -56,7 +73,7 @@
                                 <td>
                                     {{ ticket.id }}<br/>
                                     {% if not refund.completed %}
-                                        <a href="#" onclick="$('#refund-tab-content').load('{% url "boxoffice:refund_remove_ticket" refund.uuid ticket.uuid %}')">Remove</a>
+                                        <a href="#" onclick="$('#refunds-tab-content').load('{% url "boxoffice:refund_remove_ticket" refund.uuid ticket.uuid %}')">Remove</a>
                                     {% endif %}
                                 </td>
                                 <td>
@@ -78,13 +95,14 @@
                     {% if refund.completed %}
                         <button class="btn btn-primary">E-mail</button>
                         <a class="btn btn-primary" href="{% url 'reports:refund_pdf' refund.uuid %}" target="_blank">PDF</a>
+                        <a class="btn btn-secondary" href="#" onclick="$('#refunds-tab-content').load('{% url "boxoffice:refund_close" refund.uuid %}')" formnovalidate>Close</a>
                     {% else %}
                         <form id="refund-form">
                             {% csrf_token %}
                             {% include 'bs4_form.html' with form=refund_form %}
                             <div class="form-group">
                                 <button type="submit" class="btn btn-primary">Complete</button>
-                                <a class="btn btn-primary" href="#" onclick="$('#refund-tab-content').load('{% url "boxoffice:refund_cancel" refund.uuid %}')" formnovalidate>Cancel</a>
+                                <a class="btn btn-primary" href="#" onclick="$('#refunds-tab-content').load('{% url "boxoffice:refund_cancel" refund.uuid %}')" formnovalidate>Cancel</a>
                             </div>
                         </form>
                     {% endif %}
@@ -95,24 +113,33 @@
 </div>
 
 <script language="javascript">
+
     $(function () {
         {% if not refund %}
             $('#refund-customer-form').submit(function (event) {
                 event.preventDefault();
                 var postData = $('#refund-customer-form').serializeArray()
-                $('#refund-tab-content').load('{% url "boxoffice:refund_start" boxoffice.uuid %}', postData);
+                $('#refunds-tab-content').load('{% url "boxoffice:refund_start" boxoffice.uuid %}', postData);
             });
         {% else %}
             $('#refund-ticket-form').submit(function (event) {
                 event.preventDefault();
                 postData = $('#refund-ticket-form').serializeArray()
-                $('#refund-tab-content').load('{% url "boxoffice:refund_add_ticket" refund.uuid %}', postData);
+                $('#refunds-tab-content').load('{% url "boxoffice:refund_add_ticket" refund.uuid %}', postData);
             });
             $('#refund-form').submit(function (event) {
                 event.preventDefault();
                 postData = $('#refund-form').serializeArray()
-                $('#refund-tab-content').load('{% url "boxoffice:refund_complete" refund.uuid %}', postData);
+                $('#refunds-tab-content').load('{% url "boxoffice:refund_complete" refund.uuid %}', postData);
             });
         {% endif %}
     });
+
+    function showRefundDetail(refund_id, refund_uuid) {
+        $('#main-modal .modal-title').text('Refund: ' + refund_id);
+        $('#main-modal .modal-body').load('{% url "boxoffice:refund_report" '00000000-0000-0000-0000-000000000000' %}'.replace('00000000-0000-0000-0000-000000000000', refund_uuid));
+        $('#main-modal-pdf').attr('href', '{% url 'reports:refund_pdf' '00000000-0000-0000-0000-000000000000' %}'.replace('00000000-0000-0000-0000-000000000000', refund_uuid));
+        $('#main-modal').modal('show');
+    }
+
 </script>

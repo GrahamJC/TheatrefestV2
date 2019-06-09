@@ -275,12 +275,13 @@ def create_admin_shift_search_form(festival, initial_data = None, post_data = No
         Field('date'),
         Field('location'),
         Field('role'),
+        Field('volunteer'),
         Submit('shift-search', 'Search', css_class='btn-primary'),
     )
     return form
 
 
-def admin_get_shifts(festival, date_str, location_id_str, role_id_str):
+def admin_get_shifts(festival, date_str, location_id_str, role_id_str, volunteer_id_str):
 
     # Get shifts meeting criteria
     shifts = Shift.objects.filter(location__festival = festival)
@@ -293,6 +294,9 @@ def admin_get_shifts(festival, date_str, location_id_str, role_id_str):
     role_id = int(role_id_str)
     if role_id != 0:
         shifts = shifts.filter(role_id = role_id)
+    volunteer_id = int(volunteer_id_str)
+    if volunteer_id != 0:
+        shifts = shifts.filter(volunteer_id = volunteer_id)
     shifts = list(shifts.order_by('date', 'start_time', 'location__description', 'role__description'))
     return shifts
 
@@ -307,17 +311,19 @@ class AdminShiftList(LoginRequiredMixin, View):
         date_str = request.session.get('shift_search_date', '20000101')
         location_id_str = request.session.get('shift_search_location_id', '0')
         role_id_str = request.session.get('shift_search_role_id', '0')
+        volunteer_id_str = request.session.get('shift_search_volunteer_id', '0')
 
         # Create search form
         initial_data = {
             'date': date_str,
             'location': location_id_str,
             'role': role_id_str,
+            'volunteer': volunteer_id_str,
         }
         search_form = create_admin_shift_search_form(request.festival, initial_data = initial_data)
 
         # Get shifts that meet criteria
-        shifts = admin_get_shifts(request.festival, date_str, location_id_str, role_id_str)
+        shifts = admin_get_shifts(request.festival, date_str, location_id_str, role_id_str, volunteer_id_str)
 
         # Render page
         context = {
@@ -337,12 +343,14 @@ class AdminShiftList(LoginRequiredMixin, View):
             date_str = search_form.cleaned_data['date']
             location_id_str = search_form.cleaned_data['location']
             role_id_str = search_form.cleaned_data['role']
-            shifts = admin_get_shifts(request.festival, date_str, location_id_str, role_id_str)
+            volunteer_id_str = search_form.cleaned_data['volunteer']
+            shifts = admin_get_shifts(request.festival, date_str, location_id_str, role_id_str, volunteer_id_str)
 
             # Save search criteria in session
             request.session['shift_search_date'] = date_str
             request.session['shift_search_location_id'] = location_id_str
             request.session['shift_search_role_id'] = role_id_str
+            request.session['shift_search_volunteer_id'] = volunteer_id_str
         
         # Render page
         context = {

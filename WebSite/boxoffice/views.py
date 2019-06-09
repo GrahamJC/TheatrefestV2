@@ -12,19 +12,74 @@ from django.urls import reverse
 from django.views import View
 from django.forms import formset_factory, modelformset_factory
 from django.http import JsonResponse
+from django.views.decorators.http import require_GET, require_POST
 
 import arrow
 
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Layout, Field, Fieldset, HTML, Submit, Button, Row, Column
+from crispy_forms.bootstrap import FormActions, TabHolder, Tab, Div
+
 from core.models import User
 from program.models import Show, ShowPerformance
-from tickets.models import BoxOffice, Sale, Refund, TicketType, Ticket, Fringer
+from tickets.models import BoxOffice, Sale, Refund, TicketType, Ticket, Fringer, Checkpoint
 from tickets.forms import CustomerForm, SaleTicketsForm, SaleTicketSubForm, SaleFringerSubForm, SaleExtrasForm, RefundTicketForm, RefundForm
+
+from .forms import CheckpointForm
 
 # Logging
 import logging
 logger = logging.getLogger(__name__)
 
 # Helpers
+def _get_todays_sales(boxoffice):
+
+    # Get today's sales
+    today = datetime.date.today()
+    tomorrow = today + datetime.timedelta(days = 1)
+    return boxoffice.sales.filter(created__gte = today, created__lt = tomorrow).order_by('-id')
+
+def _get_todays_refunds(boxoffice):
+
+    # Get today's sales
+    today = datetime.date.today()
+    tomorrow = today + datetime.timedelta(days = 1)
+    return boxoffice.refunds.filter(created__gte = today, created__lt = tomorrow).order_by('-id')
+
+def _get_todays_checkpoints(boxoffice):
+
+    # Get today's checkpoints
+    today = datetime.date.today()
+    tomorrow = today + datetime.timedelta(days = 1)
+    return boxoffice.checkpoints.filter(created__gte = today, created__lt = tomorrow).order_by('-created')
+
+def _render_main(request, boxoffice, tab, checkpoint_form = None):
+
+    # Render main page
+    today = datetime.datetime.today()
+    report_dates = [today - datetime.timedelta(days = n) for n in range(1, 14)]
+    context = {
+        'boxoffice': boxoffice,
+        'tab': tab,
+        'sale_customer_form': _create_customer_form(),
+        'sale_tickets_form': _create_sale_tickets_form(boxoffice.festival),
+        'sale_ticket_subforms': _create_sale_ticket_subforms(boxoffice.festival),
+        'sale_fringer_subforms': _create_sale_fringer_subforms(),
+        'sale_extras_form': _create_sale_extras_form(),
+        'sale': None,
+        'sales': _get_todays_sales(boxoffice),
+        'refund_customer_form': _create_customer_form(),
+        'refund_ticket_form': _create_refund_ticket_form(),
+        'refund_form': _create_refund_form(),
+        'refund' : None,
+        'refunds': _get_todays_refunds(boxoffice),
+        'checkpoint_form': checkpoint_form or _create_checkpoint_form(boxoffice),
+        'checkpoints': _get_todays_checkpoints(boxoffice),
+        'report_today': f'{today:%Y%m%d}',
+        'report_dates': [{ 'value': f'{d:%Y%m%d}', 'text': f'{d:%a, %b %d}'} for d in report_dates],
+    }
+    return render(request, 'boxoffice/main.html', context)
+
 def _create_customer_form(post_data = None):
     # Create form
     form = CustomerForm(post_data)
@@ -70,8 +125,9 @@ def _render_sale(request, boxoffice, sale=None, customer_form=None, tickets_form
         'sale_fringer_subforms': fringer_subforms or _create_sale_fringer_subforms(sale),
         'sale_extras_form': extras_form or _create_sale_extras_form(sale),
         'sale': sale,
+        'sales': _get_todays_sales(boxoffice),
     }
-    return render(request, "boxoffice/_main_sale.html", context)
+    return render(request, "boxoffice/_main_sales.html", context)
 
 def _create_refund_ticket_form(refund = None, post_data = None):
     # Create form
@@ -79,6 +135,7 @@ def _create_refund_ticket_form(refund = None, post_data = None):
     return form
 
 def _create_refund_form(refund = None, post_data = None):
+
     # Create form
     initial_data = []
     if refund:
@@ -96,9 +153,40 @@ def _render_refund(request, boxoffice, refund, customer_form = None, ticket_form
         'refund_ticket_form': ticket_form or _create_refund_ticket_form(),
         'refund_form': refund_form or _create_refund_form(refund),
         'refund': refund,
+        'refunds': _get_todays_refunds(boxoffice),
     }
-    return render(request, "boxoffice/_main_refund.html", context)
-    
+    return render(request, "boxoffice/_main_refunds.html", context)
+
+def _create_checkpoint_form(boxoffice, post_data = None):
+
+    # Create form
+    form = CheckpointForm(post_data)
+
+    # Add crispy form helper
+    form.helper = FormHelper()
+    form.helper.form_id = 'checkpoint-form'
+    form.helper.layout = Layout(
+        Field('cash'),
+        Field('buttons'),
+        Field('fringers'),
+        Field('notes'),
+        Button('add', 'Add Checkpoint', css_class = 'btn-primary', onclick = 'checkpoint_add()'),
+    )
+
+    # Return form
+    return form
+
+def _render_checkpoint(request, boxoffice, checkpoint_form = None):
+
+    # Render checkpoint tab content
+    context = {
+        'boxoffice': boxoffice,
+        'checkpoint_form': checkpoint_form or _create_checkpoint_form(boxoffice),
+        'checkpoints': _get_todays_checkpoints(boxoffice),
+    }
+    return render(request, 'boxoffice/_main_checkpoints.html', context)
+
+
 # View functions
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
 @login_required
@@ -110,7 +198,7 @@ def select(request):
     
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
 @login_required
-def main(request, boxoffice_uuid, tab = 'sale'):
+def main(request, boxoffice_uuid, tab = 'sales'):
 
     # Get box office
     boxoffice = get_object_or_404(BoxOffice, uuid = boxoffice_uuid)
@@ -118,31 +206,14 @@ def main(request, boxoffice_uuid, tab = 'sale'):
     # Cancel any incomplete sales/refunds
     for sale in request.user.sales.filter(completed__isnull = True):
         logger.info("Incomplete sale %s cancelled", sale)
-        sale.delete();
+        sale.delete()
     for refund in request.user.refunds.filter(completed__isnull = True):
         logger.info("Incomplete refund %s cancelled", refund)
-        refund.delete();
+        refund.delete()
 
     # Render main page
-    today = datetime.datetime.today()
-    report_dates = [today - datetime.timedelta(days = n) for n in range(1, 14)]
-    context = {
-        'boxoffice': boxoffice,
-        'tab': tab,
-        'sale_customer_form': _create_customer_form(),
-        'sale_tickets_form': _create_sale_tickets_form(boxoffice.festival),
-        'sale_ticket_subforms': _create_sale_ticket_subforms(boxoffice.festival),
-        'sale_fringer_subforms': _create_sale_fringer_subforms(),
-        'sale_extras_form': _create_sale_extras_form(),
-        'sale': None,
-        'refund_customer_form': _create_customer_form(),
-        'refund_ticket_form': _create_refund_ticket_form(),
-        'refund_form': _create_refund_form(),
-        'refund' : None,
-        'report_today': f'{today:%Y%m%d}',
-        'report_dates': [{ 'value': f'{d:%Y%m%d}', 'text': f'{d:%a, %b %d}'} for d in report_dates],
-    }
-    return render(request, 'boxoffice/main.html', context)
+    return _render_main(request, boxoffice, tab)
+
 
 # AJAX sale support
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
@@ -350,6 +421,20 @@ def sale_cancel(request, sale_uuid):
         sale = None
     return _render_sale(request, boxoffice, sale)
 
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+@transaction.atomic
+def sale_close(request, sale_uuid):
+    sale = get_object_or_404(Sale, uuid = sale_uuid)
+    return _render_sale(request, sale.boxoffice, None)
+
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+def sale_report(request, sale_uuid):
+    sale = get_object_or_404(Sale, uuid = sale_uuid)
+    context = {
+        'sale': sale,
+    }
+    return render(request, 'boxoffice/sale_report.html', context)
+
 # AJAX refund support
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
 @transaction.atomic
@@ -438,82 +523,55 @@ def refund_cancel(request, refund_uuid):
         refund.delete()
         logger.info("Refund %s cancelled", refund)
         refund = None
-    return _render_refund(request, refund.boxoffice, refund)
-
-# Report AJAX support
-@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
-def report_summary(request, boxoffice_uuid, yyyymmdd):
-
-    # Get sales and refunds for this box office
-    boxoffice = get_object_or_404(BoxOffice, uuid = boxoffice_uuid)
-    date = datetime.datetime.strptime(yyyymmdd, '%Y%m%d')
-    sales = Sale.objects.filter(boxoffice = boxoffice, completed__date = date).order_by('id')
-    refunds = Refund.objects.filter(boxoffice = boxoffice, completed__date = date).order_by('id')
-
-    # Get aggregated figures
-    sales_count = sales.count()
-    sales_buttons = sales.aggregate(buttons = Coalesce(Sum('buttons'), 0))['buttons']
-    sales_fringers = sales.aggregate(fringers = Coalesce(Sum('fringers__cost'), 0))['fringers']
-    sales_tickets = sales.aggregate(tickets = Coalesce(Sum('tickets__cost'), 0))['tickets']
-    sales_total = sales.aggregate(total = Coalesce(Sum('amount'), 0))['total']
-    refunds_count = refunds.count()
-    refunds_total = refunds.aggregate(total = Coalesce(Sum('amount'), 0))['total']
-
-    # Render report
-    context = {
-        'sales_count': sales_count,
-        'sales_buttons': sales_buttons,
-        'sales_fringers': sales_fringers,
-        'sales_tickets': sales_tickets,
-        'sales_total': sales_total,
-        'refunds_count': refunds_count,
-        'refunds_total': refunds_total,
-        'balance': sales_total - refunds_total,
-    }
-    return render(request, 'boxoffice/report_summary.html', context)
+    return _render_refund(request, boxoffice, refund)
 
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
-def report_sales(request, boxoffice_uuid, yyyymmdd):
-
-    # Get completed sales for this box office
-    boxoffice = get_object_or_404(BoxOffice, uuid = boxoffice_uuid)
-    date = datetime.datetime.strptime(yyyymmdd, '%Y%m%d')
-    sales = Sale.objects.filter(boxoffice = boxoffice, completed__date = date).order_by('id')
-
-    # Render report
-    context = {
-        'boxoffice': boxoffice,
-        'sales': sales,
-    }
-    return render(request, 'boxoffice/report_sales.html', context)
+@transaction.atomic
+def refund_close(request, refund_uuid):
+    refund = get_object_or_404(Refund, uuid = refund_uuid)
+    return _render_refund(request, refund.boxoffice)
 
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
-def report_sale_detail(request, sale_uuid):
-    sale = get_object_or_404(Sale, uuid = sale_uuid)
-    context = {
-        'sale': sale,
-    }
-    return render(request, 'boxoffice/report_sale_detail.html', context)
-
-@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
-def report_refunds(request, boxoffice_uuid, yyyymmdd):
-
-    # Get completed refunds for this box office
-    boxoffice = get_object_or_404(BoxOffice, uuid = boxoffice_uuid)
-    date = datetime.datetime.strptime(yyyymmdd, '%Y%m%d')
-    refunds = Refund.objects.filter(boxoffice = boxoffice, completed__date = date).order_by('id')
-
-    # Render report
-    context = {
-        'boxoffice': boxoffice,
-        'refunds': refunds,
-    }
-    return render(request, 'boxoffice/report_refunds.html', context)
-
-@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
-def report_refund_detail(request, refund_uuid):
+def refund_report(request, refund_uuid):
     refund = get_object_or_404(Refund, uuid = refund_uuid)
     context = {
         'refund': refund,
     }
-    return render(request, 'boxoffice/report_refund_detail.html', context)
+    return render(request, 'boxoffice/refund_report.html', context)
+
+# Checkpoints
+@require_POST
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+@transaction.atomic
+def checkpoint_add(request, boxoffice_uuid):
+
+    # Get box office
+    boxoffice = get_object_or_404(BoxOffice, uuid = boxoffice_uuid)
+
+    # Create form and validate
+    form = _create_checkpoint_form(boxoffice, request.POST)
+    if form.is_valid():
+
+        # Create checkpoint
+        checkpoint = Checkpoint(
+            user = request.user,
+            boxoffice = boxoffice,
+            cash = form.cleaned_data['cash'],
+            buttons = form.cleaned_data['buttons'],
+            fringers = form.cleaned_data['fringers'],
+            notes = form.cleaned_data['notes'],
+        )
+        checkpoint.save()
+        logger.info("Boxoffice checkpoint added for %s", boxoffice.name)
+        messages.success(request, "Checkpoint added")
+
+        # If this was the first checkpoint of the day the whole page needs to be updated
+        if _get_todays_checkpoints(boxoffice).count() == 1:
+            return HttpResponse(f"Redirect: { reverse('boxoffice:main_tab', args = [boxoffice.uuid, 'checkpoints']) }")
+
+        # Clear form
+        form = None
+
+    # Rener checkpoint tab content
+    return _render_checkpoint(request, boxoffice, form)

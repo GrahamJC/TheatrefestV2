@@ -1,0 +1,65 @@
+{% load crispy_forms_tags %}
+{% load widget_tweaks %}
+
+<div class="row">
+
+    <div class="col-6">
+        <div class="card">
+            <h6 class="card-header">Add Checkpoint</h6>
+            <div class="card-body">
+                {% crispy checkpoint_form %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6">
+        <div class="card mb-2">
+            <h6 class="card-header">Checkpoints Today</h6>
+            <div class="card-body">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Cash</th>
+                            <th>Fringers</th>
+                            <th>Buttons</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for checkpoint in checkpoints %}
+                            <tr>
+                                <td>{{ checkpoint.created | time:'h:i a' }}</td>
+                                <td class="text-right">&#163;{{ checkpoint.cash }}</td>
+                                <td class="text-right">{{ checkpoint.buttons }}</td>
+                                <td class="text-right">{{ checkpoint.fringers }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+<script language="javascript">
+
+    function update_checkpoints_tab_content(url, data) {
+        $('#checkpoints-tab-content').load(url, data, function(response, status, xhr) {
+            if (status != 'success') {
+                $('#checkpoints-tab-content').html('Sorry but there was an error. Please refresh the page and try again.');
+            }
+            else if (response.startsWith('Redirect:')) {
+                $('#checkpoints-tab-content').hide();
+                window.location.href = response.substring(10);
+            }
+        });
+    }
+
+    function checkpoint_add() {
+        var postData = $('#checkpoint-form').serializeArray();
+        update_checkpoints_tab_content('{% url "boxoffice:checkpoint_add" boxoffice.uuid %}', postData);
+    }
+
+</script>
