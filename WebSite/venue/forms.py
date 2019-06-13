@@ -8,7 +8,7 @@ class OpenCheckpointForm(forms.Form):
 
     cash = forms.DecimalField(label = 'Cash', required = True, max_digits = 5, decimal_places = 2)
     buttons = forms.IntegerField(label = 'Buttons', required = True)
-    fringers = forms.IntegerField(label = 'Paper fringers', required = True)
+    fringers = forms.IntegerField(label = 'Fringers', required = True)
     notes = forms.CharField(label = 'Notes', widget = forms.Textarea(attrs = { 'rows': 4 }), required = False)
 
 
@@ -51,8 +51,8 @@ class SaleForm(forms.Form):
 
 class CloseCheckpointForm(forms.Form):
 
-    audience = forms.IntegerField(label = 'Audience tokens', required = True)
     cash = forms.DecimalField(label = 'Cash', required = True, max_digits = 5, decimal_places = 2)
     buttons = forms.IntegerField(label = 'Buttons', required = True)
-    fringers = forms.IntegerField(label = 'Paper fringers', required = True)
+    fringers = forms.IntegerField(label = 'Fringers', required = True)
+    audience = forms.IntegerField(label = 'Audience', required = True)
     notes = forms.CharField(label = 'Notes', widget = forms.Textarea(attrs = { 'rows': 4 }), required = False)

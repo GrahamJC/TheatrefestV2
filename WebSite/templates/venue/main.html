@@ -50,8 +50,8 @@
                                         <td>{{ current_performance.open_checkpoint.buttons }}</td>
                                     </tr>
                                     <tr>
-                                        <th>Paper fringers</th>
-                                        <td>&#163;{{ current_performance.open_checkpoint.fringers }}</td>
+                                        <th>Fringers</th>
+                                        <td>{{ current_performance.open_checkpoint.fringers }}</td>
                                     </tr>
                                     {% if current_performance.open_checkpoint.notes %}
                                         <tr><td colspan="2">
@@ -69,14 +69,11 @@
                 </div>
                 <div class="col-12 col-md-6 mb-2">
                     <div class="alert alert-info">
-                        <p>
-                            You must complete the open checkpoint before you can make sales and process admissions for this show.
-                            Please record the following for the venue:
-                        </p>
+                        <p>You must complete the open checkpoint before you can make sales and process admissions for this show:</p>
                         <ul>
-                            <li>Cash - the total amount of cash.</li>
-                            <li>Buttons - the number of fringe buttons.</li>
-                            <li>Paper fringers - the number of paper fringers.</li>
+                            <li>Cash - total amount of cash</li>
+                            <li>Buttons - number of fringe buttons</li>
+                            <li>Fringers - number of paper fringers</li>
                         </ul>
                         <p>
                             You can also add any notes that may be useful.
@@ -105,10 +102,6 @@
                                 {% if current_performance.has_close_checkpoint %}
                                     <table class="table">
                                         <tr>
-                                            <th>Audience</th>
-                                            <td>{{ current_performance.audience }}</td>
-                                        </tr>
-                                        <tr>
                                             <th>Cash</th>
                                             <td>&#163;{{ current_performance.close_checkpoint.cash }}</td>
                                         </tr>
@@ -117,8 +110,12 @@
                                             <td>{{ current_performance.close_checkpoint.buttons }}</td>
                                         </tr>
                                         <tr>
-                                            <th>Paper fringers</th>
-                                            <td>&#163;{{ current_performance.close_checkpoint.fringers }}</td>
+                                            <th>Fringers</th>
+                                            <td>{{ current_performance.close_checkpoint.fringers }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Audience</th>
+                                            <td>{{ current_performance.audience }}</td>
                                         </tr>
                                         {% if current_performance.close_checkpoint.notes %}
                                             <tr><td colspan="2">
@@ -134,15 +131,12 @@
                     </div>
                     <div class="col-12 col-md-6 mb-2">
                         <div class="alert alert-info">
-                            <p>
-                                Once the performance has started you must complete the close checkpoint before you can move on to the next show.
-                                Please record:
-                            </p>
+                            <p>You must complete the close checkpoint before you can move on to the next show:</p>
                             <ul>
-                                <li>Number of audience tokens collected (i.e. the number of people admitted to the performance).</li>
-                                <li>Total cash (including the opening float).</li>
-                                <li>Number of buttons remaining.</li>
-                                <li>Number of paper fringers remaining.</li>
+                                <li>Cash - total amount of cash</li>
+                                <li>Buttons - number of fringe buttons</li>
+                                <li>Fringers - number of paper fringers</li>
+                                <li>Audience - number of audience tokens collected</li>
                             </ul>
                             <p>
                                 You can also add any notes that may be useful.

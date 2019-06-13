@@ -10,6 +10,7 @@ urlpatterns = [
     path('select/<str:category>/<str:report_name>', views.select, name = 'select_report'),
     # Finance reports
     path('finance/venue_summary', views.venue_summary, name = 'finance__venue_summary'),
+    path('finance/boxoffice_summary', views.boxoffice_summary, name = 'finance__boxoffice_summary'),
     # Sales
     path('sale/<uuid:sale_uuid>/pdf', views.sale_pdf, name = 'sale_pdf'),
     # Refunds

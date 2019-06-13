@@ -45,6 +45,9 @@ def create_open_form(venue, performance, post_data = None):
     # Add crispy form helper
     form.helper = FormHelper()
     form.helper.form_action = reverse('venue:performance_open', args = [venue.uuid, performance.uuid])
+    form.helper.form_class = 'form-horizontal'
+    form.helper.label_class = 'col-3'
+    form.helper.field_class = 'col-9'
     form.helper.layout = Layout(
         Field('cash'),
         Field('buttons'),
@@ -65,11 +68,14 @@ def create_close_form(venue, performance, post_data = None):
     # Add crispy form helper
     form.helper = FormHelper()
     form.helper.form_action = reverse('venue:performance_close', args = [venue.uuid, performance.uuid])
+    form.helper.form_class = 'form-horizontal'
+    form.helper.label_class = 'col-3'
+    form.helper.field_class = 'col-9'
     form.helper.layout = Layout(
-            Field('audience'),
             Field('cash'),
             Field('buttons'),
             Field('fringers'),
+            Field('audience'),
             Field('notes'),
             Submit('close', 'Close Performance'),
     )
@@ -123,19 +129,23 @@ def create_sale_form(performance, sale, post_data = None):
     form.helper = FormHelper()
     form.helper.form_id = 'sale-form'
     form.helper.form_class = 'form-horizontal'
-    form.helper.label_class = 'col-8 py-0'
-    form.helper.field_class = 'col-4'
+    form.helper.label_class = 'col-4'
+    form.helper.field_class = 'col-8'
     if form.efringers:
         form.helper.layout = Layout(
-            Fieldset('Tickets', *(form.ticket_field_name(tt) for tt in form.ticket_types)),
-            Fieldset('Use eFringers', *(form.efringer_field_name(ef) for ef in form.efringers)),
-            Fieldset('Extras', 'buttons', 'fringers'),
+            TabHolder(
+                Tab('Tickets', *(form.ticket_field_name(tt) for tt in form.ticket_types), css_class = 'pt-2'),
+                Tag('eFringers', *(form.efringer_field_name(ef) for ef in form.efringers), css_class = 'pt-2'),
+                Tab('Other', 'buttons', 'fringers', css_class = 'pt-2'),
+            ),
             Button('update', 'Update', css_class = 'btn-primary',  onclick = f"sale_update('{sale.uuid}')"),
         )
     else:
         form.helper.layout = Layout(
-            Fieldset('Tickets', *(form.ticket_field_name(tt) for tt in form.ticket_types)),
-            Fieldset('Extras', 'buttons', 'fringers'),
+            TabHolder(
+                Tab('Tickets', *(form.ticket_field_name(tt) for tt in form.ticket_types), css_class = 'pt-2'),
+                Tab('Other', 'buttons', 'fringers', css_class = 'pt-2'),
+            ),
             Button('update', 'Update', css_class = 'btn-primary',  onclick = f"sale_update('{sale.uuid}')"),
         )
 

@@ -31,11 +31,6 @@
             <div class="card">
                 <h6 class="card-header">All Sales</h6>
                 <div class="card-body">
-                    {% if current_performance.has_close_checkpoint %}
-                        <p>Select an existing sale to view the details.</p>
-                    {% else %}
-                        <p>Select an existing sale to view/update the details.</p>
-                    {% endif %}
                     <table class="table table-striped">
                         <thhead>
                             <tr>
@@ -63,13 +58,13 @@
         {% if current_sale %}
             <div class="alert alert-info">
                 {% if current_performance.has_close_checkpoint %}
-                    <p>This performance is now closed and you can no longer make any changes.</p>
+                    This performance is now closed and you can no longer make any changes.
                 {% elif current_sale.completed %}
-                    <p>This sale is complete but you can still make changes to correct mistakes.</p>
-                    <p>Once you have made any changes select Done to start a new sale.</p>
+                    This sale is complete but you can still make changes to correct mistakes.
+                    Once you have made any changes select Done to start a new sale.
                 {% else %}
-                    <p>Once the customer has paid select Complete to finish the sale.</p>
-                    <p>If you select Cancel (or leave this page) the sale will be cancelled and no tickets will be issued.</p>
+                    Once the customer has paid select Complete to finish the sale.
+                    If you select Cancel (or leave this page) the sale will be cancelled and no tickets will be issued.
                 {% endif %}
             </div>
             <div class="card">
@@ -124,14 +119,14 @@
             <div class="alert alert-info">
                 <p>
                     This performance is now closed.
-                    Sales information can be viewed but you can no longer make any changes.
+                    To view details of a sale select it from the list.
                 </p>
             </div>
         {% else %}
             <div class="alert alert-info">
                 <p>To start a new sale enter the customer name or e-mail address and click Start.</p>
                 <p><strong>Important:</strong> if the customer wants to purchase tickets using an eFringer you must enter the e-mail address of the account used to purchase the eFringer.</p>
-                <p>To view or update details of a previous sale select the sale from the list.</p>
+                <p>To view or update details of a previous sale select it from the list.</p>
             </div>
         {% endif %}
     </div>

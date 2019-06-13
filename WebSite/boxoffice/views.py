@@ -504,8 +504,8 @@ def refund_complete(request, refund_uuid):
     else:
         form = _create_refund_form(refund, request.POST)
         if form.is_valid():
-            refund.amount = refund_form.cleaned_data['amount']
-            refund.reason = refund_form.cleaned_data['reason']
+            refund.amount = form.cleaned_data['amount']
+            refund.reason = form.cleaned_data['reason']
             refund.completed = datetime.datetime.now()
             refund.save()
             logger.info("Refund %s completed", refund)
@@ -529,7 +529,7 @@ def refund_cancel(request, refund_uuid):
 @transaction.atomic
 def refund_close(request, refund_uuid):
     refund = get_object_or_404(Refund, uuid = refund_uuid)
-    return _render_refund(request, refund.boxoffice)
+    return _render_refund(request, refund.boxoffice, None)
 
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
 def refund_report(request, refund_uuid):

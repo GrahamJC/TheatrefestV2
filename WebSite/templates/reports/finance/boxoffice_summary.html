@@ -1,0 +1,49 @@
+<div class="alert alert-info">
+    <div class="row">
+        <div class="col-2"><b>Box office</b></div>
+        <div class="col-10">{{ boxoffice.name }}</div>
+    </div>
+    <div class="row">
+        <div class="col-2"><b>Date</b></div>
+        <div class="col-10">{{ date | date:'l, d F' }}</div>
+    </div>
+</div>
+
+<table class="table table-sm">
+    <tr>
+        <th></th>
+        <th class="text-right">Open</th>
+        <th class="text-right">Sales</th>
+        <th class="text-right">Refunds</th>
+        <th class="text-right">Close</th>
+        <th class="text-right">Variance</th>
+    </tr>
+    {% for period in periods %}
+        <tr><th colspan="6">{{ period.open.created | date:'g:ia' }} to {{ period.close.created | date:'g:ia' }}</th></tr>
+        <tr>
+            <td class="text-right">Cash</td>
+            <td class="text-right">{% if period.open %}&#163;{{ period.open.cash }}{% endif %}</td>
+            <td class="text-right">{% if period.sales %}&#163;{{ period.sales.cash }}{% endif %}</td>
+            <td class="text-right">{% if period.refunds %}&#163;{{ period.refunds.cash }}{% endif %}</td>
+            <td class="text-right">{% if period.close %}&#163;{{ period.close.cash }}{% endif %}</td>
+            <td class="text-right">{% if period.variance %}&#163;{{ period.variance.cash }}{% endif %}</td>
+        </tr>
+        <tr>
+            <td class="text-right">Fringers</td>
+            <td class="text-right">{% if period.open %}{{ period.open.fringers }}{% endif %}</td>
+            <td class="text-right">{% if period.sales %}{{ period.sales.fringers }}{% endif %}</td>
+            <td></td>
+            <td class="text-right">{% if period.close %}{{ period.close.fringers }}{% endif %}</td>
+            <td class="text-right">{% if period.variance %}{{ period.variance.fringers }}{% endif %}</td>
+        </tr>
+        <tr>
+            <td class="text-right">Buttons</td>
+            <td class="text-right">{% if period.open %}{{ period.open.buttons }}{% endif %}</td>
+            <td class="text-right">{% if period.sales %}{{ period.sales.buttons }}{% endif %}</td>
+            <td></td>
+            <td class="text-right">{% if period.close %}{{ period.close.buttons }}{% endif %}</td>
+            <td class="text-right">{% if period.variance %}{{ period.variance.buttons }}{% endif %}</td>
+        </tr>
+        <tr><th colspan="5">&nbsp;</th></tr>
+    {% endfor %}
+</table>

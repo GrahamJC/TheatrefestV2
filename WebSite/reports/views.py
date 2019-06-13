@@ -25,7 +25,7 @@ from reportlab.lib.units import cm
 from reportlab.lib import colors
 
 from program.models import Venue, Show, ShowPerformance
-from tickets.models import BoxOffice, Sale, Refund, Fringer, Ticket
+from tickets.models import BoxOffice, Sale, Refund, Fringer, Ticket, Checkpoint
 
 from .forms import SelectForm
 
@@ -38,7 +38,14 @@ reports = {
             'select_fields': ['ticketed_venue', 'performance_date'],
             'select_required': ['ticketed_venue', 'performance_date'],
             'report_url': reverse_lazy('reports:finance__venue_summary'),
-        }
+        },
+        'boxoffice_summary': {
+            'title': 'Box Office summary',
+            'select_form': SelectForm,
+            'select_fields': ['boxoffice', 'boxoffice_date'],
+            'select_required': ['boxoffice', 'boxoffice_date'],
+            'report_url': reverse_lazy('reports:finance__boxoffice_summary'),
+        },
     }
 }
 
@@ -139,10 +146,9 @@ def venue_summary(request):
         open = performance.open_checkpoint if performance.has_open_checkpoint else None
         close = performance.close_checkpoint if performance.has_close_checkpoint else None
         if open and close:
-            #sales_cash = sum([sale.total_cost for sale in Sale.objects.filter(venue = venue, created__gt = open.created, created__lt = close.created)])
-            sales_cash = Sale.objects.filter(venue = venue, created__gt = open.created, created__lt = close.created).aggregate(Sum('amount'))['amount__sum']
-            sales_fringers = Fringer.objects.filter(sale__venue = venue, sale__created__gt = open.created, sale__created__lt = close.created).count()
-            sales_buttons = Sale.objects.filter(venue = venue, created__gt = open.created, created__lt = close.created).aggregate(Sum('buttons'))['buttons__sum']
+            sales_cash = Sale.objects.filter(venue = venue, created__gt = open.created, created__lt = close.created).aggregate(Sum('amount'))['amount__sum'] or 0
+            sales_fringers = Fringer.objects.filter(sale__venue = venue, sale__created__gt = open.created, sale__created__lt = close.created).count() or 0
+            sales_buttons = Sale.objects.filter(venue = venue, created__gt = open.created, created__lt = close.created).aggregate(Sum('buttons'))['buttons__sum'] or 0
             performances.append({
                 'show': performance.show.name,
                 'time': performance.time, 
@@ -181,7 +187,6 @@ def venue_summary(request):
 
     # Render PDF
     response = HttpResponse(content_type = 'application/pdf')
-    #response['Content-Disposition'] = 'venue_summary.pdf'
     doc = SimpleDocTemplate(
         response,
         pagesize = portrait(A4),
@@ -257,6 +262,149 @@ def venue_summary(request):
             style = (
                 ('SPAN', (0, 0), (4, 0)),
                 ('ALIGN', (0, 1), (4, -1), 'RIGHT'),
+            )
+        )
+        story.append(table)
+        story.append(Spacer(1, 0.5*cm))
+
+    # Render PDF document and return it
+    doc.build(story)
+    return response
+
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_volunteer or u.is_admin)
+def boxoffice_summary(request):
+
+    # Get selection criteria
+    boxoffice = BoxOffice.objects.get(id = int(request.GET['boxoffice']))
+    date = datetime.datetime.strptime(request.GET['boxoffice_date'], '%Y%m%d')
+
+    # Fetch data
+    periods = []
+    prev_checkpoint = None
+    for checkpoint in boxoffice.checkpoints.filter(created__gte = date, created__lt = (date + datetime.timedelta(days = 1))).order_by('created'):
+        open = prev_checkpoint
+        close = checkpoint
+        if open and close:
+            sales_cash = Sale.objects.filter(boxoffice = boxoffice, created__gt = open.created, created__lt = close.created).aggregate(Sum('amount'))['amount__sum'] or 0
+            sales_fringers = Fringer.objects.filter(sale__boxoffice = boxoffice, sale__created__gt = open.created, sale__created__lt = close.created).count() or 0
+            sales_buttons = Sale.objects.filter(boxoffice = boxoffice, created__gt = open.created, created__lt = close.created).aggregate(Sum('buttons'))['buttons__sum'] or 0
+            refunds_cash = Refund.objects.filter(boxoffice = boxoffice, created__gt = open.created, created__lt = close.created).aggregate(Sum('amount'))['amount__sum'] or 0
+            periods.append({
+                'open': open,
+                'close': close,
+                'sales': {
+                    'cash': sales_cash,
+                    'fringers': sales_fringers,
+                    'buttons': sales_buttons,
+                },
+                'refunds': {
+                    'cash': refunds_cash,
+                },
+                'variance': {
+                    'cash': close.cash - open.cash - sales_cash + refunds_cash,
+                    'fringers': close.fringers - open.fringers + sales_fringers,
+                    'buttons': close.buttons - open.buttons + sales_buttons,
+                },
+            })
+        prev_checkpoint = checkpoint
+
+    # Check for HTML
+    format = request.GET['format']
+    if format == 'HTML':
+
+        # Render HTML
+        context = {
+            'boxoffice': boxoffice,
+            'date': date,
+            'periods': periods,
+        }
+        return render(request, 'reports/finance/boxoffice_summary.html', context)
+
+    # Render PDF
+    response = HttpResponse(content_type = 'application/pdf')
+    doc = SimpleDocTemplate(
+        response,
+        pagesize = portrait(A4),
+        leftMargin = 2.5*cm,
+        rightMargin = 2.5*cm,
+        topMargin = 2.5*cm,
+        bottomMargin = 2.5*cm,
+    )
+    styles = getSampleStyleSheet()
+    story = []
+
+    # Festival banner
+    if boxoffice.festival.banner:
+        banner = Image(boxoffice.festival.banner.get_absolute_path(), width = 16*cm, height = 4*cm)
+        banner.hAlign = 'CENTER'
+        story.append(banner)
+        story.append(Spacer(1, 1*cm))
+
+    # Box office and date
+    table = Table(
+        (
+            (Paragraph('<para><b>Box office:</b></para>', styles['Normal']), boxoffice.name),
+            (Paragraph('<para><b>Date:</b></para>', styles['Normal']), f"{date:%A, %d %B}"),
+        ),
+        colWidths = (4*cm, 12*cm),
+        hAlign = 'LEFT'
+    )
+    story.append(table)
+    story.append(Spacer(1, 0.5*cm))
+
+    # Periods
+    for period in periods:
+        table_data = []
+        table_data.append((
+            Paragraph(f"<para><b>{ period['open'].created:%I:%M%p } to { period['close'].created:%I:%M%p }</b></para>", styles['Normal']),
+            '',
+            '',
+            '',
+            '',
+            '',
+        ))
+        table_data.append((
+            '',
+            'Open',
+            'Sales',
+            'Refunds',
+            'Close',
+            'Variance',
+        ))
+        table_data.append((
+            'Cash',
+            f"£{ period['open'].cash }" if period.get('open', None) else '',
+            f"£{ period['sales']['cash'] }" if period.get('sales', None) else '',
+            f"£{ period['refunds']['cash'] }" if period.get('refunds', None) else '',
+            f"£{ period['close'].cash }" if period.get('close', None) else '',
+            f"£{ period['variance']['cash'] }" if period.get('variance', None) else '',
+        ))
+        table_data.append((
+            'Fringers',
+            period['open'].fringers if period.get('open', None) else '',
+            period['sales']['fringers'] if period.get('sales', None) else '',
+            '',
+            period['close'].fringers if period.get('close', None) else '',
+            period['variance']['fringers'] if period.get('variance', None) else '',
+        ))
+        table_data.append((
+            'Buttons',
+            period['open'].buttons if period.get('open', None) else '',
+            period['sales']['buttons'] if period.get('sales', None) else '',
+            '',
+            period['close'].buttons if period.get('close', None) else '',
+            period['variance']['buttons'] if period.get('variance', None) else '',
+        ))
+        table = Table(
+            table_data,
+            colWidths = (2.5*cm, 2.5*cm, 2.5*cm, 2.5*cm, 2.5*cm, 2.5*cm),
+            hAlign = 'LEFT',
+            style = (
+                ('SPAN', (0, 0), (5, 0)),
+                ('ALIGN', (0, 1), (5, -1), 'RIGHT'),
             )
         )
         story.append(table)
