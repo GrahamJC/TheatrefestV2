@@ -1,11 +1,10 @@
 from .base import *
 
-DEBUG=False
-
 ALLOWED_HOSTS = [
     'www.theatrefest.co.uk',
 ]
 INTERNAL_IPS = [
+    # '81.143.205.105',
 ]
 
 # Database

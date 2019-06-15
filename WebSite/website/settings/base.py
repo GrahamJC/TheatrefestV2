@@ -23,7 +23,7 @@ def get_secret(setting):
 SECRET_KEY = get_secret("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 # Disable internationlization and time zones
 USE_I18N = False
@@ -129,3 +129,6 @@ LOGOUT_REDIRECT_URL = "/home"
 
 # Crisp forms
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
+
+# Application settings
+VENUE_SHOW_ALL_PERFORMANCES = False

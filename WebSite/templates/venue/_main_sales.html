@@ -105,10 +105,10 @@
                         <div class="row mb-2">
                             <div class="col-12">
                                 {% if current_sale.completed %}
-                                    <a class="btn btn-primary" href="#" onclick="update_sales_tab_content('{% url 'venue:sale_new' venue.uuid current_performance.uuid %}')">Done</a>
+                                    <a class="btn btn-primary" href="#" onclick="update_sales_tab_content('{% url 'venue:sale_new' current_performance.uuid %}')">Done</a>
                                 {% else %}
-                                    <a class="btn btn-primary" href="#" onclick="update_sales_tab_content('{% url 'venue:sale_complete' venue.uuid current_performance.uuid current_sale.uuid %}')">Complete</a>
-                                    <a class="btn btn-secondary" href="#" onclick="update_sales_tab_content('{% url 'venue:sale_cancel' venue.uuid current_performance.uuid current_sale.uuid %}')">Cancel</a>
+                                    <a class="btn btn-primary" href="#" onclick="update_sales_tab_content('{% url 'venue:sale_complete' current_performance.uuid current_sale.uuid %}')">Complete</a>
+                                    <a class="btn btn-secondary" href="#" onclick="update_sales_tab_content('{% url 'venue:sale_cancel' current_performance.uuid current_sale.uuid %}')">Cancel</a>
                                 {% endif %}
                             </div>
                         </div>
@@ -144,22 +144,22 @@
     }
 
     function sale_select(uuid) {
-        update_sales_tab_content('{% url "venue:sale_select" venue.uuid current_performance.uuid "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid));
+        update_sales_tab_content('{% url "venue:sale_select" current_performance.uuid "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid));
     }
 
     function sale_start() {
         var postData = $('#sale-start-form').serializeArray();
-        update_sales_tab_content('{% url "venue:sale_start" venue.uuid current_performance.uuid %}', postData);
+        update_sales_tab_content('{% url "venue:sale_start" current_performance.uuid %}', postData);
     }
 
     function sale_update(uuid) {
         var postData = $('#sale-form').serializeArray();
-        update_sales_tab_content('{% url "venue:sale_update" venue.uuid current_performance.uuid  "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid), postData);
+        update_sales_tab_content('{% url "venue:sale_update" current_performance.uuid  "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid), postData);
     }
 
     function sale_cancel(uuid) {
         var postData = $('#sale-form').serializeArray();
-        update_sales_tab_content('{% url "venue:sale_cancel" venue.uuid current_performance.uuid  "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid), postData);
+        update_sales_tab_content('{% url "venue:sale_cancel" current_performance.uuid  "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid), postData);
     }
 
 </script>

@@ -1,11 +1,10 @@
 from .base import *
 
-DEBUG=False
-
 ALLOWED_HOSTS = [
     'training.theatrefest.co.uk',
 ]
 INTERNAL_IPS = [
+    # '81.143.205.105',
 ]
 
 # Database
@@ -98,3 +97,6 @@ LOGGING = {
         "handlers": ["console", "theatrefest"],
     },
 }
+
+# Application settings
+VENUE_SHOW_ALL_PERFORMANCES = True

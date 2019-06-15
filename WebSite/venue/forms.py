@@ -11,6 +11,44 @@ class OpenCheckpointForm(forms.Form):
     fringers = forms.IntegerField(label = 'Fringers', required = True)
     notes = forms.CharField(label = 'Notes', widget = forms.Textarea(attrs = { 'rows': 4 }), required = False)
 
+    def __init__(self, checkpoint, *args, **kwargs):
+        if checkpoint:
+            kwargs['initial'] = {
+                'cash': checkpoint.cash,
+                'buttons': checkpoint.buttons,
+                'fringers': checkpoint.fringers,
+                'notes': checkpoint.notes,
+            }
+        super().__init__(*args, **kwargs)
+        if checkpoint:
+            self.fields['cash'].disabled = True
+            self.fields['buttons'].disabled = True
+            self.fields['fringers'].disabled = True
+
+
+class CloseCheckpointForm(forms.Form):
+
+    cash = forms.DecimalField(label = 'Cash', required = True, max_digits = 5, decimal_places = 2)
+    buttons = forms.IntegerField(label = 'Buttons', required = True)
+    fringers = forms.IntegerField(label = 'Fringers', required = True)
+    audience = forms.IntegerField(label = 'Audience', required = True)
+    notes = forms.CharField(label = 'Notes', widget = forms.Textarea(attrs = { 'rows': 4 }), required = False)
+
+    def __init__(self, checkpoint, *args, **kwargs):
+        if checkpoint:
+            kwargs['initial'] = {
+                'cash': checkpoint.cash,
+                'buttons': checkpoint.buttons,
+                'fringers': checkpoint.fringers,
+                'audience': checkpoint.close_performance.audience,
+                'notes': checkpoint.notes,
+            }
+        super().__init__(*args, **kwargs)
+        if checkpoint:
+            self.fields['cash'].disabled = True
+            self.fields['buttons'].disabled = True
+            self.fields['fringers'].disabled = True
+
 
 class SaleStartForm(forms.Form):
 
@@ -47,12 +85,3 @@ class SaleForm(forms.Form):
             +
             sum([1 for ef in self.efringers if self.cleaned_data[self.efringer_field_name(ef)]])
         )
-
-
-class CloseCheckpointForm(forms.Form):
-
-    cash = forms.DecimalField(label = 'Cash', required = True, max_digits = 5, decimal_places = 2)
-    buttons = forms.IntegerField(label = 'Buttons', required = True)
-    fringers = forms.IntegerField(label = 'Fringers', required = True)
-    audience = forms.IntegerField(label = 'Audience', required = True)
-    notes = forms.CharField(label = 'Notes', widget = forms.Textarea(attrs = { 'rows': 4 }), required = False)
