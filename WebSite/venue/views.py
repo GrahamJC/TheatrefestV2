@@ -170,7 +170,7 @@ def create_sale_form(performance, sale, post_data = None):
         form.helper.layout = Layout(
             TabHolder(
                 Tab('Tickets', *(form.ticket_field_name(tt) for tt in form.ticket_types), css_class = 'pt-2'),
-                Tag('eFringers', *(form.efringer_field_name(ef) for ef in form.efringers), css_class = 'pt-2'),
+                Tab('eFringers', *(form.efringer_field_name(ef) for ef in form.efringers), css_class = 'pt-2'),
                 Tab('Other', 'buttons', 'fringers', css_class = 'pt-2'),
             ),
             Button('update', 'Update', css_class = 'btn-primary',  onclick = f"sale_update('{sale.uuid}')"),

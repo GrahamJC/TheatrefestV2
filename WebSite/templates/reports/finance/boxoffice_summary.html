@@ -11,12 +11,12 @@
 
 <table class="table table-sm">
     <tr>
-        <th></th>
-        <th class="text-right">Open</th>
-        <th class="text-right">Sales</th>
-        <th class="text-right">Refunds</th>
-        <th class="text-right">Close</th>
-        <th class="text-right">Variance</th>
+        <th width="20%"></th>
+        <th width="16%" class="text-right">Open</th>
+        <th width="16%" class="text-right">Sales</th>
+        <th width="16%" class="text-right">Refunds</th>
+        <th width="16%" class="text-right">Close</th>
+        <th width="16%" class="text-right">Variance</th>
     </tr>
     {% for period in periods %}
         <tr><th colspan="6">{{ period.open.created | date:'g:ia' }} to {{ period.close.created | date:'g:ia' }}</th></tr>
@@ -44,6 +44,18 @@
             <td class="text-right">{% if period.close %}{{ period.close.buttons }}{% endif %}</td>
             <td class="text-right">{% if period.variance %}{{ period.variance.buttons }}{% endif %}</td>
         </tr>
+        {% if period.open.notes %}
+            <tr>
+                <td class="text-right">Open notes</td>
+                <td class="pl-4" colspan="5">{{ period.open.notes }}</td>
+            </tr>
+        {% endif %}
+        {% if period.close.notes %}
+            <tr>
+                <td class="text-right">Close notes</td>
+                <td class="pl-4" colspan="5">{{ period.close.notes }}</td>
+            </tr>
+        {% endif %}
         <tr><th colspan="5">&nbsp;</th></tr>
     {% endfor %}
 </table>

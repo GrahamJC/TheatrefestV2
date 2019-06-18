@@ -9,14 +9,19 @@
 
     <h5>{{ festival.title }}</h5>
 
-    <div class="form-group">
-        <select id="tf-select-report" class="form-control">
-            <option value="" {% if not selected_report %}selected{% endif %}>Select report</option>
-            {% for name, report in reports.items %}
-                <option value="{{ name }}" {% if name == selected_report %}selected{% endif %}>{{ report.title }}</option>
-            {% endfor %}
-        </select>
-    </div>
+    <form class="form-horizontal">
+        <div class="form-group row">
+            <label class="col-2 col-form-label">Report</label>
+            <div class="col-10">
+                <select id="tf-select-report" class="form-control">
+                    <option value="" {% if not selected_report %}selected{% endif %}>Select report</option>
+                    {% for name, report in reports.items %}
+                        <option value="{{ name }}" {% if name == selected_report %}selected{% endif %}>{{ report.title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </form>
 
     {% if select_form %}
         {% crispy select_form %}

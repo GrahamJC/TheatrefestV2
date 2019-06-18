@@ -11,11 +11,11 @@
 
 <table class="table table-sm">
     <tr>
-        <th></th>
-        <th class="text-right">Open</th>
-        <th class="text-right">Sales</th>
-        <th class="text-right">Close</th>
-        <th class="text-right">Variance</th>
+        <th width="20%"></th>
+        <th width="20%" class="text-right">Open</th>
+        <th width="20%" class="text-right">Sales</th>
+        <th width="20%" class="text-right">Close</th>
+        <th width="20%" class="text-right">Variance</th>
     </tr>
     {% for performance in performances %}
         <tr><th colspan="5">{{ performance.time | date:'g:ia' }} {{ performance.show }}</th></tr>
@@ -40,6 +40,18 @@
             <td class="text-right">{% if performance.close %}{{ performance.close.buttons }}{% endif %}</td>
             <td class="text-right">{% if performance.variance %}{{ performance.variance.buttons }}{% endif %}</td>
         </tr>
+        {% if performance.open.notes %}
+            <tr>
+                <td class="text-right">Open notes</td>
+                <td class="pl-4" colspan="4">{{ performance.open.notes }}</td>
+            </tr>
+        {% endif %}
+        {% if performance.close.notes %}
+            <tr>
+                <td class="text-right">Close notes</td>
+                <td class="pl-4" colspan="4">{{ performance.close.notes }}</td>
+            </tr>
+        {% endif %}
         <tr><th colspan="5">&nbsp;</th></tr>
     {% endfor %}
 </table>

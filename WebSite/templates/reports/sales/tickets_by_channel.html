@@ -1,0 +1,24 @@
+{% load tf_filters %}
+
+<table class="table table-sm">
+    <tr>
+        <th></th>
+        {% for channel in channels %}
+            <th class="text-right">{{ channel }}</th>
+        {% endfor %}
+        <th class="text-right">Total</th>
+    </tr>
+    {% for show in shows %}
+        <tr><th colspan="{{ channels | length | add:2 }}">{{ show.name }}</th></tr>
+        {% for performance in show.performances %}
+            <tr>
+                <th>&nbsp;&nbsp;&nbsp;&nbsp;{{ performance.date | date:'l, F j' }} at {{ performance.time | time:'g:ia' }}</th>
+                {% for channel in channels %}
+                    <th class="text-right">{{ performance.tickets | lookup:channel }}</th>
+                {% endfor %}
+                <th class="text-right">{{ performance.tickets | lookup:'Total' }}</th>
+            </tr>
+        {% endfor %}
+        <tr><th colspan="{{ channels | length | add:2 }}">&nbsp;</th></tr>
+    {% endfor %}
+</table>

@@ -12,7 +12,7 @@
                 <h5 class="d-block d-md-none tf-show-name">{{ show.name }}</h5>
                 <h6 class="d-block d-md-none tf-company-name">{{ show.company.name }}</h6>
                 {% if show.image %}
-                    <img class="m-1 w-100" src="{{ MEDIA_ROOT }}{{ show.image.url }}" />
+                    <img class="m-1 w-100" src="{{ show.image.url }}" />
                 {% endif %}
                 <div class="tf-info1">
                     {% if show.genre_list %}
@@ -64,7 +64,7 @@
                 {% if show.venue.sponsor %}
                     <div class="tf-sponsor-name text-right" style="{% if show.venue.sponsor.background %}background-color: {{ show.venue.sponsor.background }};{% endif %}">
                         <a href="{{ show.venue.sponsor.url }}" target="_blank"  style="{% if show.venue.sponsor.color %}color: {{ show.venue.sponsor.color }};{% endif %}">
-                            {% if show.venue.sponsor.image %}<img class="m-1" style="height: 45px;" src="{{ MEDIA_ROOT }}{{ show.venue.sponsor.image.url }}" />{% endif %}
+                            {% if show.venue.sponsor.image %}<img class="m-1" style="height: 45px;" src="{{ show.venue.sponsor.image.url }}" />{% endif %}
                         </a>
                     </div>
                 {% endif %}

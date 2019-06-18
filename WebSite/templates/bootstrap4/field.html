@@ -31,8 +31,6 @@
                     {{ field.label|safe }}
                 </label>
                 {% include 'bootstrap4/layout/help_text_and_errors.html' %}
-            {% elif field|is_file %}
-                {% include 'bootstrap4/layout/field_file.html' %}
             {% else %}
                 <div class="{{ field_class }}">
                     {% crispy_field field %}

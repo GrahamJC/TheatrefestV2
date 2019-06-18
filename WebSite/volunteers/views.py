@@ -20,6 +20,7 @@ from crispy_forms.layout import Layout, Field, HTML, Submit, Button, Row, Column
 from crispy_forms.bootstrap import FormActions, TabHolder, Tab
 
 from core.models import User
+from content.models import Document
 
 from .models import Role, Location, Shift, Volunteer
 from .forms import (
@@ -29,7 +30,7 @@ from .forms import (
 )
 
 
-def get_shift_list_context(volunteer):
+def render_shifts(request, volunteer):
 
     # Get days that have shifts defined
     shifts = Shift.objects.filter(location__festival=volunteer.user.festival, volunteer_can_accept=True, volunteer__isnull=True, role__in=volunteer.roles.all())
@@ -39,10 +40,18 @@ def get_shift_list_context(volunteer):
             'date': day['date'],
             'shifts': [s for s in shifts.filter(date = day['date']).order_by('start_time', 'location__name')]
         })
-    return {
+    context = {
         'my_shifts': volunteer.shifts.all(),
         'days': days,
     }
+
+    # Get volunteer handbook URL
+    handbook = Document.objects.filter(festival = request.festival, name='VolunteerHandbook').first()
+    if handbook:
+        context['handbook_url'] = handbook.get_absolute_url()
+
+    # Render shifts
+    return render(request, 'volunteers/shifts.html', context)
 
 @login_required
 def shift_list(request):
@@ -51,7 +60,7 @@ def shift_list(request):
     volunteer = request.user.volunteer
 
     # Render the page
-    return render(request, 'volunteers/shifts.html', get_shift_list_context(volunteer))
+    return render_shifts(request, volunteer)
 
 
 @login_required
@@ -71,7 +80,7 @@ def shift_accept(request, slug):
         messages.error(request, 'Shift has been accepted by another volunteer')
 
     # Render the page
-    return render(request, 'volunteers/shifts.html', get_shift_list_context(volunteer))
+    return render_shifts(request, volunteer)
 
 
 @login_required
@@ -91,7 +100,7 @@ def shift_cancel(request, slug):
         messages.error(request, 'Shift is assigned to another volunteer')
 
     # Render the page
-    return render(request, 'volunteers/shifts.html', get_shift_list_context(volunteer))
+    return render_shifts(request, volunteer)
 
 
 @login_required

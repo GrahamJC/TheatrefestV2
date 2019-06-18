@@ -6,6 +6,7 @@
 
 {% block content %}
 
+
     <p>Selet a day to view and volunteer for shifts on that day.</p>
 
     <div class="nav nav-pills nav-justified mb-3">
@@ -18,7 +19,16 @@
     <div class="tab-content">
 
         <div id="tf-tab-myshifts" class="tab-pane fade show active">
-            <table class="table accordion">
+
+            <div class="float-right">
+                <a class="btn btn-primary" href="{% url 'reports:volunteer_shifts_pdf' %}" target="_blank">Print Shifts</a>
+                {% if handbook_url %}
+                    <a class="btn btn-primary" href="{{ handbook_url }}">Handbook PDF</a>
+                {% endif %}
+            </div>
+            <div class="clearfix"></div>
+
+            <table class="table accordion mt-2">
                 <thead class="thead-light">
                     <tr>
                         <th>Date</th>
