@@ -162,9 +162,9 @@
 
 {% block body-script %}
 
-    {% if performances %}
+    <script language="javascript">
 
-        <script language="javascript">
+        {% if performances %}
 
             $( function() {
                 $('#select-performance').on('change', function() {
@@ -175,14 +175,27 @@
             });
 
             function updateTickets(event) {
-                $('#tickets-tab-content').load('{% url 'venue:tickets' current_performance.uuid 'html' %}', function(response, status, xhr) {
-                    if (status != 'success') {
-                        $('#tickets-tab-content').html('Sorry but there was an error. Please refresh the page and try again.');
-                    }
-                });
+                updateTicketsTab('{% url 'venue:tickets' current_performance.uuid 'html' %}')
             }
-        </script>
 
-    {% endif %}
+        {% endif %}
+
+        function updateSalesTab(url, data) {
+            $('#sales-tab-content').load(url, data, function(response, status, xhr) {
+                if (status != 'success') {
+                    $('#sales-tab-content').html('Sorry but there was an error. Please refresh the page and try again.');
+                }
+            });
+        }
+
+        function updateTicketsTab(url, data) {
+            $('#tickets-tab-content').load(url, data, function(response, status, xhr) {
+                if (status != 'success') {
+                    $('#tickets-tab-content').html('Sorry but there was an error. Please refresh the page and try again.');
+                }
+            });
+        }
+
+    </script>
     
 {% endblock %}

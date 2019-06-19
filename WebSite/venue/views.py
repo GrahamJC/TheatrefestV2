@@ -122,7 +122,7 @@ def create_sale_start_form(performance, post_data = None):
     form.helper.form_id = 'sale-start-form'
     form.helper.layout = Layout(
         Field('customer'),
-        Button('start', 'Start', css_class = 'btn-primary',  onclick = 'sale_start()'),
+        Button('start', 'Start', css_class = 'btn-primary',  onclick = 'saleStart()'),
     )
 
     # Return form
@@ -173,7 +173,7 @@ def create_sale_form(performance, sale, post_data = None):
                 Tab('eFringers', *(form.efringer_field_name(ef) for ef in form.efringers), css_class = 'pt-2'),
                 Tab('Other', 'buttons', 'fringers', css_class = 'pt-2'),
             ),
-            Button('update', 'Update', css_class = 'btn-primary',  onclick = f"sale_update('{sale.uuid}')"),
+            Button('update', 'Update', css_class = 'btn-primary',  onclick = f"saleUpdate('{sale.uuid}')"),
         )
     else:
         form.helper.layout = Layout(
@@ -181,7 +181,7 @@ def create_sale_form(performance, sale, post_data = None):
                 Tab('Tickets', *(form.ticket_field_name(tt) for tt in form.ticket_types), css_class = 'pt-2'),
                 Tab('Other', 'buttons', 'fringers', css_class = 'pt-2'),
             ),
-            Button('update', 'Update', css_class = 'btn-primary',  onclick = f"sale_update('{sale.uuid}')"),
+            Button('update', 'Update', css_class = 'btn-primary',  onclick = f"saleUpdate('{sale.uuid}')"),
         )
 
     # Return form

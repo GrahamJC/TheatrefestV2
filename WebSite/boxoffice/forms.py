@@ -1,12 +1,81 @@
 from django import forms
 from django.core.exceptions import ValidationError
 
-from tickets.models import TicketType, Checkpoint
+from program.models import Show, ShowPerformance
+from tickets.models import TicketType, Sale, Checkpoint
+
+
+class SaleStartForm(forms.Form):
+
+    customer = forms.CharField(label = 'Customer', required = True)
+    customer.widget.attrs['placeholder'] = '-- Enter customer name or e-mail --'
+
+
+class SaleTicketsForm(forms.Form):
+
+    show = forms.ChoiceField(choices = [], required = True, label = "Show")
+    performance = forms.ChoiceField(choices = [], required = True, label = "Performance")
+
+    def __init__(self, shows, ticket_types, efringers, *args, **kwargs):
+        self.ticket_types = ticket_types
+        self.efringers = efringers
+        super().__init__(*args, **kwargs)
+        self.fields['show'].choices = [('', '-- Select show --')] + [(s.uuid, s.name) for s in shows]
+        if 'show' in self.data:
+            try:
+                show_uuid = self.data.get('show')
+                self.fields['performance'].choices = [('', '-- Select performance --')] + [(p.uuid, f"{p.date:%a, %b %d} at {p.time:%I:%M%p}") for p in ShowPerformance.objects.filter(show__uuid = show_uuid)]
+            except:
+                pass
+        for tt in self.ticket_types:
+            self.fields[self.ticket_field_name(tt)] = forms.IntegerField(label = tt.name, required = False, initial = 0, min_value = 0)
+        if efringers:
+            for ef in self.efringers:
+                self.fields[self.efringer_field_name(ef)] = forms.BooleanField(label = ef.name, required = False, initial = False)
+
+    @classmethod
+    def ticket_field_name(cls, ticket_type):
+        return f'Ticket_{ticket_type.name}'
+
+    @classmethod
+    def efringer_field_name(cls, efringer):
+        return f'eFringer_{efringer.name}'
+
+    @property
+    def ticket_count(self):
+        return (
+            sum([self.cleaned_data[self.ticket_field_name(tt)] for tt in self.ticket_types])
+            +
+            sum([1 for ef in self.efringers if self.cleaned_data[self.efringer_field_name(ef)]])
+        )
+
+
+class SaleExtrasForm(forms.Form):
+
+    buttons = forms.IntegerField(label = 'Buttons', required = False, initial = 0, min_value = 0)
+    fringers = forms.IntegerField(label = 'Fringers', required = False, initial = 0, min_value = 0)
+
+
+class RefundStartForm(forms.Form):
+
+    customer = forms.CharField(label = 'Customer', required = True)
+    customer.widget.attrs['placeholder'] = '-- Enter customer name or e-mail --'
+
+
+class RefundTicketForm(forms.Form):
+
+    ticket_no = forms.IntegerField(label = 'Number')
+
+
+class RefundForm(forms.Form):
+
+    amount = forms.DecimalField(label = 'Refund', min_value = 0, max_digits = 5, decimal_places = 2)
+    reason = forms.CharField(label = 'Reason', widget = forms.Textarea())
 
 
 class CheckpointForm(forms.Form):
 
     cash = forms.DecimalField(label = 'Cash', required = True, max_digits = 5, decimal_places = 2)
     buttons = forms.IntegerField(label = 'Buttons', required = True)
-    fringers = forms.IntegerField(label = 'Paper fringers', required = True)
+    fringers = forms.IntegerField(label = 'Fringers', required = True)
     notes = forms.CharField(label = 'Notes', widget = forms.Textarea(attrs = { 'rows': 4 }), required = False)

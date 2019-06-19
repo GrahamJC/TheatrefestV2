@@ -40,19 +40,28 @@
 
     </div>
 
-    <div id="main-modal" class="modal fade" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">Modal title</h4>
-                </div>
-                <div class="modal-body"></div>
-                <div class="modal-footer">
-                    <a id="main-modal-pdf" class="btn btn-primary" href="#" target="_blank">PDF</a>
-                    <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
+{% endblock %}
+
+{% block body-script %}
+
+    <script language="javascript">
+
+        function updateSalesTab(url, data) {
+            $('#sales-tab-content').load(url, data, function(response, status, xhr) {
+                if (status != 'success') {
+                    $('#sales-tab-content').html('Sorry but there was an error. Please refresh the page and try again.');
+                }
+            });
+        }
+
+        function updateRefundsTab(url, data) {
+            $('#refunds-tab-content').load(url, data, function(response, status, xhr) {
+                if (status != 'success') {
+                    $('#refunds-tab-content').html('Sorry but there was an error. Please refresh the page and try again.');
+                }
+            });
+        }
+
+    </script>
 
 {% endblock %}

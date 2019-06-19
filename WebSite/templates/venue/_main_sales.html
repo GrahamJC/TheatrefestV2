@@ -42,8 +42,8 @@
                         <tbody>
                             {% for sale in sales %}
                                 <tr>
-                                    <td>{{ sale.id }}</td>
-                                    <td><a href="javascript: sale_select('{{ sale.uuid }}')">{{ sale.customer }}</a></td>
+                                    <td><a href="#" onclick="saleSelect('{{ sale.uuid }}')">{{ sale.id }}</a></td>
+                                    <td>{{ sale.customer }}</td>
                                     <td>&#163;{{ sale.amount }}</td>
                                 </tr>
                             {% endfor %}
@@ -58,13 +58,13 @@
         {% if current_sale %}
             <div class="alert alert-info">
                 {% if current_performance.has_close_checkpoint %}
-                    This performance is now closed and you can no longer make any changes.
+                    <p>This performance is now closed and you can no longer make any changes.</p>
                 {% elif current_sale.completed %}
-                    This sale is complete but you can still make changes to correct mistakes.
-                    Once you have made any changes select Done to start a new sale.
+                    <p>This sale is complete but you can still make changes to correct mistakes.</p>
+                    <p></p>Once you have made any changes select Close to begin a new sale.</p>
                 {% else %}
-                    Once the customer has paid select Complete to finish the sale.
-                    If you select Cancel (or leave this page) the sale will be cancelled and no tickets will be issued.
+                    <p>Once the customer has paid select Complete to finish the sale.</p>
+                    <p>If you select Cancel (or leave this page) the sale will be cancelled and no tickets will be issued.</p>
                 {% endif %}
             </div>
             <div class="card">
@@ -105,10 +105,12 @@
                         <div class="row mb-2">
                             <div class="col-12">
                                 {% if current_sale.completed %}
-                                    <a class="btn btn-primary" href="#" onclick="update_sales_tab_content('{% url 'venue:sale_new' current_performance.uuid %}')">Done</a>
+                                    <div class="float-right">
+                                        <a class="btn btn-secondary" href="#" onclick="updateSalesTab('{% url 'venue:sale_new' current_performance.uuid %}')">Close</a>
+                                    </div>
                                 {% else %}
-                                    <a class="btn btn-primary" href="#" onclick="update_sales_tab_content('{% url 'venue:sale_complete' current_performance.uuid current_sale.uuid %}')">Complete</a>
-                                    <a class="btn btn-secondary" href="#" onclick="update_sales_tab_content('{% url 'venue:sale_cancel' current_performance.uuid current_sale.uuid %}')">Cancel</a>
+                                    <a class="btn btn-primary" href="#" onclick="updateSalesTab('{% url 'venue:sale_complete' current_performance.uuid current_sale.uuid %}')">Complete</a>
+                                    <a class="btn btn-secondary" href="#" onclick="updateSalesTab('{% url 'venue:sale_cancel' current_performance.uuid current_sale.uuid %}')">Cancel</a>
                                 {% endif %}
                             </div>
                         </div>
@@ -135,31 +137,18 @@
 
 <script language="javascript">
 
-    function update_sales_tab_content(url, data) {
-        $('#sales-tab-content').load(url, data, function(response, status, xhr) {
-            if (status != 'success') {
-                $('#sales-tab-content').html('Sorry but there was an error. Please refresh the page and try again.');
-            }
-        });
+    function saleSelect(uuid) {
+        updateSalesTab('{% url "venue:sale_select" current_performance.uuid "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid));
     }
 
-    function sale_select(uuid) {
-        update_sales_tab_content('{% url "venue:sale_select" current_performance.uuid "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid));
-    }
-
-    function sale_start() {
+    function saleStart() {
         var postData = $('#sale-start-form').serializeArray();
-        update_sales_tab_content('{% url "venue:sale_start" current_performance.uuid %}', postData);
+        updateSalesTab('{% url "venue:sale_start" current_performance.uuid %}', postData);
     }
 
-    function sale_update(uuid) {
+    function saleUpdate(uuid) {
         var postData = $('#sale-form').serializeArray();
-        update_sales_tab_content('{% url "venue:sale_update" current_performance.uuid  "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid), postData);
-    }
-
-    function sale_cancel(uuid) {
-        var postData = $('#sale-form').serializeArray();
-        update_sales_tab_content('{% url "venue:sale_cancel" current_performance.uuid  "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid), postData);
+        updateSalesTab('{% url "venue:sale_update" current_performance.uuid  "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid), postData);
     }
 
 </script>

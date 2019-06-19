@@ -53,6 +53,7 @@ class CloseCheckpointForm(forms.Form):
 class SaleStartForm(forms.Form):
 
     customer = forms.CharField(label = 'Customer', required = True)
+    customer.widget.attrs['placeholder'] = '-- Enter customer name or e-mail --'
 
 
 class SaleForm(forms.Form):
