@@ -17,10 +17,11 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'theatrefest',
+#       'NAME': 'training',
         'USER': 'theatrefest',
         'PASSWORD': 'barnum',
-        'HOST': 'localhost',
-#        'HOST': 'theatrefestvm.ukwest.cloudapp.azure.com',
+#        'HOST': 'localhost',
+        'HOST': 'theatrefestvm.ukwest.cloudapp.azure.com',
         'PORT': '5432',
     },
 }

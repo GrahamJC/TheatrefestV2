@@ -53,6 +53,7 @@ def tickets_by_type(request):
     # Fetch data
     ticket_types = [tt.name for tt in TicketType.objects.filter(festival = request.festival).order_by('name')]
     ticket_types.append('eFringer')
+    ticket_types.append('Volunteer')
     shows = []
     if selected_show:
         shows.append(_get_show_tickets_by_type(selected_show, ticket_types))

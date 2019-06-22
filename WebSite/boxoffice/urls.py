@@ -12,8 +12,10 @@ urlpatterns = [
     path('<uuid:boxoffice_uuid>/tab/<str:tab>', views.main, name = 'main_tab'),
     # Sale AJAX support
     path('<uuid:boxoffice_uuid>/sale/start', views.sale_start, name = 'sale_start'),
-    path('show/<uuid:show_uuid>/performances', views.show_performances, name = 'show_performances'),
-    path('sale/<uuid:sale_uuid>/tickets/add', views.sale_tickets_add, name = 'sale_tickets_add'),
+    path('sale/show/<uuid:show_uuid>', views.show_performances, name = 'show_performances'),
+    path('sale/<uuid:sale_uuid>/show/<uuid:show_uuid>/select', views.sale_show_select, name = 'sale_show_select'),
+    path('sale/<uuid:sale_uuid>/performance/<uuid:performance_uuid>/select', views.sale_performance_select, name = 'sale_performance_select'),
+    path('sale/<uuid:sale_uuid>/performance/<uuid:performance_uuid>/tickets/add', views.sale_tickets_add, name = 'sale_tickets_add'),
     path('sale/<uuid:sale_uuid>/extras/update', views.sale_extras_update, name = 'sale_extras_update'),
     path('sale/<uuid:sale_uuid>/performance/<uuid:performance_uuid>/remove', views.sale_remove_performance, name = 'sale_remove_performance'),
     path('sale/<uuid:sale_uuid>/ticket/<uuid:ticket_uuid>/remove', views.sale_remove_ticket, name = 'sale_remove_ticket'),

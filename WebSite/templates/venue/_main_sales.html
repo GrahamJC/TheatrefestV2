@@ -10,10 +10,10 @@
 <div class="row">
 
     <div class="col-6">
-        {% if not current_performance.has_close_checkpoint %}
+        {% if not performance.has_close_checkpoint %}
             {% if current_sale %}
                 <div class="card mb-2">
-                    <h6 class="card-header">Sale<div class="float-right">Tickets Available: {{ current_performance.tickets_available }}</div></h6>
+                    <h6 class="card-header">Sale<div class="float-right">Tickets Available: {{ performance.tickets_available }}</div></h6>
                     <div class="card-body">
                         {% crispy sale_form %}
                     </div>
@@ -27,7 +27,7 @@
                 </div>
             {% endif %}
         {% endif %}
-        {% if current_performance.has_close_checkpoint or not current_sale %}
+        {% if performance.has_close_checkpoint or not current_sale %}
             <div class="card">
                 <h6 class="card-header">All Sales</h6>
                 <div class="card-body">
@@ -57,7 +57,7 @@
     <div class="col-6">
         {% if current_sale %}
             <div class="alert alert-info">
-                {% if current_performance.has_close_checkpoint %}
+                {% if performance.has_close_checkpoint %}
                     <p>This performance is now closed and you can no longer make any changes.</p>
                 {% elif current_sale.completed %}
                     <p>This sale is complete but you can still make changes to correct mistakes.</p>
@@ -101,23 +101,23 @@
                         <div class="col-9"><strong>Total</strong></div>
                         <div class="col-3 text-right">&#163;{{ current_sale.total_cost }}</div>
                     </div>
-                    {% if not current_performance.has_close_checkpoint %}
+                    {% if not performance.has_close_checkpoint %}
                         <div class="row mb-2">
                             <div class="col-12">
                                 {% if current_sale.completed %}
                                     <div class="float-right">
-                                        <a class="btn btn-secondary" href="#" onclick="updateSalesTab('{% url 'venue:sale_new' current_performance.uuid %}')">Close</a>
+                                        <a class="btn btn-secondary" href="#" onclick="updateSalesTab('{% url 'venue:sale_new' performance.uuid %}')">Close</a>
                                     </div>
                                 {% else %}
-                                    <a class="btn btn-primary" href="#" onclick="updateSalesTab('{% url 'venue:sale_complete' current_performance.uuid current_sale.uuid %}')">Complete</a>
-                                    <a class="btn btn-secondary" href="#" onclick="updateSalesTab('{% url 'venue:sale_cancel' current_performance.uuid current_sale.uuid %}')">Cancel</a>
+                                    <a class="btn btn-primary" href="#" onclick="updateSalesTab('{% url 'venue:sale_complete' performance.uuid current_sale.uuid %}')">Complete</a>
+                                    <a class="btn btn-secondary" href="#" onclick="updateSalesTab('{% url 'venue:sale_cancel' performance.uuid current_sale.uuid %}')">Cancel</a>
                                 {% endif %}
                             </div>
                         </div>
                     {% endif %}
                 </div>
             </div>
-        {% elif current_performance.has_close_checkpoint %}
+        {% elif performance.has_close_checkpoint %}
             <div class="alert alert-info">
                 <p>
                     This performance is now closed.
@@ -138,17 +138,17 @@
 <script language="javascript">
 
     function saleSelect(uuid) {
-        updateSalesTab('{% url "venue:sale_select" current_performance.uuid "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid));
+        updateSalesTab('{% url "venue:sale_select" performance.uuid "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid));
     }
 
     function saleStart() {
         var postData = $('#sale-start-form').serializeArray();
-        updateSalesTab('{% url "venue:sale_start" current_performance.uuid %}', postData);
+        updateSalesTab('{% url "venue:sale_start" performance.uuid %}', postData);
     }
 
     function saleUpdate(uuid) {
         var postData = $('#sale-form').serializeArray();
-        updateSalesTab('{% url "venue:sale_update" current_performance.uuid  "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid), postData);
+        updateSalesTab('{% url "venue:sale_update" performance.uuid  "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid), postData);
     }
 
 </script>

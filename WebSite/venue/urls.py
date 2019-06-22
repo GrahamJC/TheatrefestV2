@@ -10,7 +10,9 @@ urlpatterns = [
     # Main page
     path('<uuid:venue_uuid>', views.main, name = 'main'),
     path('performance/<uuid:performance_uuid>', views.performance, name = 'performance'),
-    # Checkpoint API
+    # Notes API
+    path('performance/<uuid:performance_uuid>/notes', views.performance_notes, name = 'performance_notes'),
+    # Open/close checkpoint API
     path('performance/<uuid:performance_uuid>/open', views.performance_open, name = 'performance_open'),
     path('performance/<uuid:performance_uuid>/close', views.performance_close, name = 'performance_close'),
     path('checkpoint/<uuid:checkpoint_uuid>/update_open', views.checkpoint_update_open, name = 'checkpoint_update_open'),

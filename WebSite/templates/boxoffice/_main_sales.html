@@ -37,7 +37,33 @@
             <div class="card mb-2">
                 <h6 class="card-header">Add Tickets</h6>
                 <div class="card-body">
-                    {% crispy sale_tickets_form %}
+                    <div class="row form-group">
+                        <label class="col-4 form-control-label">Show</label>
+                        <div class="col-8">
+                            <select id="sale-show-select" class="form-control" onchange="saleSelectShow(this.value)">
+                                <option value="" {% if not selected_show %}selected{%endif %}>-- Select show --</option>
+                                {% for s in shows %}
+                                    <option value="{{ s.uuid }}" {% if s == selected_show %}selected{%endif %}>{{ s.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    {% if performances %}
+                        <div class="row form-group">
+                            <label class="col-4 form-control-label">Performance</label>
+                            <div class="col-8">
+                                <select id="sale-performance-select" class="form-control" onchange="saleSelectPerformance(this.value)">
+                                    <option value="" {% if not selected_performance %}selected{%endif %}>-- Select performance --</option>
+                                    {% for p in performances %}
+                                        <option value="{{ p.uuid }}" {% if p == selected_performance %}selected{% endif %}>{{ p.date | date:'D, j M' }} at {{ p.time | time:'h:ip' }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    {% endif %}
+                    {% if sale_tickets_form %}
+                        {% crispy sale_tickets_form %}
+                    {% endif %}
                 </div>
             </div>
             <div class="card mb-2">
@@ -131,24 +157,36 @@
 <script language="javascript">
 
     {% if not sale %}
+
         function saleStart() {
             var postData = $('#sale-start-form').serializeArray();
             updateSalesTab('{% url "boxoffice:sale_start" boxoffice.uuid %}', postData);
         }
+
     {% else %}
-        function loadPerformances(showUuid) {
-            $('#id_performance').load('{% url "boxoffice:show_performances" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', showUuid));
+
+        function saleSelectShow(showUuid) {
+            updateSalesTab('{% url "boxoffice:sale_show_select" sale.uuid "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', showUuid));
         }
 
-        function saleTickets() {
-            var postData = $('#sale-tickets-form').serializeArray();
-            updateSalesTab('{% url "boxoffice:sale_tickets_add" sale.uuid %}', postData);
+        function saleSelectPerformance(performanceUuid) {
+            updateSalesTab('{% url "boxoffice:sale_performance_select" sale.uuid "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', performanceUuid));
         }
 
-        function saleExtras() {
-            var postData = $('#sale-extras-form').serializeArray();
-            updateSalesTab('{% url "boxoffice:sale_extras_update" sale.uuid %}', postData);
-        }
+        {% if sale_tickets_form %}
+            function saleAddTickets() {
+                var postData = $('#sale-tickets-form').serializeArray();
+                updateSalesTab('{% url "boxoffice:sale_tickets_add" sale.uuid selected_performance.uuid %}', postData);
+            }
+        {% endif %}
+
+        {% if sale_extras_form %}
+            function saleUpdateExtras() {
+                var postData = $('#sale-extras-form').serializeArray();
+                updateSalesTab('{% url "boxoffice:sale_extras_update" sale.uuid %}', postData);
+            }
+        {% endif %}
+
     {% endif %}
 
 </script>

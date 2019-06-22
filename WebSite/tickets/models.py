@@ -6,8 +6,8 @@ from decimal import Decimal, ROUND_05UP
 
 from core.models import TimeStampedModel, Festival
 from core.utils import AutoOneToOneField
-from program.models import ShowPerformance, Venue
 
+from program.models import ShowPerformance, Venue
 
 class BoxOffice(TimeStampedModel):
     

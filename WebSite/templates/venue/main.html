@@ -12,21 +12,24 @@
             <div class="form-group form-row">
                 <label class="col-form-label col-2">Performance</label>
                 <select id="select-performance" class="form-control col-10">
-                    {% for performance in performances %}
-                        <option value="{{ performance.uuid }}" {% if performance == current_performance %}selected{% endif %} >{{ performance.show.name }} on {{ performance.date }} at {{ performance.time }}</option>
+                    {% for p in performances %}
+                        <option value="{{ p.uuid }}" {% if p == performance %}selected{% endif %} >{{ p.show.name }} on {{ p.date }} at {{ p.time }}</option>
                     {% endfor %}
                 </select>
             </div>
         </form>
 
         <div class="nav nav-tabs nav-justified mb-3">
-            {% if current_performance.has_open_checkpoint %}
+            {% if performance.notes %}
+                <a id="notes-tab" class="nav-item nav-link {% if tab == 'notes' %}active{% endif %}" href="#notes-tab-content" data-toggle="tab">Notes</a>
+            {% endif %}
+            {% if performance.has_open_checkpoint %}
                 <a id="open-tab" class="nav-item nav-link {% if tab == 'open' or not tab %}active{% endif %}" href="#open-tab-content" data-toggle="tab">Open</a>
                 <a id="sales-tab" class="nav-item nav-link {% if tab == 'sales' %}active{% endif %}" href="#sales-tab-content" data-toggle="tab">Sales</a>
                 <a id="tickets-tab" class="nav-item nav-link {% if tab == 'tickets' %}active{% endif %}" href="#tickets-tab-content" data-toggle="tab">Tickets</a>
                 <a id="close-tab" class="nav-item nav-link {% if tab == 'close' %}active{% endif %}" href="#close-tab-content" data-toggle="tab">Close</a>
             {% else %}
-                <a class="nav-item nav-link active" href="#open-tab-content" data-toggle="tab">Open</a>
+                <a class="nav-item nav-link {% if tab == 'open' or not tab %}active{% endif %}" href="#open-tab-content" data-toggle="tab">Open</a>
                 <a class="nav-item nav-link disabled" href="#">Sales</a>
                 <a class="nav-item nav-link disabled" href="#">Tickets</a>
                 <a class="nav-item nav-link disabled" href="#">Close</a>
@@ -35,56 +38,17 @@
 
         <div class="tab-content">
 
-            <div id="open-tab-content" class="tab-pane {% if not current_performance.has_open_checkpoint or tab == 'open' or not tab %}active{% endif %}">
-                <div class="row">
-                    <div class="col-12 col-md-6 mb-2">
-                        <div class="card">
-                            <h6 class="card-header">Checkpoint</h6>
-                            <div class="card-body">
-                                {% if open_form %}
-                                    {% crispy open_form %}
-                                {% elif current_performance.has_open_checkpoint %}
-                                    <table class="table">
-                                        <tr>
-                                            <th>Cash</th>
-                                            <td>&#163;{{ current_performance.open_checkpoint.cash }}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Buttons</th>
-                                            <td>{{ current_performance.open_checkpoint.buttons }}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Fringers</th>
-                                            <td>{{ current_performance.open_checkpoint.fringers }}</td>
-                                        </tr>
-                                        {% if current_performance.open_checkpoint.notes %}
-                                            <tr><td colspan="2">
-                                                {{ current_performance.open_checkpoint.notes }}
-                                            </td></tr>
-                                        {% endif %}
-                                    </table>
-                                {% else %}
-                                    <p>You cannot open this performance until all previous performances have been closed.</p>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-6 mb-2">
-                        <div class="alert alert-info">
-                            <p>You must complete the open checkpoint before you can make sales and process admissions for this show:</p>
-                            <ul>
-                                <li>Cash - total amount of cash</li>
-                                <li>Buttons - number of fringe buttons</li>
-                                <li>Fringers - number of paper fringers</li>
-                            </ul>
-                            <p>You can also add any notes that may be useful.</p>
-                            <p><strong>Important:</strong> once the performance has been opened you cannot update the cash, buttons or fringers but you can still add/update the notes.</p>
-                        </div>
-                    </div>
+            {% if performance.notes %}
+                <div id="notes-tab-content" class="tab-pane {% if tab == 'notes' %}active{% endif %}">
+                    {% include 'venue/_main_notes.html' %}
                 </div>
+            {% endif %}
+
+            <div id="open-tab-content" class="tab-pane {% if tab == 'open' or not tab %}active{% endif %}">
+                {% include 'venue/_main_open.html' %}
             </div>
 
-            {% if current_performance.has_open_checkpoint %}
+            {% if performance.has_open_checkpoint %}
 
                 <div id="sales-tab-content" class="tab-pane {% if tab == 'sales' %}active{% endif %}">
                     {% include 'venue/_main_sales.html' %}
@@ -95,55 +59,7 @@
                 </div>
 
                 <div id="close-tab-content" class="tab-pane {% if tab == 'close' %}active{% endif %}">
-                    <div class="row">
-                        <div class="col-12 col-md-6 mb-2">
-                            <div class="card">
-                                <h6 class="card-header">Checkpoint</h6>
-                                <div class="card-body">
-                                    {% if close_form %}
-                                        {% crispy close_form %}
-                                    {% elif current_performance.has_close_checkpoint %}
-                                        <table class="table">
-                                            <tr>
-                                                <th>Cash</th>
-                                                <td>&#163;{{ current_performance.close_checkpoint.cash }}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Buttons</th>
-                                                <td>{{ current_performance.close_checkpoint.buttons }}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Fringers</th>
-                                                <td>{{ current_performance.close_checkpoint.fringers }}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Audience</th>
-                                                <td>{{ current_performance.audience }}</td>
-                                            </tr>
-                                            {% if current_performance.close_checkpoint.notes %}
-                                                <tr><td colspan="2">
-                                                    {{ current_performance.close_checkpoint.notes }}
-                                                </td></tr>
-                                            {% endif %}
-                                        </table>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12 col-md-6 mb-2">
-                            <div class="alert alert-info">
-                                <p>You must complete the close checkpoint before you can move on to the next show:</p>
-                                <ul>
-                                    <li>Cash - total amount of cash</li>
-                                    <li>Buttons - number of fringe buttons</li>
-                                    <li>Fringers - number of paper fringers</li>
-                                    <li>Audience - number of audience tokens collected</li>
-                                </ul>
-                                <p>You can also add any notes that may be useful.</p>
-                                <p><strong>Important:</strong> once the performance has been closed you cannot update the cash, buttons or fringers but you can still add/update the audience and notes.</p>
-                            </div>
-                        </div>
-                    </div>
+                    {% include 'venue/_main_close.html' %}
                 </div>
 
             {% endif %}
@@ -164,21 +80,25 @@
 
     <script language="javascript">
 
-        {% if performances %}
 
-            $( function() {
-                $('#select-performance').on('change', function() {
-                    var uuid = $('#select-performance').val();
-                    location.href = '{% url 'venue:performance' '00000000-0000-0000-0000-000000000000' %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
-                });
-                $('#tickets-tab').on('show.bs.tab', updateTickets);
+        $( function() {
+            $('#select-performance').on('change', function() {
+                var uuid = $('#select-performance').val();
+                location.href = '{% url 'venue:performance' '00000000-0000-0000-0000-000000000000' %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
             });
+            {% if performance %}
+                $('#notes-tab').on('show.bs.tab', function(e) { updateNotesTab('{% url 'venue:performance_notes' performance.uuid %}') });
+                $('#tickets-tab').on('show.bs.tab', function(e) { updateTicketsTab('{% url 'venue:tickets' performance.uuid 'html' %}') });
+            {% endif %}
+        });
 
-            function updateTickets(event) {
-                updateTicketsTab('{% url 'venue:tickets' current_performance.uuid 'html' %}')
-            }
-
-        {% endif %}
+        function updateNotesTab(url, data) {
+            $('#notes-tab-content').load(url, data, function(response, status, xhr) {
+                if (status != 'success') {
+                    $('#notes-tab-content').html('Sorry but there was an error. Please refresh the page and try again.');
+                }
+            });
+        }
 
         function updateSalesTab(url, data) {
             $('#sales-tab-content').load(url, data, function(response, status, xhr) {

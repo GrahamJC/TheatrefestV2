@@ -1278,6 +1278,7 @@ class AdminShowPerformanceUpdate(LoginRequiredMixin, SuccessMessageMixin, Update
                 Column('time', css_class='form-group col-md-6 mb-0'),
                 css_class = 'form-row',
             ),
+            Field('notes'),
             FormActions(
                 Submit('save', 'Save'),
                 Button('delete', 'Delete'),

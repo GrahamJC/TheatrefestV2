@@ -58,26 +58,27 @@ class SaleStartForm(forms.Form):
 
 class SaleForm(forms.Form):
 
-    buttons = forms.IntegerField(label = 'Buttons', required = False, initial = 0, min_value = 0)
-    fringers = forms.IntegerField(label = 'Paper fringers', required = False, initial = 0, min_value = 0)
+    buttons = forms.IntegerField(label = 'Buttons', required = True, initial = 0, min_value = 0)
+    fringers = forms.IntegerField(label = 'Paper fringers', required = True, initial = 0, min_value = 0)
+    volunteer = forms.BooleanField(label = 'Use volunteer ticket', required = False, initial = False)
 
     def __init__(self, ticket_types, efringers, *args, **kwargs):
         self.ticket_types = ticket_types
         self.efringers = efringers
         super().__init__(*args, **kwargs)
         for tt in self.ticket_types:
-            self.fields[self.ticket_field_name(tt)] = forms.IntegerField(label = tt.name, required = False, initial = 0, min_value = 0)
+            self.fields[self.ticket_field_name(tt)] = forms.IntegerField(label = tt.name, required = True, initial = 0, min_value = 0)
         if efringers:
             for ef in self.efringers:
-                self.fields[self.efringer_field_name(ef)] = forms.BooleanField(label = ef.name, required = False, initial = False)
-
+                self.fields[self.efringer_field_name(ef)] = forms.BooleanField(label = f"{ef.name} ({ef.available} remaining)", required = False, initial = False)
+                
     @classmethod
     def ticket_field_name(cls, ticket_type):
-        return f'Ticket_{ticket_type.name}'
+        return f'ticket_{ticket_type.id}'
 
     @classmethod
     def efringer_field_name(cls, efringer):
-        return f'eFringer_{efringer.name}'
+        return f'eFringer_{efringer.id}'
 
     @property
     def ticket_count(self):
@@ -85,4 +86,6 @@ class SaleForm(forms.Form):
             sum([self.cleaned_data[self.ticket_field_name(tt)] for tt in self.ticket_types])
             +
             sum([1 for ef in self.efringers if self.cleaned_data[self.efringer_field_name(ef)]])
+            +
+            1 if self.cleaned_data['volunteer'] else 0
         )

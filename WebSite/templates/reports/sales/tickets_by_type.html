@@ -6,17 +6,17 @@
         {% for ticket_type in ticket_types %}
             <th class="text-right">{{ ticket_type }}</th>
         {% endfor %}
-        <th class="text-right">Total</th>
+        <th class="text-right"><strong>Total</strong></th>
     </tr>
     {% for show in shows %}
         <tr><th colspan="{{ ticket_types | length | add:2 }}">{{ show.name }}</th></tr>
         {% for performance in show.performances %}
             <tr>
-                <th>&nbsp;&nbsp;&nbsp;&nbsp;{{ performance.date | date:'l, F j' }} at {{ performance.time | time:'g:ia' }}</th>
+                <td>&nbsp;&nbsp;&nbsp;&nbsp;{{ performance.date | date:'l, F j' }} at {{ performance.time | time:'g:ia' }}</td>
                 {% for ticket_type in ticket_types %}
-                    <th class="text-right">{{ performance.tickets | lookup:ticket_type }}</th>
+                    <td class="text-right">{{ performance.tickets | lookup:ticket_type }}</td>
                 {% endfor %}
-                <th class="text-right">{{ performance.tickets | lookup:'Total' }}</th>
+                <td class="text-right"><strong>{{ performance.tickets | lookup:'Total' }}</strong></td>
             </tr>
         {% endfor %}
         <tr><th colspan="{{ ticket_types | length | add:2 }}">&nbsp;</th></tr>

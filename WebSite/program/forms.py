@@ -219,7 +219,7 @@ class AdminShowPerformanceForm(forms.ModelForm):
     class Meta:
         model = ShowPerformance
         fields = [
-            'date', 'time',
+            'date', 'time', 'notes',
         ]
         widgets = {
             'date': DatePickerInput(),

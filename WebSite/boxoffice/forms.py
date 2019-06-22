@@ -13,22 +13,12 @@ class SaleStartForm(forms.Form):
 
 class SaleTicketsForm(forms.Form):
 
-    show = forms.ChoiceField(choices = [], required = True, label = "Show")
-    performance = forms.ChoiceField(choices = [], required = True, label = "Performance")
-
-    def __init__(self, shows, ticket_types, efringers, *args, **kwargs):
+    def __init__(self, ticket_types, efringers, *args, **kwargs):
         self.ticket_types = ticket_types
         self.efringers = efringers
         super().__init__(*args, **kwargs)
-        self.fields['show'].choices = [('', '-- Select show --')] + [(s.uuid, s.name) for s in shows]
-        if 'show' in self.data:
-            try:
-                show_uuid = self.data.get('show')
-                self.fields['performance'].choices = [('', '-- Select performance --')] + [(p.uuid, f"{p.date:%a, %b %d} at {p.time:%I:%M%p}") for p in ShowPerformance.objects.filter(show__uuid = show_uuid)]
-            except:
-                pass
         for tt in self.ticket_types:
-            self.fields[self.ticket_field_name(tt)] = forms.IntegerField(label = tt.name, required = False, initial = 0, min_value = 0)
+            self.fields[self.ticket_field_name(tt)] = forms.IntegerField(label = tt.name, required = True, initial = 0, min_value = 0)
         if efringers:
             for ef in self.efringers:
                 self.fields[self.efringer_field_name(ef)] = forms.BooleanField(label = ef.name, required = False, initial = False)
@@ -52,8 +42,8 @@ class SaleTicketsForm(forms.Form):
 
 class SaleExtrasForm(forms.Form):
 
-    buttons = forms.IntegerField(label = 'Buttons', required = False, initial = 0, min_value = 0)
-    fringers = forms.IntegerField(label = 'Fringers', required = False, initial = 0, min_value = 0)
+    buttons = forms.IntegerField(label = 'Buttons', required = True, initial = 0, min_value = 0)
+    fringers = forms.IntegerField(label = 'Fringers', required = True, initial = 0, min_value = 0)
 
 
 class RefundStartForm(forms.Form):
@@ -69,8 +59,8 @@ class RefundTicketForm(forms.Form):
 
 class RefundForm(forms.Form):
 
-    amount = forms.DecimalField(label = 'Refund', min_value = 0, max_digits = 5, decimal_places = 2)
-    reason = forms.CharField(label = 'Reason', widget = forms.Textarea())
+    amount = forms.DecimalField(label = 'Refund', required = True, min_value = 0, max_digits = 5, decimal_places = 2)
+    reason = forms.CharField(label = 'Reason', required = True, widget = forms.Textarea())
 
 
 class CheckpointForm(forms.Form):

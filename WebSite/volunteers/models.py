@@ -4,6 +4,7 @@ from django.utils.functional import cached_property
 
 from core.models import TimeStampedModel, Festival, User
 from core.utils import get_image_filename
+
 from program.models import Venue
 
 class Role(TimeStampedModel):

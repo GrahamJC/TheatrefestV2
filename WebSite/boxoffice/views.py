@@ -72,14 +72,12 @@ def create_sale_start_form(post_data = None):
     # Return form
     return form
 
-def create_sale_tickets_form(festival, sale, post_data = None):
+def create_sale_tickets_form(festival, sale, performance, post_data = None):
 
     # Validate parameters
     assert festival
     assert sale
-
-    # Get shows
-    shows = Show.objects.filter(festival=festival, is_cancelled = False, venue__is_ticketed = True)
+    assert performance
 
     # Get ticket types and efringers
     ticket_types = []
@@ -93,7 +91,7 @@ def create_sale_tickets_form(festival, sale, post_data = None):
                 efringers.append(efringer)
 
     # Create form
-    form = SaleTicketsForm(shows, ticket_types, efringers, data = post_data)
+    form = SaleTicketsForm(ticket_types, efringers, data = post_data)
 
     # Add crispy form helper
     form.helper = FormHelper()
@@ -103,20 +101,16 @@ def create_sale_tickets_form(festival, sale, post_data = None):
     form.helper.field_class = 'col-8'
     if form.efringers:
         form.helper.layout = Layout(
-            Field('show', onchange=f"loadPerformances(this.value)"),
-            Field('performance'),
             TabHolder(
                 Tab('Tickets', *(form.ticket_field_name(tt) for tt in form.ticket_types), css_class = 'pt-2'),
                 Tab('eFringers', *(form.efringer_field_name(ef) for ef in form.efringers), css_class = 'pt-2'),
             ),
-            Button('add', 'Add', css_class = 'btn-primary',  onclick = f"saleTickets()"),
+            Button('add', 'Add', css_class = 'btn-primary',  onclick = f"saleAddTickets()"),
         )
     else:
         form.helper.layout = Layout(
-            Field('show', onchange=f"loadPerformances(this.value)"),
-            Field('performance'),
             *(Field(form.ticket_field_name(tt)) for tt in form.ticket_types),
-            Button('add', 'Add', css_class = 'btn-primary',  onclick = f"saleTickets()"),
+            Button('add', 'Add', css_class = 'btn-primary',  onclick = f"saleAddTickets()"),
         )
 
     # Return form
@@ -145,54 +139,12 @@ def create_sale_extras_form(sale, post_data = None):
     form.helper.layout = Layout(
         Field('buttons'),
         Field('fringers'),
-        Button('add', 'Add/Update', css_class = 'btn-primary',  onclick = f"saleExtras('{sale.uuid}')"),
+        Button('add', 'Add/Update', css_class = 'btn-primary',  onclick = f"saleUpdateExtras('{ sale.uuid }')"),
     )
 
     # Return form
     return form
 
-def render_main(request, boxoffice, tab, checkpoint_form = None):
-
-    # Render main page
-    today = datetime.datetime.today()
-    report_dates = [today - datetime.timedelta(days = n) for n in range(1, 14)]
-    context = {
-        'boxoffice': boxoffice,
-        'tab': tab,
-        'sale_start_form': create_sale_start_form(),
-        'sale_tickets_form': None,
-        'sale_extras_form': None,
-        'sale': None,
-        'sales': get_sales(boxoffice),
-        'refund_start_form': create_refund_start_form(),
-        'refund_ticket_form': None,
-        'refund_form': None,
-        'refund' : None,
-        'refunds': get_refunds(boxoffice),
-        'checkpoint_form': checkpoint_form or create_checkpoint_form(boxoffice),
-        'checkpoints': get_checkpoints(boxoffice),
-        'report_today': f'{today:%Y%m%d}',
-        'report_dates': [{ 'value': f'{d:%Y%m%d}', 'text': f'{d:%a, %b %d}'} for d in report_dates],
-    }
-    return render(request, 'boxoffice/main.html', context)
-
-def render_sale(request, boxoffice, sale = None, start_form = None, tickets_form = None, extras_form = None):
-    if sale:
-        context = {
-            'boxoffice': boxoffice,
-            'sale_tickets_form': tickets_form or create_sale_tickets_form(request.festival, sale),
-            'sale_extras_form': extras_form or create_sale_extras_form(sale),
-            'sale': sale,
-            'sales': get_sales(boxoffice),
-        }
-    else:
-        context = {
-            'boxoffice': boxoffice,
-            'sale_start_form': start_form or create_sale_start_form(),
-            'sale': None,
-            'sales': get_sales(boxoffice),
-        }
-    return render(request, "boxoffice/_main_sales.html", context)
 
 def create_refund_start_form(post_data = None):
 
@@ -248,6 +200,53 @@ def create_refund_form(refund = None, post_data = None):
 
     # Return form
     return form
+
+def render_main(request, boxoffice, tab, checkpoint_form = None):
+
+    # Render main page
+    today = datetime.datetime.today()
+    report_dates = [today - datetime.timedelta(days = n) for n in range(1, 14)]
+    context = {
+        'boxoffice': boxoffice,
+        'tab': tab,
+        'sale_start_form': create_sale_start_form(),
+        'sale_tickets_form': None,
+        'sale_extras_form': None,
+        'sale': None,
+        'sales': get_sales(boxoffice),
+        'refund_start_form': create_refund_start_form(),
+        'refund_ticket_form': None,
+        'refund_form': None,
+        'refund' : None,
+        'refunds': get_refunds(boxoffice),
+        'checkpoint_form': checkpoint_form or create_checkpoint_form(boxoffice),
+        'checkpoints': get_checkpoints(boxoffice),
+        'report_today': f'{today:%Y%m%d}',
+        'report_dates': [{ 'value': f'{d:%Y%m%d}', 'text': f'{d:%a, %b %d}'} for d in report_dates],
+    }
+    return render(request, 'boxoffice/main.html', context)
+
+def render_sale(request, boxoffice, sale = None, show = None, performance = None, start_form = None, tickets_form = None, extras_form = None):
+
+    if sale:
+        context = {
+            'boxoffice': boxoffice,
+            'sale': sale,
+            'shows': Show.objects.filter(festival = request.festival, is_cancelled = False, venue__is_ticketed = True),
+            'selected_show': show,
+            'performances': show.performances.order_by('date', 'time') if show else None,
+            'selected_performance': performance,
+            'sale_tickets_form': tickets_form or create_sale_tickets_form(request.festival, sale, performance) if performance else None,
+            'sale_extras_form': extras_form or create_sale_extras_form(sale),
+            'sales': get_sales(boxoffice),
+        }
+    else:
+        context = {
+            'boxoffice': boxoffice,
+            'sale_start_form': start_form or create_sale_start_form(),
+            'sales': get_sales(boxoffice),
+        }
+    return render(request, "boxoffice/_main_sales.html", context)
 
 def render_refund(request, boxoffice, refund = None, start_form = None, ticket_form = None, refund_form = None):
     if refund:
@@ -327,23 +326,8 @@ def main(request, boxoffice_uuid, tab = 'sales'):
 
     # Render main page
     return render_main(request, boxoffice, tab)
-
-
-# AJAX sale support
-@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
-def show_performances(request, show_uuid):
-
-    show = get_object_or_404(Show, uuid = show_uuid)
-    html = '<option value="">-- Select performance --</option>'
-    for performance in show.performances.order_by('date', 'time'):
-        dt = datetime.datetime.combine(performance.date, performance.time)
-        mins_remaining = (dt - datetime.datetime.now()).total_seconds() / 60
-        dt = arrow.get(dt)
-        html += f'<option value="{performance.uuid}">{dt:ddd, MMM D} at {dt:h:mm a} ({performance.tickets_available} available)</option>'
-        #if mins_remaining >= -30:
-            #html += f'<option disabled value="{performance.uuid}">{dt:ddd, MMM D} at {dt:h:mm a} ({performance.tickets_available} available - venue only)</option>'
-    return HttpResponse(html)
     
+# AJAX sale support
 @require_POST
 @login_required
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
@@ -369,23 +353,66 @@ def sale_start(request, boxoffice_uuid):
     # Render sales tab content
     return render_sale(request, boxoffice, sale, start_form = form)
 
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+def show_performances(request, show_uuid):
+
+    show = get_object_or_404(Show, uuid = show_uuid)
+    html = '<option value="">-- Select performance --</option>'
+    for performance in show.performances.order_by('date', 'time'):
+        dt = datetime.datetime.combine(performance.date, performance.time)
+        mins_remaining = (dt - datetime.datetime.now()).total_seconds() / 60
+        dt = arrow.get(dt)
+        html += f'<option value="{performance.uuid}">{dt:ddd, MMM D} at {dt:h:mm a} ({performance.tickets_available} available)</option>'
+        #if mins_remaining >= -30:
+            #html += f'<option disabled value="{performance.uuid}">{dt:ddd, MMM D} at {dt:h:mm a} ({performance.tickets_available} available - venue only)</option>'
+    return HttpResponse(html)
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+def sale_show_select(request, sale_uuid, show_uuid):
+
+    # Get sale, box office and show
+    sale = get_object_or_404(Sale, uuid = sale_uuid)
+    boxoffice = sale.boxoffice
+    assert boxoffice
+    show = get_object_or_404(Show, uuid = show_uuid)
+
+    # Render sales tab content
+    return render_sale(request, boxoffice, sale, show = show)
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+def sale_performance_select(request, sale_uuid, performance_uuid):
+
+    # Get sale, box office and performance
+    sale = get_object_or_404(Sale, uuid = sale_uuid)
+    boxoffice = sale.boxoffice
+    assert boxoffice
+    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+
+    # Render sales tab content
+    return render_sale(request, boxoffice, sale, show = performance.show, performance = performance)
+
 @require_POST
 @login_required
 @user_passes_test(lambda u: u.is_venue or u.is_admin)
 @transaction.atomic
-def sale_tickets_add(request, sale_uuid):
+def sale_tickets_add(request, sale_uuid, performance_uuid):
 
-    # Get sale and box office
+    # Get sale, box office and performance
     sale = get_object_or_404(Sale, uuid = sale_uuid)
     boxoffice = sale.boxoffice
     assert boxoffice
+    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+    assert performance
 
     # Process form
-    form = create_sale_tickets_form(request.festival, sale, request.POST)
+    form = create_sale_tickets_form(request.festival, sale, performance, request.POST)
     if form.is_valid():
-
-        # Get performance
-        performance = ShowPerformance.objects.get(uuid = form.cleaned_data['performance'])
 
         # Check if there are sufficient tickets
         requested_tickets = form.ticket_count
@@ -395,11 +422,11 @@ def sale_tickets_add(request, sale_uuid):
             # Adjust ticket numbers
             for ticket_type in form.ticket_types:
                 form_tickets = form.cleaned_data[SaleTicketsForm.ticket_field_name(ticket_type)]
-                while sale.tickets.filter(description = ticket_type.name).count() > form_tickets:
+                while sale.tickets.filter(performance = performance, description = ticket_type.name).count() > form_tickets:
                     sale_ticket = sale.tickets.filter(description = ticket_type.name).last()
                     logger.info("Sale %s ticket deleted: %s", sale, sale_ticket)
                     sale_ticket.delete()
-                while sale.tickets.filter(description = ticket_type.name).count() < form_tickets:
+                while sale.tickets.filter(performance = performance, description = ticket_type.name).count() < form_tickets:
                     new_ticket = Ticket(
                         sale = sale,
                         user = sale.customer_user,
@@ -414,7 +441,7 @@ def sale_tickets_add(request, sale_uuid):
             # Update eFringers
             for efringer in form.efringers:
                 form_is_used = form.cleaned_data[SaleTicketsForm.efringer_field_name(efringer)]
-                sale_ticket = sale.tickets.filter(fringer = efringer).first()
+                sale_ticket = sale.tickets.filter(performance = performance, fringer = efringer).first()
                 if form_is_used and not sale_ticket:
                     new_ticket = Ticket(
                         sale = sale,

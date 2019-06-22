@@ -270,6 +270,7 @@ class ShowPerformance(TimeStampedModel):
     date = models.DateField()
     time = models.TimeField()
     audience = models.IntegerField(blank = True, default = 0)
+    notes = models.TextField(blank = True, default = '')
 
     class Meta:
         unique_together = ('show', 'date', 'time')
