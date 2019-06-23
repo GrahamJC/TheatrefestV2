@@ -20,11 +20,13 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Field, Fieldset, HTML, Submit, Button, Row, Column
 from crispy_forms.bootstrap import FormActions, TabHolder, Tab, Div
 
+from dal.autocomplete import Select2QuerySetView
+
 from core.models import User
 from program.models import Show, ShowPerformance
-from tickets.models import BoxOffice, Sale, Refund, TicketType, Ticket, Fringer, Checkpoint
+from tickets.models import BoxOffice, Sale, TicketType, Ticket, Fringer, Checkpoint
 
-from .forms import CheckpointForm, SaleStartForm, SaleTicketsForm, SaleExtrasForm, RefundStartForm, RefundTicketForm, RefundForm
+from .forms import CheckpointForm, SaleStartForm, SaleTicketsForm, SaleExtrasForm, UserLookupForm
 
 # Logging
 import logging
@@ -40,16 +42,6 @@ def get_sales(boxoffice):
 
     # Get sales since last checkpoint
     return boxoffice.sales.filter(created__gte = checkpoint.created).order_by('-id')
-
-def get_refunds(boxoffice):
-
-    # Get last checkpoint for today
-    checkpoint = Checkpoint.objects.filter(boxoffice = boxoffice, created__gte = datetime.date.today()).order_by('created').last()
-    if not checkpoint:
-        return Sale.objects.none()
-
-    # Get refunds since last checkpoint
-    return boxoffice.refunds.filter(created__gte = checkpoint.created).order_by('-id')
 
 def get_checkpoints(boxoffice):
 
@@ -81,14 +73,12 @@ def create_sale_tickets_form(festival, sale, performance, post_data = None):
 
     # Get ticket types and efringers
     ticket_types = []
-    for ticket_type in sale.festival.ticket_types.order_by('name'):
+    for ticket_type in sale.festival.ticket_types.order_by('seqno'):
         ticket_types.append(ticket_type)
     efringers = []
     if sale.customer_user:
-        for efringer in sale.customer_user.fringers.order_by('name'):
-            is_in_sale = sale.tickets.filter(fringer = efringer).exists()
-            if is_in_sale or efringer.is_available():
-                efringers.append(efringer)
+        for fringer in sale.customer_user.fringers.order_by('name'):
+            efringers.append(fringer)
 
     # Create form
     form = SaleTicketsForm(ticket_types, efringers, data = post_data)
@@ -97,21 +87,44 @@ def create_sale_tickets_form(festival, sale, performance, post_data = None):
     form.helper = FormHelper()
     form.helper.form_id = 'sale-tickets-form'
     form.helper.form_class = 'form-horizontal'
-    form.helper.label_class = 'col-4'
-    form.helper.field_class = 'col-8'
-    if form.efringers:
-        form.helper.layout = Layout(
-            TabHolder(
-                Tab('Tickets', *(form.ticket_field_name(tt) for tt in form.ticket_types), css_class = 'pt-2'),
-                Tab('eFringers', *(form.efringer_field_name(ef) for ef in form.efringers), css_class = 'pt-2'),
-            ),
-            Button('add', 'Add', css_class = 'btn-primary',  onclick = f"saleAddTickets()"),
-        )
-    else:
-        form.helper.layout = Layout(
-            *(Field(form.ticket_field_name(tt)) for tt in form.ticket_types),
-            Button('add', 'Add', css_class = 'btn-primary',  onclick = f"saleAddTickets()"),
-        )
+    form.helper.label_class = 'col-6'
+    form.helper.field_class = 'col-6'
+    tabs = [Tab('Tickets', *(Field(form.ticket_field_name(tt)) for tt in form.ticket_types), css_class = 'pt-2')]
+    if sale.customer_user:
+        tab_content = []
+        if form.efringers:
+            fringers_available = []
+            fringers_used = []
+            fringers_empty = []
+            for fringer in form.efringers:
+                if fringer.is_available(performance):
+                    fringers_available.append(fringer)
+                else:
+                    form.fields[SaleTicketsForm.efringer_field_name(fringer)].disabled = True
+                    if fringer.is_available():
+                        fringers_used.append(fringer)
+                    else:
+                        fringers_empty.append(fringer)
+            if fringers_available:
+                tab_content.append(HTML("<p>Available for this performance.</p>"))
+                tab_content.extend(Field(form.efringer_field_name(ef)) for ef in fringers_available)
+            if fringers_used:
+                tab_content.append(HTML("<p>Already used for this performance.</p>"))
+                tab_content.extend(Field(form.efringer_field_name(ef)) for ef in fringers_used)
+            if fringers_empty:
+                tab_content.append(HTML("<p>No tickets remaining.</p>"))
+                tab_content.extend(Field(form.efringer_field_name(ef)) for ef in fringers_empty)
+        else:
+            tab_content.append(HTML("<p>None.</p>"))
+        tabs.append(Tab(
+            'eFringers',
+            *tab_content,
+            css_class = 'pt-2',
+        ))
+    form.helper.layout = Layout(
+        TabHolder(*tabs),
+        Button('add', 'Add', css_class = 'btn-primary',  onclick = 'saleAddTickets()'),
+    )
 
     # Return form
     return form
@@ -134,95 +147,75 @@ def create_sale_extras_form(sale, post_data = None):
     form.helper = FormHelper()
     form.helper.form_id = 'sale-extras-form'
     form.helper.form_class = 'form-horizontal'
-    form.helper.label_class = 'col-4'
-    form.helper.field_class = 'col-8'
+    form.helper.label_class = 'col-6'
+    form.helper.field_class = 'col-6'
     form.helper.layout = Layout(
         Field('buttons'),
         Field('fringers'),
-        Button('add', 'Add/Update', css_class = 'btn-primary',  onclick = f"saleUpdateExtras('{ sale.uuid }')"),
+        Button('add', 'Add/Update', css_class = 'btn-primary',  onclick = 'saleUpdateExtras()'),
     )
 
     # Return form
     return form
 
-
-def create_refund_start_form(post_data = None):
+def create_checkpoint_form(boxoffice, checkpoint = None, post_data = None):
 
     # Create form
-    form = RefundStartForm(data = post_data)
+    form = CheckpointForm(checkpoint, data = post_data)
 
-    # Add crispy forms helper
+    # Add crispy form helper
     form.helper = FormHelper()
-    form.helper.form_id = 'refund-start-form'
-    form.helper.layout = Layout(
-        Field('customer'),
-        Button('start', 'Start', css_class = 'btn-primary',  onclick = 'refundStart()'),
-    )
-
+    if not checkpoint:
+        form.helper.form_action = reverse('boxoffice:checkpoint_add', args = [boxoffice.uuid])
+    form.helper.form_id = 'checkpoint-form'
+    form.helper.form_class = 'form-horizontal'
+    form.helper.label_class = 'col-3'
+    form.helper.field_class = 'col-9'
+    if checkpoint:
+        form.helper.layout = Layout(
+            Field('cash'),
+            Field('buttons'),
+            Field('fringers'),
+            Field('notes'),
+            Button('update', 'Update', css_class = 'btn-primary', onclick = 'checkpointUpdate()'),
+            Button('cancel', 'Cancel', css_class = 'btn-secondary', onclick = 'checkpointCancel()'),
+        )
+    else:
+        form.helper.layout = Layout(
+            Field('cash'),
+            Field('buttons'),
+            Field('fringers'),
+            Field('notes'),
+            Submit('add', 'Add Checkpoint'),
+        )
+        
     # Return form
     return form
 
-def create_refund_ticket_form(refund = None, post_data = None):
+def create_user_lookup_form(festival, post_data = None):
 
     # Create form
-    form = RefundTicketForm(post_data)
-
-    # Add crispy forms helper
-    form.helper = FormHelper()
-    form.helper.form_id = 'refund-ticket-form'
-    form.helper.layout = Layout(
-        Field('ticket_no'),
-        Button('add', 'Add', css_class = 'btn-primary',  onclick = 'refundAddTicket()'),
-    )
+    form = UserLookupForm(festival, data = post_data)
 
     # Return form
     return form
 
-def create_refund_form(refund = None, post_data = None):
-
-    # Create form
-    initial_data = None
-    if refund:
-        initial_data = {
-            'amount': refund.amount,
-            'reason': refund.reason,
-        }
-    form = RefundForm(data = post_data, initial = initial_data)
-    form.fields['reason'].widget.attrs['rows'] = 4
-
-    # Add crispy forms helper
-    form.helper = FormHelper()
-    form.helper.form_id = 'refund-form'
-    form.helper.layout = Layout(
-        Field('amount'),
-        Field('reason'),
-    )
-
-    # Return form
-    return form
-
-def render_main(request, boxoffice, tab, checkpoint_form = None):
+def render_main(request, boxoffice, tab = None, checkpoint_form = None):
 
     # Render main page
     today = datetime.datetime.today()
     report_dates = [today - datetime.timedelta(days = n) for n in range(1, 14)]
     context = {
         'boxoffice': boxoffice,
-        'tab': tab,
+        'tab': tab or 'sales',
         'sale_start_form': create_sale_start_form(),
         'sale_tickets_form': None,
         'sale_extras_form': None,
         'sale': None,
         'sales': get_sales(boxoffice),
-        'refund_start_form': create_refund_start_form(),
-        'refund_ticket_form': None,
-        'refund_form': None,
-        'refund' : None,
-        'refunds': get_refunds(boxoffice),
         'checkpoint_form': checkpoint_form or create_checkpoint_form(boxoffice),
         'checkpoints': get_checkpoints(boxoffice),
-        'report_today': f'{today:%Y%m%d}',
-        'report_dates': [{ 'value': f'{d:%Y%m%d}', 'text': f'{d:%a, %b %d}'} for d in report_dates],
+        'user_lookup_form': create_user_lookup_form(request.festival),
     }
     return render(request, 'boxoffice/main.html', context)
 
@@ -246,59 +239,28 @@ def render_sale(request, boxoffice, sale = None, show = None, performance = None
             'sale_start_form': start_form or create_sale_start_form(),
             'sales': get_sales(boxoffice),
         }
-    return render(request, "boxoffice/_main_sales.html", context)
+    return render(request, 'boxoffice/_main_sales.html', context)
 
-def render_refund(request, boxoffice, refund = None, start_form = None, ticket_form = None, refund_form = None):
-    if refund:
-        context = {
-            'boxoffice': boxoffice,
-            'refund_ticket_form': ticket_form or create_refund_ticket_form(),
-            'refund_form': refund_form or create_refund_form(refund = refund),
-            'refund': refund,
-            'refunds': get_refunds(boxoffice),
-        }
-    else:
-        context = {
-            'boxoffice': boxoffice,
-            'refund_start_form': start_form or create_refund_start_form(),
-            'refund': None,
-            'refunds': get_refunds(boxoffice),
-        }
-
-    return render(request, "boxoffice/_main_refunds.html", context)
-
-def create_checkpoint_form(boxoffice, post_data = None):
-
-    # Create form
-    form = CheckpointForm(post_data)
-
-    # Add crispy form helper
-    form.helper = FormHelper()
-    form.helper.form_id = 'checkpoint-form'
-    form.helper.form_class = 'form-horizontal'
-    form.helper.label_class = 'col-3'
-    form.helper.field_class = 'col-9'
-    form.helper.layout = Layout(
-        Field('cash'),
-        Field('buttons'),
-        Field('fringers'),
-        Field('notes'),
-        Button('add', 'Add Checkpoint', css_class = 'btn-primary', onclick = 'checkpoint_add()'),
-    )
-
-    # Return form
-    return form
-
-def render_checkpoint(request, boxoffice, checkpoint_form = None):
+def render_checkpoint(request, boxoffice, checkpoint, checkpoint_form = None):
 
     # Render checkpoint tab content
     context = {
         'boxoffice': boxoffice,
-        'checkpoint_form': checkpoint_form or create_checkpoint_form(boxoffice),
+        'checkpoint_form': checkpoint_form or create_checkpoint_form(boxoffice, checkpoint),
         'checkpoints': get_checkpoints(boxoffice),
+        'checkpoint': checkpoint,
     }
     return render(request, 'boxoffice/_main_checkpoints.html', context)
 
+def render_user(request, boxoffice, user = None, lookup_form = None):
+
+    # Render users tab content
+    context = {
+        'boxoffice': boxoffice,
+        'user_lookup_form': lookup_form or create_user_lookup_form(request.festival),
+        'lookup_user': user,
+    }
+    return render(request, 'boxoffice/_main_users.html', context)
 
 # View functions
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
@@ -311,18 +273,15 @@ def select(request):
     
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
 @login_required
-def main(request, boxoffice_uuid, tab = 'sales'):
+def main(request, boxoffice_uuid, tab = None):
 
     # Get box office
     boxoffice = get_object_or_404(BoxOffice, uuid = boxoffice_uuid)
 
-    # Cancel any incomplete sales/refunds
+    # Cancel any incomplete sales
     for sale in request.user.sales.filter(completed__isnull = True):
         logger.info("Incomplete sale %s cancelled", sale)
         sale.delete()
-    for refund in request.user.refunds.filter(completed__isnull = True):
-        logger.info("Incomplete refund %s cancelled", refund)
-        refund.delete()
 
     # Render main page
     return render_main(request, boxoffice, tab)
@@ -596,160 +555,6 @@ def sale_select(request, sale_uuid):
     sale = get_object_or_404(Sale, uuid = sale_uuid)
     return render_sale(request, sale.boxoffice, sale)
 
-@require_GET
-@login_required
-@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
-def sale_report(request, sale_uuid):
-    sale = get_object_or_404(Sale, uuid = sale_uuid)
-    context = {
-        'sale': sale,
-    }
-    return render(request, 'boxoffice/sale_report.html', context)
-
-# AJAX refund support
-@require_POST
-@login_required
-@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
-@transaction.atomic
-def refund_start(request, boxoffice_uuid):
-    boxoffice = get_object_or_404(BoxOffice, uuid = boxoffice_uuid)
-    refund = None
-    form = create_refund_start_form(request.POST)
-    if form.is_valid():
-        customer = form.cleaned_data['customer']
-        refund = Refund(
-            festival = boxoffice.festival,
-            boxoffice = boxoffice,
-            user = request.user,
-            customer = customer,
-        )
-        refund.save()
-        form = None
-        logger.info("Refund %s started", refund)
-    return render_refund(request, boxoffice, refund, start_form = form)
-
-@require_POST
-@login_required
-@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
-@transaction.atomic
-def refund_add_ticket(request, refund_uuid):
-    refund = get_object_or_404(Refund, uuid = refund_uuid)
-    if refund.completed:
-        logger.error('refund_add_ticket: Refund %s completed', refund)
-    else:
-        form = create_refund_ticket_form(refund, request.POST)
-        if form.is_valid():
-            try:
-                ticket = Ticket.objects.get(pk = form.cleaned_data['ticket_no'])
-                if ticket.refund:
-                    form.add_error('ticket_no', 'Ticket already refunded')
-                elif ticket.fringer:
-                    form.add_error('ticket_no', 'eFringer tickets cannot be refunded')
-                else:
-                    ticket.refund = refund
-                    ticket.save()
-                    logger.info("Refund %s ticket added: %s", refund, ticket)
-                    form = None
-            except Ticket.DoesNotExist:
-                form.add_error('ticket_no', 'Ticket not found')
-    return render_refund(request, refund.boxoffice, refund, ticket_form = form)
-
-@require_GET
-@login_required
-@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
-@transaction.atomic
-def refund_remove_ticket(request, refund_uuid, ticket_uuid):
-    refund = get_object_or_404(Refund, uuid = refund_uuid)
-    ticket = get_object_or_404(Ticket, uuid = ticket_uuid)
-    if refund.completed:
-        logger.error('refund_remove_ticket: Refund %s completed', refund)
-    else:
-        if ticket.refund == refund:
-            ticket.refund = None
-            ticket.save()
-            logger.info("Refund %s ticket removed: %s", refund, ticket)
-        else:
-            logger.error('refund_remove_ticket: Ticket %s not part of refund %s', ticket, refund)
-    return render_refund(request, refund.boxoffice, refund)
-
-@require_POST
-@login_required
-@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
-@transaction.atomic
-def refund_complete(request, refund_uuid):
-    refund = get_object_or_404(Refund, uuid = refund_uuid)
-    if refund.completed:
-        logger.error('refund_complete: Refund %s completed', refund)
-    else:
-        form = create_refund_form(post_data = request.POST)
-        if form.is_valid():
-            refund.amount = form.cleaned_data['amount']
-            refund.reason = form.cleaned_data['reason']
-            refund.completed = datetime.datetime.now()
-            refund.save()
-            logger.info("Refund %s completed", refund)
-            form = None
-    return render_refund(request, refund.boxoffice, refund, refund_form = form)
-
-@require_GET
-@login_required
-@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
-@transaction.atomic
-def refund_cancel(request, refund_uuid):
-    refund = get_object_or_404(Refund, uuid = refund_uuid)
-    boxoffice = refund.boxoffice
-    if refund.completed:
-        logger.error('refund_cancel: Refund %s completed', refund)
-    else:
-        refund.delete()
-        logger.info("Refund %s cancelled", refund)
-        refund = None
-    return render_refund(request, boxoffice, refund)
-
-@require_POST
-@login_required
-@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
-@transaction.atomic
-def refund_update(request, refund_uuid):
-    refund = get_object_or_404(Refund, uuid = refund_uuid)
-    if not refund.completed:
-        logger.error('refund_update: Refund %s not completed', refund)
-    else:
-        form = create_refund_form(post_data = request.POST)
-        if form.is_valid():
-            refund.amount = form.cleaned_data['amount']
-            refund.reason = form.cleaned_data['reason']
-            refund.save()
-            logger.info("Refund %s updated", refund)
-            form = None
-    return render_refund(request, refund.boxoffice, refund, refund_form = form)
-
-@require_GET
-@login_required
-@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
-@transaction.atomic
-def refund_close(request, refund_uuid):
-    refund = get_object_or_404(Refund, uuid = refund_uuid)
-    return render_refund(request, refund.boxoffice, None)
-
-@require_GET
-@login_required
-@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
-@transaction.atomic
-def refund_select(request, refund_uuid):
-    refund = get_object_or_404(Refund, uuid = refund_uuid)
-    return render_refund(request, refund.boxoffice, refund)
-
-@require_GET
-@login_required
-@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
-def refund_report(request, refund_uuid):
-    refund = get_object_or_404(Refund, uuid = refund_uuid)
-    context = {
-        'refund': refund,
-    }
-    return render(request, 'boxoffice/refund_report.html', context)
-
 # Checkpoints
 @require_POST
 @login_required
@@ -777,12 +582,89 @@ def checkpoint_add(request, boxoffice_uuid):
         logger.info("Boxoffice checkpoint added for %s", boxoffice.name)
         messages.success(request, "Checkpoint added")
 
-        # If this was the first checkpoint of the day the whole page needs to be updated
-        if get_checkpoints(boxoffice).count() == 1:
-            return HttpResponse(f"Redirect: { reverse('boxoffice:main_tab', args = [boxoffice.uuid, 'checkpoints']) }")
-
         # Clear form
         form = None
 
-    # Rener checkpoint tab content
-    return render_checkpoint(request, boxoffice, form)
+    # Render main page (to force update of sales list)
+    return render_main(request, boxoffice, 'checkpoints', form)
+
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+def checkpoint_select(request, checkpoint_uuid):
+
+    # Get checkpoint and box office
+    checkpoint = get_object_or_404(Checkpoint, uuid = checkpoint_uuid)
+    boxoffice = checkpoint.boxoffice
+    assert boxoffice
+
+    # Render checkpoint tab content
+    return render_checkpoint(request, boxoffice, checkpoint)
+
+
+@require_POST
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+@transaction.atomic
+def checkpoint_update(request, checkpoint_uuid):
+
+    # Get checkpoint and box office
+    checkpoint = get_object_or_404(Checkpoint, uuid = checkpoint_uuid)
+    boxoffice = checkpoint.boxoffice
+    assert boxoffice
+
+    # Process form
+    form = create_checkpoint_form(boxoffice, checkpoint, request.POST)
+    if form.is_valid():
+
+        # Update checkpoint
+        checkpoint.notes = form.cleaned_data['notes']
+        checkpoint.save()
+        logger.info("Boxoffice checkpoint updated for %s", boxoffice.name)
+        checkpoint = None
+        form = None
+
+    # Render checkpoint tab content
+    return render_checkpoint(request, boxoffice, checkpoint, checkpoint_form = form)
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+def checkpoint_cancel(request, checkpoint_uuid):
+
+    # Get checkpoint and box office
+    checkpoint = get_object_or_404(Checkpoint, uuid = checkpoint_uuid)
+    boxoffice = checkpoint.boxoffice
+    assert boxoffice
+
+    # Render checkpoint tab content
+    return render_checkpoint(request, boxoffice, None)
+
+class UserAutoComplete(Select2QuerySetView):
+
+    def get_queryset(self):
+        qs = User.objects.filter(festival = self.request.festival, is_active = True)
+        if self.q:
+            qs = qs.filter(email__istartswith = self.q)
+        return qs
+
+    def get_result_label(self, item):
+        return item.email
+
+@require_POST
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+def user_lookup(request, boxoffice_uuid):
+
+    # Get box office
+    boxoffice = get_object_or_404(BoxOffice, uuid = boxoffice_uuid)
+
+    # Get e-mail address and lookup user
+    user = None
+    form = create_user_lookup_form(request.festival, request.POST)
+    if form.is_valid():
+        user = form.cleaned_data['user']
+    
+    # Render user tab
+    return render_user(request, boxoffice, user = user, lookup_form = form)

@@ -1,0 +1,40 @@
+{% if performance.notes %}
+    <div class="alert alert-info">{{ performance.notes }}</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-2"><strong>Show</strong></div>
+    <div class="col-10">{{ show.name }}</div>
+</div>
+<div class="row">
+    <div class="col-2"><strong>Company</strong></div>
+    <div class="col-10">{{ show.company.name }}</div>
+</div>
+<div class="row">
+    <div class="col-2"><strong>Venue</strong></div>
+    <div class="col-10">{{ show.venue.name }}</div>
+</div>
+<div class="row">
+    <div class="col-2"><strong>Performance</strong></div>
+    <div class="col-10">{{ performance.date | date:'l, jS F' }} at {{ performance.time | time:'h:i:a' }}</div>
+</div>
+<div class="row">
+    <div class="col-2"><strong>Tickets available</strong></div>
+    <div class="col-10">{{ performance.tickets_available }}</div>
+</div>
+<div class="row">
+    <div class="col-2"><strong>Running time</strong></div>
+    <div class="col-10">{{ show.duration }} minutes</div>
+</div>
+<div class="row">
+    <div class="col-2"><strong>Age range</strong></div>
+    <div class="col-10">{{ show.age_range }}</div>
+</div>
+<div class="row">
+    <div class="col-2"><strong>Genres</strong></div>
+    <div class="col-10">{{ show.genre_list }}</div>
+</div>
+<div class="row">
+    <div class="col-2"><strong>Description</strong></div>
+    <div class="col-10">{{ show.listing }}</div>
+</div>

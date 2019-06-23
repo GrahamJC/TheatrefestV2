@@ -11,7 +11,7 @@
                 </div>
             </div>
             <div class="card">
-                <h6 class="card-header">Sales (since last checkpoint)</h6>
+                <h6 class="card-header">Sales Since Last Checkpoint)</h6>
                 <div class="card-body">
                     <table class="table table-striped">
                         <thhead>
@@ -97,17 +97,17 @@
                             <div class="col-3 text-right">&#163;{{ sale.button_cost }}</div>
                         </div>
                     {% endif %}
-                    {% for fringer in sale.fringers.all %}
+                    {% if sale.fringers.count > 0 %}
                         <div class="row mb-2">
-                            <div class="col-9"><strong>Frequent Fringers: {{ fringer.description }}</strong></div>
-                            <div class="col-3 text-right">&#163;{{ fringer.cost }}</div>
+                            <div class="col-9"><strong>{{ sale.fringers.count }} x Paper fringers (6 shows for &#163;18)</strong></div>
+                            <div class="col-3 text-right">&#163;{{ sale.fringer_cost }}</div>
                         </div>
-                    {% endfor %}
+                    {% endif %}
                     {% for performance in sale.performances %}
                         <div class="row mb-2">
                             <div class="col-9"><strong>{{ performance.show }}</strong></div>
                             <div class="col-3 text-right">&#163;{{ performance.ticket_cost }}</div>
-                            <div class="col-6">{{ performance.date | date:"D, jS M" }} at {{ performance.time }}</div>
+                            <div class="col-6">{{ performance.date | date:'D, j M' }} at {{ performance.time | time:'h:ia' }}</div>
                             <div class="col-3"><a href="#tf-boxoffice-sale-tickets-{{ forloop.counter }}" data-toggle="collapse">{{ performance.tickets | length }} Tickets</a></div>
                             <div class="col-3 text-right">
                                 {% if not sale.completed %}
@@ -118,7 +118,8 @@
                                 {% for ticket in performance.tickets %}
                                     <div class="row">
                                         <div class="col-1"></div>
-                                        <div class="col-5">{{ ticket.description }}</div>
+                                        <div class="col-2">{{ ticket.id }}</div>
+                                        <div class="col-4">{{ ticket.description }}</div>
                                         <div class="col-2 text-right">{% if ticket.cost %}&#163;{{ ticket.cost }}{% endif %}</div>
                                         <div class="col-3">
                                             {% if not sale.completed %}

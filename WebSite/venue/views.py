@@ -146,19 +146,22 @@ def create_sale_form(performance, sale, post_data = None):
 
     # Get ticket types and add initial values
     ticket_types = []
-    for ticket_type in sale.festival.ticket_types.order_by('name'):
+    for ticket_type in sale.festival.ticket_types.order_by('seqno'):
         ticket_types.append(ticket_type)
         initial_data[SaleForm.ticket_field_name(ticket_type)] = sale.tickets.filter(description = ticket_type.name).count()
 
     # Get eFringers and add initial values
     efringers = []
+    efringers_in_sale = []
     if sale.customer_user:
         for fringer in sale.customer_user.fringers.order_by('name'):
             efringers.append(fringer)
-            initial_data[SaleForm.efringer_field_name(fringer)] = sale.tickets.filter(fringer = fringer).exists()
+            if sale.tickets.filter(fringer = fringer).exists():
+                efringers_in_sale.append(fringer)
+                initial_data[SaleForm.efringer_field_name(fringer)] = True
 
     # Get volunteer shifts (capped at four) and number of complimentary tickets used so far
-    volunteer = sale.customer_user and sale.customer_user.volunteer
+    volunteer = sale.customer_user.volunteer if sale.customer_user and sale.customer_user.is_volunteer else None
     if volunteer:
         volunteer_earned = min(volunteer.shifts.count(), 4)
         volunteer_used = Ticket.objects.filter(user = volunteer.user, description = 'Volunteer', sale__completed__isnull = False).count()
@@ -171,32 +174,35 @@ def create_sale_form(performance, sale, post_data = None):
     form.helper = FormHelper()
     form.helper.form_id = 'sale-form'
     form.helper.form_class = 'form-horizontal'
-    form.helper.label_class = 'col-4'
-    form.helper.field_class = 'col-8'
+    form.helper.label_class = 'col-6'
+    form.helper.field_class = 'col-6'
     tabs = [Tab('Tickets', *(Field(form.ticket_field_name(tt)) for tt in form.ticket_types), css_class = 'pt-2')]
-    if form.efringers:
-        fringers_available = []
-        fringers_used = []
-        fringers_empty = []
-        for fringer in form.efringers:
-            if fringer.is_available(performance) or sale.tickets.filter(fringer = fringer).exists():
-                fringers_available.append(fringer)
-            else:
-                form.fields[SaleForm.efringer_field_name(fringer)].disabled = True
-                if fringer.is_available():
-                    fringers_used.append(fringer)
-                else:
-                    fringers_empty.append(fringer)
+    if sale.customer_user:
         tab_content = []
-        if fringers_available:
-            tab_content.append(HTML("<p>Available for this performance.</p>"))
-            tab_content.extend(Field(form.efringer_field_name(ef)) for ef in fringers_available)
-        if fringers_used:
-            tab_content.append(HTML("<p>Already used for this performance.</p>"))
-            tab_content.extend(Field(form.efringer_field_name(ef)) for ef in fringers_used)
-        if fringers_empty:
-            tab_content.append(HTML("<p>No tickets remaining.</p>"))
-            tab_content.extend(Field(form.efringer_field_name(ef)) for ef in fringers_empty)
+        if form.efringers:
+            fringers_available = []
+            fringers_used = []
+            fringers_empty = []
+            for fringer in form.efringers:
+                if fringer in efringers_in_sale or fringer.is_available(performance):
+                    fringers_available.append(fringer)
+                else:
+                    form.fields[SaleForm.efringer_field_name(fringer)].disabled = True
+                    if fringer.is_available():
+                        fringers_used.append(fringer)
+                    else:
+                        fringers_empty.append(fringer)
+            if fringers_available:
+                tab_content.append(HTML("<p>Available for this performance.</p>"))
+                tab_content.extend(Field(form.efringer_field_name(ef)) for ef in fringers_available)
+            if fringers_used:
+                tab_content.append(HTML("<p>Already used for this performance.</p>"))
+                tab_content.extend(Field(form.efringer_field_name(ef)) for ef in fringers_used)
+            if fringers_empty:
+                tab_content.append(HTML("<p>No tickets remaining.</p>"))
+                tab_content.extend(Field(form.efringer_field_name(ef)) for ef in fringers_empty)
+        else:
+            tab_content.append(HTML("<p>None.</p>"))
         tabs.append(Tab(
             'eFringers',
             *tab_content,
@@ -211,7 +217,7 @@ def create_sale_form(performance, sale, post_data = None):
     tabs.append(Tab('Other', 'buttons', 'fringers', css_class = 'pt-2'))
     form.helper.layout = Layout(
         TabHolder(*tabs),
-        Button('update', 'Update', css_class = 'btn-primary',  onclick = f"saleUpdate('{sale.uuid}')"),
+        Button('update', 'Update', css_class = 'btn-primary',  onclick = f"saleUpdate()"),
     )
 
     # Return form
@@ -245,9 +251,7 @@ def render_main(request, venue, performance, tab = None, open_form = None, start
 
         # Select default tab if not specified
         if not tab:
-            if performance.notes:
-                tab = 'notes'
-            elif not performance.has_open_checkpoint:
+            if not performance.has_open_checkpoint:
                 tab = 'open'
             elif performance.has_close_checkpoint:
                 tab = 'close'
@@ -262,10 +266,12 @@ def render_main(request, venue, performance, tab = None, open_form = None, start
     context = {
         'venue': venue,
         'tab': tab,
+        'show': performance.show if performance else None,
         'performances': performances,
+        'next_performance': venue.get_next_performance(),
         'performance': performance,
         'sales': sales,
-        'current_sale': None,
+        'sale': None,
         'open_form': open_form,
         'start_form': start_form,
         'close_form': close_form,
@@ -274,7 +280,7 @@ def render_main(request, venue, performance, tab = None, open_form = None, start
     return render(request, 'venue/main.html', context)
 
 
-def render_main_sales(request, performance, sale = None, start_form = None, sale_form = None):
+def render_sales(request, performance, sale = None, start_form = None, sale_form = None):
 
     # Validate parameters
     assert performance
@@ -300,23 +306,24 @@ def render_main_sales(request, performance, sale = None, start_form = None, sale
         'venue': venue,
         'performance': performance,
         'sales': sales,
-        'current_sale': sale,
+        'sale': sale,
         'start_form': start_form,
         'sale_form': sale_form,
     }
     return render(request, "venue/_main_sales.html", context)
 
 
-def render_main_notes(request, performance):
+def render_info(request, performance):
 
     # Validate parameters
     assert performance
 
-    # Render notes tab content
+    # Render information tab content
     context = {
+        'show': performance.show if performance else None,
         'performance': performance,
     }
-    return render(request, "venue/_main_notes.html", context)
+    return render(request, "venue/_main_info.html", context)
 
 
 # View functions
@@ -371,19 +378,6 @@ def performance(request, performance_uuid):
 
     # Render page
     return render_main(request, venue, performance)
-
-   
-@require_GET
-@user_passes_test(lambda u: u.is_venue or u.is_admin)
-@login_required
-@transaction.atomic
-def performance_notes(request, performance_uuid):
-
-    # Get performance
-    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
-
-    # Render notes
-    return render_main_notes(request, performance)
 
 
 @require_POST
@@ -532,7 +526,7 @@ def sale_new(request, performance_uuid):
     assert not performance.has_close_checkpoint
 
     # Render sales tab content
-    return  render_main_sales(request, performance)
+    return  render_sales(request, performance)
 
 
 @require_GET
@@ -548,7 +542,7 @@ def sale_select(request, performance_uuid, sale_uuid):
     assert sale.venue == venue
 
     # Render sales tab content
-    return  render_main_sales(request, performance, sale = sale)
+    return  render_sales(request, performance, sale = sale)
 
 
 @require_POST
@@ -581,7 +575,7 @@ def sale_start(request, performance_uuid):
         start_form = None
 
     # Render sales tab content
-    return  render_main_sales(request, performance, sale = sale, start_form = start_form)
+    return  render_sales(request, performance, sale = sale, start_form = start_form)
 
 
 @require_POST
@@ -698,7 +692,7 @@ def sale_update(request, performance_uuid, sale_uuid):
             sale_form.add_error(None, f"There are only {available_tickets} tickets available for this performance.")
 
     # Render sales tab content
-    return  render_main_sales(request, performance, sale = sale, sale_form = sale_form)
+    return  render_sales(request, performance, sale = sale, sale_form = sale_form)
 
 
 @require_GET
@@ -723,7 +717,7 @@ def sale_complete(request, performance_uuid, sale_uuid):
     logger.info("Sale %s completed", sale)
 
     # Render sales tab content
-    return  render_main_sales(request, performance)
+    return  render_sales(request, performance)
 
 
 @require_GET
@@ -746,7 +740,20 @@ def sale_cancel(request, performance_uuid, sale_uuid):
     sale.delete()
 
     # Render sales tab content
-    return  render_main_sales(request, performance)
+    return  render_sales(request, performance)
+
+   
+@require_GET
+@user_passes_test(lambda u: u.is_venue or u.is_admin)
+@login_required
+@transaction.atomic
+def performance_info(request, performance_uuid):
+
+    # Get performance
+    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+
+    # Render information tab
+    return render_info(request, performance)
 
 
 @require_GET

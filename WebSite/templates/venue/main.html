@@ -13,16 +13,17 @@
                 <label class="col-form-label col-2">Performance</label>
                 <select id="select-performance" class="form-control col-10">
                     {% for p in performances %}
-                        <option value="{{ p.uuid }}" {% if p == performance %}selected{% endif %} >{{ p.show.name }} on {{ p.date }} at {{ p.time }}</option>
+                        {% if p == next_performance %}
+                            <option class="font-weight-bold" value="{{ p.uuid }}" {% if p == performance %}selected{% endif %}>{{ p.show.name }} on {{ p.date }} at {{ p.time }}</option>
+                        {% else %}
+                            <option value="{{ p.uuid }}" {% if p == performance %}selected{% endif %}>{{ p.show.name }} on {{ p.date }} at {{ p.time }}</option>
+                        {% endif %}
                     {% endfor %}
                 </select>
             </div>
         </form>
 
         <div class="nav nav-tabs nav-justified mb-3">
-            {% if performance.notes %}
-                <a id="notes-tab" class="nav-item nav-link {% if tab == 'notes' %}active{% endif %}" href="#notes-tab-content" data-toggle="tab">Notes</a>
-            {% endif %}
             {% if performance.has_open_checkpoint %}
                 <a id="open-tab" class="nav-item nav-link {% if tab == 'open' or not tab %}active{% endif %}" href="#open-tab-content" data-toggle="tab">Open</a>
                 <a id="sales-tab" class="nav-item nav-link {% if tab == 'sales' %}active{% endif %}" href="#sales-tab-content" data-toggle="tab">Sales</a>
@@ -34,15 +35,10 @@
                 <a class="nav-item nav-link disabled" href="#">Tickets</a>
                 <a class="nav-item nav-link disabled" href="#">Close</a>
             {% endif %}
+            <a id="info-tab" class="nav-item nav-link {% if tab == 'info' %}active{% endif %}" href="#info-tab-content" data-toggle="tab">Information</a>
         </div>
 
         <div class="tab-content">
-
-            {% if performance.notes %}
-                <div id="notes-tab-content" class="tab-pane {% if tab == 'notes' %}active{% endif %}">
-                    {% include 'venue/_main_notes.html' %}
-                </div>
-            {% endif %}
 
             <div id="open-tab-content" class="tab-pane {% if tab == 'open' or not tab %}active{% endif %}">
                 {% include 'venue/_main_open.html' %}
@@ -63,6 +59,10 @@
                 </div>
 
             {% endif %}
+
+            <div id="info-tab-content" class="tab-pane {% if tab == 'info' %}active{% endif %}">
+                {% include 'venue/_main_info.html' %}
+            </div>
 
         </div>
 
@@ -87,18 +87,10 @@
                 location.href = '{% url 'venue:performance' '00000000-0000-0000-0000-000000000000' %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
             });
             {% if performance %}
-                $('#notes-tab').on('show.bs.tab', function(e) { updateNotesTab('{% url 'venue:performance_notes' performance.uuid %}') });
                 $('#tickets-tab').on('show.bs.tab', function(e) { updateTicketsTab('{% url 'venue:tickets' performance.uuid 'html' %}') });
+                $('#info-tab').on('show.bs.tab', function(e) { updateInfoTab('{% url 'venue:performance_info' performance.uuid %}') });
             {% endif %}
         });
-
-        function updateNotesTab(url, data) {
-            $('#notes-tab-content').load(url, data, function(response, status, xhr) {
-                if (status != 'success') {
-                    $('#notes-tab-content').html('Sorry but there was an error. Please refresh the page and try again.');
-                }
-            });
-        }
 
         function updateSalesTab(url, data) {
             $('#sales-tab-content').load(url, data, function(response, status, xhr) {
@@ -112,6 +104,14 @@
             $('#tickets-tab-content').load(url, data, function(response, status, xhr) {
                 if (status != 'success') {
                     $('#tickets-tab-content').html('Sorry but there was an error. Please refresh the page and try again.');
+                }
+            });
+        }
+
+        function updateInfoTab(url, data) {
+            $('#info-tab-content').load(url, data, function(response, status, xhr) {
+                if (status != 'success') {
+                    $('#info-tab-content').html('Sorry but there was an error. Please refresh the page and try again.');
                 }
             });
         }

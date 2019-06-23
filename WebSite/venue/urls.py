@@ -10,8 +10,6 @@ urlpatterns = [
     # Main page
     path('<uuid:venue_uuid>', views.main, name = 'main'),
     path('performance/<uuid:performance_uuid>', views.performance, name = 'performance'),
-    # Notes API
-    path('performance/<uuid:performance_uuid>/notes', views.performance_notes, name = 'performance_notes'),
     # Open/close checkpoint API
     path('performance/<uuid:performance_uuid>/open', views.performance_open, name = 'performance_open'),
     path('performance/<uuid:performance_uuid>/close', views.performance_close, name = 'performance_close'),
@@ -26,4 +24,6 @@ urlpatterns = [
     path('performance/<uuid:performance_uuid>/sale/<uuid:sale_uuid>/cancel', views.sale_cancel, name = 'sale_cancel'),
     # Tickets API
     path('performance/<uuid:performance_uuid>/tickets/<str:format>', views.tickets, name = 'tickets'),
+    # Info API
+    path('performance/<uuid:performance_uuid>/info', views.performance_info, name = 'performance_info'),
 ]

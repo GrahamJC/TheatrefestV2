@@ -1,0 +1,41 @@
+{% load widget_tweaks %}
+
+<p>To display details of a user enter the first few letters of their e-mail address, select from the drop-down list and click Show.</p>
+<form id="user-lookup-form" class="mb-2">
+    {% csrf_token %}
+    <div class="form-row">
+        <div class="col-10">
+            {{ user_lookup_form.user | add_class:'form-control' }}
+        </div>
+        <div class="col-2">
+            <button type="button" class="btn btn-primary" name="Show" onclick="userLookup()">Show</button>
+        </div>
+    </div>
+</form>
+
+{% if lookup_user %}
+    
+    <h5>User Details</h5>
+    <div class="row">
+        <div class="col-3"><strong>e-mail</strong></div>
+        <div class="col-9">{{ lookup_user.email }}</div>
+    </div>
+    
+    <h5>Tickets</h5>
+
+    <h5>eFringers</h5>
+
+{% endif %}
+
+{% block body-script %}
+    {{ user_lookup_form.media }}
+{% endblock %}
+
+<script language="javascript">
+
+    function userLookup() {
+        var postData = $('#user-lookup-form').serializeArray();
+        updateUsersTab('{% url "boxoffice:user_lookup" boxoffice.uuid %}', postData);
+    }
+
+</script>

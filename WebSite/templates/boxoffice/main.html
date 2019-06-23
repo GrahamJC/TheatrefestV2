@@ -8,8 +8,9 @@
 
     <div class="nav nav-tabs nav-justified mb-3">
         <a id="sales-tab" class="nav-item nav-link {% if tab == 'sales' %}active{% endif %}" href="#sales-tab-content" data-toggle="tab">Sales</a>
-        <a id="refunds-tab" class="nav-item nav-link {% if tab == 'refunds' %}active{% endif %}" href="#refunds-tab-content" data-toggle="tab">Refunds</a>
         <a id="checkpoints-tab" class="nav-item nav-link {% if tab == 'checkpoints' %}active{% endif %}" href="#checkpoints-tab-content" data-toggle="tab">Checkpoints</a>
+        <a id="shows-tab" class="nav-item nav-link {% if tab == 'shows' %}active{% endif %}" href="#shows-tab-content" data-toggle="tab">Shows</a>
+        <a id="users-tab" class="nav-item nav-link {% if tab == 'users' %}active{% endif %}" href="#users-tab-content" data-toggle="tab">Users</a>
     </div>
 
     <div class="tab-content">
@@ -24,20 +25,18 @@
             {% endif %}
         </div>
 
-        <div id="refunds-tab-content" class="tab-pane {% if tab == 'refunds' %}active{% endif %}">
-            {% if checkpoints %}
-                {% include 'boxoffice/_main_refunds.html' %}
-            {% else %}
-                <div class="alert alert-info">
-                    You cannot enter refunds until you have completed the first checkpoint for today.
-                </div>
-            {% endif %}
-        </div>
-
         <div id="checkpoints-tab-content" class="tab-pane {% if tab == 'checkpoints' %}active{% endif %}">
             {% include 'boxoffice/_main_checkpoints.html' %}
         </div>
 
+        <div id="shows-tab-content" class="tab-pane {% if tab == 'shows' %}active{% endif %}">
+            {% include 'boxoffice/_main_shows.html' %}
+        </div>
+
+        <div id="users-tab-content" class="tab-pane {% if tab == 'users' %}active{% endif %}">
+            {% include 'boxoffice/_main_users.html' %}
+        </div>
+    
     </div>
 
 {% endblock %}
@@ -54,10 +53,26 @@
             });
         }
 
-        function updateRefundsTab(url, data) {
-            $('#refunds-tab-content').load(url, data, function(response, status, xhr) {
+        function updateCheckpointsTab(url, data) {
+            $('#checkpoints-tab-content').load(url, data, function(response, status, xhr) {
                 if (status != 'success') {
-                    $('#refunds-tab-content').html('Sorry but there was an error. Please refresh the page and try again.');
+                    $('#checkpoints-tab-content').html('Sorry but there was an error. Please refresh the page and try again.');
+                }
+            });
+        }
+
+        function updateShowsTab(url, data) {
+            $('#shows-tab-content').load(url, data, function(response, status, xhr) {
+                if (status != 'success') {
+                    $('#shows-tab-content').html('Sorry but there was an error. Please refresh the page and try again.');
+                }
+            });
+        }
+
+        function updateUsersTab(url, data) {
+            $('#users-tab-content').load(url, data, function(response, status, xhr) {
+                if (status != 'success') {
+                    $('#users-tab-content').html('Sorry but there was an error. Please refresh the page and try again.');
                 }
             });
         }
