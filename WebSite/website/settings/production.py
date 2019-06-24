@@ -113,3 +113,7 @@ LOGGING = {
         "handlers": ["console", "theatrefest"],
     },
 }
+
+# Application settings
+VENUE_SHOW_ALL_PERFORMANCES = False
+VOLUNTEER_CANCEL_SHIFTS = False

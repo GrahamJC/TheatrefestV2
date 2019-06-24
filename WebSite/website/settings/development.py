@@ -110,4 +110,4 @@ LOGGING = {
 }
 
 # Application settings
-VENUE_SHOW_ALL_PERFORMANCES = True
+#VOLUNTEER_CANCEL_SHIFTS = False

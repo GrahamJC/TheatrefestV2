@@ -80,7 +80,7 @@ class Sale(TimeStampedModel):
                 'date' : p.date,
                 'time': p.time,
                 'ticket_cost': sum(t.cost for t in tickets.all()), 
-                'tickets': [{'id': t.id, 'uuid': t.uuid, 'description': t.description, 'cost': t.cost} for t in tickets],
+                'tickets': [{'id': t.id, 'uuid': t.uuid, 'description': f"{t.description}: {t.fringer.name}" if t.fringer else t.description, 'cost': t.cost} for t in tickets],
             }
             performances.append(performance)
         return performances

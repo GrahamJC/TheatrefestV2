@@ -99,4 +99,3 @@ LOGGING = {
 }
 
 # Application settings
-VENUE_SHOW_ALL_PERFORMANCES = True

@@ -1,9 +1,14 @@
 {% load crispy_forms_tags %}
 
 <style>
-    legend {
+    .legend {
         font-size: 1em;
         font-weight: bold;
+    }
+    div.alert-danger ul {
+        margin-bottom: 0;
+        list-style-type: none;
+        padding-left: 0;
     }
 </style>
 
@@ -13,7 +18,7 @@
         {% if not performance.has_close_checkpoint %}
             {% if sale %}
                 <div class="card mb-2">
-                    <h6 class="card-header">Sale<div class="float-right">Tickets Available: {{ performance.tickets_available }}</div></h6>
+                    <h6 class="card-header">Sale<div class="float-right">Available: {{ available }}</div></h6>
                     <div class="card-body">
                         {% crispy sale_form %}
                     </div>
@@ -72,7 +77,7 @@
                 <div class="card-body">
                     {% if sale.buttons %}
                         <div class="row mb-2">
-                            <div class="col-9"><strong>{{ sale.buttons }} x Buttons</strong></div>
+                            <div class="col-9"><strong>{{ sale.buttons }} x Badges</strong></div>
                             <div class="col-3 text-right">&#163;{{ sale.button_cost }}</div>
                         </div>
                     {% endif %}

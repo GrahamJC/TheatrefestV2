@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 
 from django_registration import signals
+from django_registration.exceptions import ActivationError
 import django_registration.backends.one_step.views as OneStepViews
 import django_registration.backends.activation.views as TwoStepViews
 

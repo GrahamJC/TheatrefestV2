@@ -60,6 +60,9 @@ class AdminLocationForm(forms.ModelForm):
 
 class AdminShiftSearchForm(forms.Form):
 
+    STATUS_CHOICES = [('All', 'All'), ('Accepted', 'Accepted'), ('NotAccepted', 'Not accepted')]
+    status = forms.ChoiceField(choices = STATUS_CHOICES, label = 'Status', required = True)
+
     def __init__(self, festival, *args, **kwargs):
 
         # Save festival

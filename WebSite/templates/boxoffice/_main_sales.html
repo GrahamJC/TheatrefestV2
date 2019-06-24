@@ -1,6 +1,14 @@
 {% load crispy_forms_tags %}
 {% load widget_tweaks %}
 
+<style type="text/css">
+    div.alert-danger ul {
+        margin-bottom: 0;
+        list-style-type: none;
+        padding-left: 0;
+    }
+</style>
+
 <div class="row">
     <div class="col-6">
         {% if not sale %}
@@ -35,7 +43,7 @@
             </div>
         {% else %}
             <div class="card mb-2">
-                <h6 class="card-header">Add Tickets</h6>
+                <h6 class="card-header">Add Tickets{% if selected_performance %}<div class="float-right">Available: {{ selected_performance.tickets_available }}</div>{% endif %}</h6>
                 <div class="card-body">
                     <div class="row form-group">
                         <label class="col-4 form-control-label">Show</label>
@@ -93,7 +101,7 @@
                 <div class="card-body">
                     {% if sale.buttons %}
                         <div class="row mb-2">
-                            <div class="col-9"><strong>{{ sale.buttons }} x Buttons</strong></div>
+                            <div class="col-9"><strong>{{ sale.buttons }} x Badges</strong></div>
                             <div class="col-3 text-right">&#163;{{ sale.button_cost }}</div>
                         </div>
                     {% endif %}

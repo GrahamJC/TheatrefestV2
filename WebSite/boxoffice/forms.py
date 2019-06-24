@@ -47,14 +47,14 @@ class SaleTicketsForm(forms.Form):
 
 class SaleExtrasForm(forms.Form):
 
-    buttons = forms.IntegerField(label = 'Buttons', required = True, initial = 0, min_value = 0)
+    buttons = forms.IntegerField(label = 'Badges', required = True, initial = 0, min_value = 0)
     fringers = forms.IntegerField(label = 'Fringers (buy)', required = True, initial = 0, min_value = 0)
 
 
 class CheckpointForm(forms.Form):
 
     cash = forms.DecimalField(label = 'Cash', required = True, max_digits = 5, decimal_places = 2)
-    buttons = forms.IntegerField(label = 'Buttons', required = True)
+    buttons = forms.IntegerField(label = 'Badges', required = True)
     fringers = forms.IntegerField(label = 'Fringers', required = True)
     notes = forms.CharField(label = 'Notes', widget = forms.Textarea(attrs = { 'rows': 4 }), required = False)
 

@@ -7,26 +7,6 @@
             <div class="card-body">
                 {% if open_form %}
                     {% crispy open_form %}
-                {% elif performance.has_open_checkpoint %}
-                    <table class="table">
-                        <tr>
-                            <th>Cash</th>
-                            <td>&#163;{{ performance.open_checkpoint.cash }}</td>
-                        </tr>
-                        <tr>
-                            <th>Buttons</th>
-                            <td>{{ performance.open_checkpoint.buttons }}</td>
-                        </tr>
-                        <tr>
-                            <th>Fringers</th>
-                            <td>{{ performance.open_checkpoint.fringers }}</td>
-                        </tr>
-                        {% if performance.open_checkpoint.notes %}
-                            <tr><td colspan="2">
-                                {{ performance.open_checkpoint.notes }}
-                            </td></tr>
-                        {% endif %}
-                    </table>
                 {% else %}
                     <p>You cannot open this performance until all previous performances have been closed.</p>
                 {% endif %}
@@ -38,11 +18,11 @@
             <p>You must complete the open checkpoint before you can make sales and process admissions for this show:</p>
             <ul>
                 <li>Cash - total amount of cash</li>
-                <li>Buttons - number of fringe buttons</li>
+                <li>Badges - number of fringe badges</li>
                 <li>Fringers - number of paper fringers</li>
             </ul>
             <p>You can also add any notes that may be useful.</p>
-            <p><strong>Important:</strong> once the performance has been opened you cannot update the cash, buttons or fringers but you can still add/update the notes.</p>
+            <p><strong>Important:</strong> once the performance has been opened you cannot update the cash, badges or fringers but you can still add/update the notes.</p>
         </div>
     </div>
 </div>

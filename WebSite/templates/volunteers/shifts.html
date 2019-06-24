@@ -6,7 +6,6 @@
 
 {% block content %}
 
-
     <p>Selet a day to view and volunteer for shifts on that day.</p>
 
     <div class="nav nav-pills nav-justified mb-3">
@@ -20,6 +19,12 @@
 
         <div id="tf-tab-myshifts" class="tab-pane fade show active">
 
+            {% if not can_cancel %}
+                <div class="alert alert-info">
+                    You can no longer cancel shifts online. If you are unable to work a shift please e-mail Pete at volunteers@theatrefest.co.uk as soon as possible.
+                </div>
+            {% endif %}
+            
             <div class="float-right">
                 <a class="btn btn-primary" href="{% url 'reports:volunteer_shifts_pdf' %}" target="_blank">Print Shifts</a>
                 {% if handbook_url %}
@@ -48,7 +53,7 @@
                             <td>{{ shift.start_time }}</td>
                             <td>{{ shift.end_time }}</td>
                             <td>{{ shift.role.description }}</td>
-                            <td><a href="{% url 'volunteers:shift_cancel' shift.uuid %}">Cancel</a></td>
+                            <td>{% if can_cancel %}<a href="{% url 'volunteers:shift_cancel' shift.uuid %}">Cancel</a>{% endif %}</td>
                             <td>{% if shift.notes %}<a href="#tf-tab-myshifts-{{ shift.id }}-notes" data-toggle="collapse"><i class="fa fa-info-circle"></i></a>{% endif %}</td>
                         </tr>
                         {% if shift.notes %}

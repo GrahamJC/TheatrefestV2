@@ -26,7 +26,7 @@
                                             <div class="col-12"><strong>{{ performance.show }}</strong></div>
                                             <div class="col-7">{{ performance.date | date:"D, jS M" }} at {{ performance.time }}</div>
                                             <div class="col-3"><a href="#tf-tickets-show-current-tickets-{{ forloop.counter }}" data-toggle="collapse">{{ performance.tickets | length }} Tickets</a></div>
-                                            <div class="col-2 text-right"><a href="{% url 'tickets:print_performance' performance.uuid %}">Print</a></div>
+                                            <div class="col-2 text-right"><a href="{% url 'tickets:print_performance' performance.uuid %}" target="_blank">Print</a></div>
                                             <div id="tf-tickets-show-current-tickets-{{ forloop.counter }}" class="col-12 collapse">
                                                 {% for ticket in performance.tickets %}
                                                     <div class="row">

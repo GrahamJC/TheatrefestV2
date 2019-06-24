@@ -42,6 +42,7 @@ def render_shifts(request, volunteer):
         })
     context = {
         'my_shifts': volunteer.shifts.all(),
+        'can_cancel': settings.VOLUNTEER_CANCEL_SHIFTS,
         'days': days,
     }
 
@@ -285,12 +286,13 @@ def create_admin_shift_search_form(festival, initial_data = None, post_data = No
         Field('location'),
         Field('role'),
         Field('volunteer'),
+        Field('status'),
         Submit('shift-search', 'Search', css_class='btn-primary'),
     )
     return form
 
 
-def admin_get_shifts(festival, date_str, location_id_str, role_id_str, volunteer_id_str):
+def admin_get_shifts(festival, date_str, location_id_str, role_id_str, volunteer_id_str, status):
 
     # Get shifts meeting criteria
     shifts = Shift.objects.filter(location__festival = festival)
@@ -306,6 +308,10 @@ def admin_get_shifts(festival, date_str, location_id_str, role_id_str, volunteer
     volunteer_id = int(volunteer_id_str)
     if volunteer_id != 0:
         shifts = shifts.filter(volunteer_id = volunteer_id)
+    if status == 'Accepted':
+        shifts = shifts.filter(volunteer__isnull = False)
+    elif status == 'NotAccepted':
+        shifts = shifts.filter(volunteer__isnull = True)
     shifts = list(shifts.order_by('date', 'start_time', 'location__description', 'role__description'))
     return shifts
 
@@ -321,6 +327,7 @@ class AdminShiftList(LoginRequiredMixin, View):
         location_id_str = request.session.get('shift_search_location_id', '0')
         role_id_str = request.session.get('shift_search_role_id', '0')
         volunteer_id_str = request.session.get('shift_search_volunteer_id', '0')
+        status = request.session.get('shift_search_status', 'All')
 
         # Create search form
         initial_data = {
@@ -328,16 +335,17 @@ class AdminShiftList(LoginRequiredMixin, View):
             'location': location_id_str,
             'role': role_id_str,
             'volunteer': volunteer_id_str,
+            'status': status,
         }
         search_form = create_admin_shift_search_form(request.festival, initial_data = initial_data)
 
         # Get shifts that meet criteria
-        shifts = admin_get_shifts(request.festival, date_str, location_id_str, role_id_str, volunteer_id_str)
+        #shifts = admin_get_shifts(request.festival, date_str, location_id_str, role_id_str, volunteer_id_str, status)
 
         # Render page
         context = {
             'search_form': search_form,
-            'shifts': shifts,
+            'shifts': None,
         }
         return render(request, 'volunteers/admin_shift_list.html', context)
 
@@ -353,7 +361,8 @@ class AdminShiftList(LoginRequiredMixin, View):
             location_id_str = search_form.cleaned_data['location']
             role_id_str = search_form.cleaned_data['role']
             volunteer_id_str = search_form.cleaned_data['volunteer']
-            shifts = admin_get_shifts(request.festival, date_str, location_id_str, role_id_str, volunteer_id_str)
+            status = search_form.cleaned_data['status']
+            shifts = admin_get_shifts(request.festival, date_str, location_id_str, role_id_str, volunteer_id_str, status)
 
             # Save search criteria in session
             request.session['shift_search_date'] = date_str
@@ -369,13 +378,13 @@ class AdminShiftList(LoginRequiredMixin, View):
         return render(request, 'volunteers/admin_shift_list.html', context)
 
 
-    def get_queryset(self):
-        queryset = Shift.objects.filter(location__festival=self.request.festival)
-        if 'location_uuid' in self.request.GET:
-            queryset = queryset.filter(uuid=self.request.GET['location_uuid'])
-        if 'date' in self.request.GET:
-            queryset = queryset.filter(UpdateView=self.request.GET['date'])
-        return queryset
+    #def get_queryset(self):
+        #queryset = Shift.objects.filter(location__festival = self.request.festival)
+        #if 'location_uuid' in self.request.GET:
+        #    queryset = queryset.filter(uuid = self.request.GET['location_uuid'])
+        #if 'date' in self.request.GET:
+        #    queryset = queryset.filter(UpdateView = self.request.GET['date'])
+        #return queryset
 
 
 class AdminShiftCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):

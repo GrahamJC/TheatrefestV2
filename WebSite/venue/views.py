@@ -309,6 +309,7 @@ def render_sales(request, performance, sale = None, start_form = None, sale_form
         'sale': sale,
         'start_form': start_form,
         'sale_form': sale_form,
+        'available': performance.tickets_available + (sale.tickets.count() if sale else 0),
     }
     return render(request, "venue/_main_sales.html", context)
 
@@ -597,10 +598,9 @@ def sale_update(request, performance_uuid, sale_uuid):
     if sale_form.is_valid():
 
         # Check if there are sufficient tickets
-        sale_tickets = sale.tickets.count()
-        form_tickets = sale_form.ticket_count
-        available_tickets = performance.tickets_available
-        if (form_tickets - sale_tickets) <= available_tickets:
+        requested_tickets = sale_form.ticket_count
+        available_tickets = performance.tickets_available + sale.tickets.count()
+        if requested_tickets <= available_tickets:
 
             # Adjust ticket numbers
             for ticket_type in sale_form.ticket_types:
@@ -688,7 +688,7 @@ def sale_update(request, performance_uuid, sale_uuid):
 
         # Insufficient tickets
         else:
-            logger.info("Sale %s tickets not available (%d requested, %d available): %s", sale, (form_tickets - sale_tickets), available_tickets, performance)
+            logger.info("Sale %s tickets not available (%d requested, %d available): %s", sale, requested_tickets, available_tickets, performance)
             sale_form.add_error(None, f"There are only {available_tickets} tickets available for this performance.")
 
     # Render sales tab content

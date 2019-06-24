@@ -673,8 +673,8 @@ class PrintSaleView(LoginRequiredMixin, View):
         story = []
 
         # Festival banner
-        if sale.festival.banner:
-            banner = Image(os.path.join(settings.MEDIA_ROOT, sale.festival.banner.path), width = 16*cm, height = 4*cm)
+        if request.festival.banner:
+            banner = Image(request.festival.banner.get_absolute_path(), width = 18*cm, height = 4*cm)
             banner.hAlign = 'CENTER'
             story.append(banner)
             story.append(Spacer(1, 1*cm))
@@ -785,8 +785,8 @@ class PrintPerformanceView(LoginRequiredMixin, View):
         story = []
 
         # Festival banner
-        if sale.festival.banner:
-            banner = Image(os.path.join(settings.MEDIA_ROOT, sale.festival.banner.path), width = 16*cm, height = 4*cm)
+        if request.festival.banner:
+            banner = Image(request.festival.banner.get_absolute_path(), width = 18*cm, height = 4*cm)
             banner.hAlign = 'CENTER'
             story.append(banner)
             story.append(Spacer(1, 1*cm))

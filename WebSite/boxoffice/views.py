@@ -158,7 +158,7 @@ def create_sale_extras_form(sale, post_data = None):
     # Return form
     return form
 
-def create_checkpoint_form(boxoffice, checkpoint = None, post_data = None):
+def create_checkpoint_form(boxoffice, checkpoint, post_data = None):
 
     # Create form
     form = CheckpointForm(checkpoint, data = post_data)
@@ -213,7 +213,7 @@ def render_main(request, boxoffice, tab = None, checkpoint_form = None):
         'sale_extras_form': None,
         'sale': None,
         'sales': get_sales(boxoffice),
-        'checkpoint_form': checkpoint_form or create_checkpoint_form(boxoffice),
+        'checkpoint_form': checkpoint_form or create_checkpoint_form(boxoffice, None),
         'checkpoints': get_checkpoints(boxoffice),
         'user_lookup_form': create_user_lookup_form(request.festival),
     }
@@ -221,6 +221,8 @@ def render_main(request, boxoffice, tab = None, checkpoint_form = None):
 
 def render_sale(request, boxoffice, sale = None, show = None, performance = None, start_form = None, tickets_form = None, extras_form = None):
 
+    if performance and not show:
+        show = performance.show
     if sale:
         context = {
             'boxoffice': boxoffice,
@@ -378,14 +380,9 @@ def sale_tickets_add(request, sale_uuid, performance_uuid):
         available_tickets = performance.tickets_available
         if requested_tickets <= available_tickets:
 
-            # Adjust ticket numbers
+            # Ad tickets
             for ticket_type in form.ticket_types:
-                form_tickets = form.cleaned_data[SaleTicketsForm.ticket_field_name(ticket_type)]
-                while sale.tickets.filter(performance = performance, description = ticket_type.name).count() > form_tickets:
-                    sale_ticket = sale.tickets.filter(description = ticket_type.name).last()
-                    logger.info("Sale %s ticket deleted: %s", sale, sale_ticket)
-                    sale_ticket.delete()
-                while sale.tickets.filter(performance = performance, description = ticket_type.name).count() < form_tickets:
+                for n in range(form.cleaned_data[SaleTicketsForm.ticket_field_name(ticket_type)]):
                     new_ticket = Ticket(
                         sale = sale,
                         user = sale.customer_user,
@@ -399,9 +396,7 @@ def sale_tickets_add(request, sale_uuid, performance_uuid):
 
             # Update eFringers
             for efringer in form.efringers:
-                form_is_used = form.cleaned_data[SaleTicketsForm.efringer_field_name(efringer)]
-                sale_ticket = sale.tickets.filter(performance = performance, fringer = efringer).first()
-                if form_is_used and not sale_ticket:
+                if form.cleaned_data[SaleTicketsForm.efringer_field_name(efringer)]:
                     new_ticket = Ticket(
                         sale = sale,
                         user = sale.customer_user,
@@ -413,17 +408,15 @@ def sale_tickets_add(request, sale_uuid, performance_uuid):
                     )
                     new_ticket.save()
                     logger.info("Sale %s ticket aded: %s", sale, new_ticket)
-                elif sale_ticket and not form_is_used:
-                    logger.info("Sale %s ticket deleted: %s", sale, sale_ticket)
-                    sale_ticket.delete()
 
             # If sale is complete then update the total
             if sale.completed:
                 sale.amount = sale.total_cost
                 sale.save()
 
-            # Destroy form
+            # Prepare for adding more tickets
             form = None
+            performance = None
 
         # Insufficient tickets
         else:
@@ -431,7 +424,7 @@ def sale_tickets_add(request, sale_uuid, performance_uuid):
             form.add_error(None, f"There are only {available_tickets} tickets available for this performance.")
 
     # Render sales tab content
-    return  render_sale(request, boxoffice, sale = sale, tickets_form = form)
+    return  render_sale(request, boxoffice, sale = sale, performance = performance, tickets_form = form)
 
 @require_POST
 @login_required
@@ -566,7 +559,7 @@ def checkpoint_add(request, boxoffice_uuid):
     boxoffice = get_object_or_404(BoxOffice, uuid = boxoffice_uuid)
 
     # Create form and validate
-    form = create_checkpoint_form(boxoffice, request.POST)
+    form = create_checkpoint_form(boxoffice, None, request.POST)
     if form.is_valid():
 
         # Create checkpoint
@@ -585,8 +578,8 @@ def checkpoint_add(request, boxoffice_uuid):
         # Clear form
         form = None
 
-    # Render main page (to force update of sales list)
-    return render_main(request, boxoffice, 'checkpoints', form)
+    # Render main page and go to sales (unless there was an error)
+    return render_main(request, boxoffice, 'checkpoints' if form else 'sales', form)
 
 
 @require_GET
