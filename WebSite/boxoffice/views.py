@@ -1,6 +1,8 @@
 import datetime
 from decimal import Decimal
 
+from django.conf import settings
+from django.core.mail import send_mail
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db import transaction
@@ -12,6 +14,7 @@ from django.urls import reverse
 from django.views import View
 from django.forms import formset_factory, modelformset_factory
 from django.http import JsonResponse
+from django.template.loader import render_to_string
 from django.views.decorators.http import require_GET, require_POST
 
 import arrow
@@ -26,7 +29,7 @@ from core.models import User
 from program.models import Show, ShowPerformance
 from tickets.models import BoxOffice, Sale, TicketType, Ticket, Fringer, Checkpoint
 
-from .forms import CheckpointForm, SaleStartForm, SaleTicketsForm, SaleExtrasForm, UserLookupForm
+from .forms import CheckpointForm, SaleStartForm, SaleTicketsForm, SaleExtrasForm, SaleEMailForm, UserLookupForm
 
 # Logging
 import logging
@@ -158,6 +161,27 @@ def create_sale_extras_form(sale, post_data = None):
     # Return form
     return form
 
+def create_sale_email_form(sale, post_data = None):
+
+    # Validate parameters
+    assert sale
+
+    # Create form
+    initial_data = { 'email': sale.customer }
+    form = SaleEMailForm(initial = initial_data, data = post_data)
+
+    # Add crispy form helper
+    form.helper = FormHelper()
+    form.helper.form_id = 'sale-email-form'
+    form.helper.layout = Layout(
+        Field('email'),
+        Button('send', 'Send', css_class = 'btn-primary', onclick = 'saleEMailSend()'),
+        Button('close', 'Close', css_class = 'btn-secondary',  data_dismiss = 'modal'),
+    )
+
+    # Return form
+    return form
+
 def create_checkpoint_form(boxoffice, checkpoint, post_data = None):
 
     # Create form
@@ -221,9 +245,19 @@ def render_main(request, boxoffice, tab = None, checkpoint_form = None):
 
 def render_sale(request, boxoffice, sale = None, show = None, performance = None, start_form = None, tickets_form = None, extras_form = None):
 
-    if performance and not show:
-        show = performance.show
+    # Show and performance must match
+    assert not performance or show == performance.show
+
+    # Check if there is an active sale 
     if sale:
+
+        # Box office sales are closed 30 mins before the performance starts
+        boxoffice_sales_closed = False
+        all_sales_closed = False
+        if performance:
+            delta = datetime.datetime.combine(performance.date, performance.time) - datetime.datetime.now()
+            boxoffice_sales_closed = delta.days < 0 or delta.total_seconds() <= (30 * 60)
+            all_sales_closed = delta.days < 0 or delta.total_seconds() <= 0
         context = {
             'boxoffice': boxoffice,
             'sale': sale,
@@ -231,8 +265,11 @@ def render_sale(request, boxoffice, sale = None, show = None, performance = None
             'selected_show': show,
             'performances': show.performances.order_by('date', 'time') if show else None,
             'selected_performance': performance,
+            'boxoffice_sales_closed': boxoffice_sales_closed,
+            'all_sales_closed': all_sales_closed,
             'sale_tickets_form': tickets_form or create_sale_tickets_form(request.festival, sale, performance) if performance else None,
             'sale_extras_form': extras_form or create_sale_extras_form(sale),
+            'sale_email_form': create_sale_email_form(sale),
             'sales': get_sales(boxoffice),
         }
     else:
@@ -476,13 +513,13 @@ def sale_extras_update(request, sale_uuid):
 def sale_remove_performance(request, sale_uuid, performance_uuid):
     sale = get_object_or_404(Sale, uuid = sale_uuid)
     performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+    tickets = 0
+    for ticket in sale.tickets.filter(performance = performance):
+        ticket.delete()
+        tickets += 1
     if sale.completed:
-        logger.error('sale_remove_performance: sale %s completed', sale)
+        logger.warning("Sale %s performance removed (%d tickets) after completed: %s", sale, tickets, performance)
     else:
-        tickets = sale.tickets.count()
-        for ticket in sale.tickets.all():
-            if ticket.performance_id == performance.id:
-                ticket.delete()
         logger.info("Sale %s performance removed (%d tickets): %s", sale, tickets, performance)
     return render_sale(request, sale.boxoffice, sale)
 
@@ -493,13 +530,12 @@ def sale_remove_performance(request, sale_uuid, performance_uuid):
 def sale_remove_ticket(request, sale_uuid, ticket_uuid):
     sale = get_object_or_404(Sale, uuid = sale_uuid)
     ticket = get_object_or_404(Ticket, uuid = ticket_uuid)
+    assert ticket.sale == sale
     if sale.completed:
-        logger.error('sale_remove_ticket: sale %s completed', sale)
-    elif ticket.sale != sale:
-        logger.error('sale_remove_ticket: ticket %s not part of sale %s', ticket, sale)
+        logger.warning("Sale %s ticket removed after completed: %s", sale, ticket)
     else:
         logger.info("Sale %s ticket removed: %s", sale, ticket)
-        ticket.delete()
+    ticket.delete()
     return render_sale(request, sale.boxoffice, sale)
 
 @require_GET
@@ -547,6 +583,32 @@ def sale_close(request, sale_uuid):
 def sale_select(request, sale_uuid):
     sale = get_object_or_404(Sale, uuid = sale_uuid)
     return render_sale(request, sale.boxoffice, sale)
+
+@require_POST
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+@transaction.atomic
+def sale_email(request, sale_uuid):
+
+    # Get sale
+    sale = get_object_or_404(Sale, uuid = sale_uuid)
+
+    # Process form
+    form = create_sale_email_form(sale, request.POST)
+    if form.is_valid():
+        email = form.cleaned_data['email']
+        context = {
+            'festival': request.festival,
+            'buttons': sale.buttons,
+            'fringers': sale.fringers.count(),
+            'tickets': sale.tickets.order_by('performance__date', 'performance__time', 'performance__show__name')
+        }
+        body = render_to_string('boxoffice/sale_email.txt', context)
+        send_mail('Tickets for ' + request.festival.title, body, settings.DEFAULT_FROM_EMAIL, [email])
+        return HttpResponse('<div class="alert alert-success">e-mail sent.</div>')
+
+    # Return status
+    return HttpResponse('<div class="alert alert-danger">Invalid e-mail address.</div>')
 
 # Checkpoints
 @require_POST

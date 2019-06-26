@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from .forms import UserCreationForm, UserChangeForm
+from .forms import AdminUserCreationForm, AdminUserChangeForm
 from .models import SiteInfo, Festival, User
 
 # Register standard admins
@@ -11,8 +11,8 @@ admin.site.register(Festival)
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
 
-    form = UserChangeForm
-    add_form = UserCreationForm
+    form = AdminUserChangeForm
+    add_form = AdminUserCreationForm
 
     list_display = ('email', 'site', 'festival', 'is_active', 'is_admin', 'is_boxoffice', 'is_venue', 'is_volunteer')
     list_filter = ('site', 'festival', 'is_active', 'is_admin', 'is_boxoffice', 'is_venue', 'is_volunteer')

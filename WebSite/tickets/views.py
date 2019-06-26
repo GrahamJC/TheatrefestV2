@@ -195,8 +195,8 @@ class BuyView(LoginRequiredMixin, View):
 
         # Check if online ticket sales are still open
         delta = datetime.combine(performance.date, performance.time) - datetime.now()
-        #if delta.total_seconds() <= (30 * 60):
-        #    return redirect(reverse('tickets:buy_closed', args = [performance.uuid]))
+        if delta.total_seconds() <= (30 * 60):
+            return redirect(reverse('tickets:buy_closed', args = [performance.uuid]))
 
         # Create buy ticket formset
         ticket_formset = self.get_ticket_formset(ticket_types)
@@ -531,10 +531,11 @@ class CheckoutView(LoginRequiredMixin, View):
             # Send e-mail to confirm tickets
             if sale.tickets:
                 context = {
+                    'festival': request.festival,
                     'tickets': sale.tickets.order_by('performance__date', 'performance__time', 'performance__show__name')
                 }
                 body = render_to_string('tickets/sale_email.txt', context)
-                send_mail('Theatrefest 2018', body, settings.DEFAULT_FROM_EMAIL, [self.request.user.email])
+                send_mail('Tickets for ' + request.festival.title, body, settings.DEFAULT_FROM_EMAIL, [self.request.user.email])
 
             # Confirm checkout
             return redirect(reverse('tickets:checkout_confirm', args = [sale.uuid]))

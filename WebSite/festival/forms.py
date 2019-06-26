@@ -1,5 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
+from django.contrib.auth.password_validation import validate_password
 
 from core.models import User
 from content.models import Page, PageImage, Navigator
@@ -59,3 +60,13 @@ class NavigatorForm(forms.ModelForm):
             self.instance.validate_unique(exclude=exclude)
         except ValidationError:
             self._update_errors(ValidationError({'name': 'A navigator with that name already exists'}))
+
+
+class PasswordResetForm(forms.Form):
+
+    password = forms.CharField(required = True, widget = forms.PasswordInput)
+
+    def clean_password(self):
+        data = self.cleaned_data['password']
+        validate_password(data)
+        return data

@@ -24,7 +24,11 @@
     </form>
 
     {% if select_form %}
-        {% crispy select_form %}
+        {% if select_form.template %}
+            {% include select_form.template with form=select_form %}
+        {% else %}
+            {% crispy select_form %}
+        {% endif %}
     {% endif %}
 
     {% if report_html_url or report_pdf_url %}

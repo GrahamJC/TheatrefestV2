@@ -19,7 +19,7 @@
                 </div>
             </div>
             <div class="card">
-                <h6 class="card-header">Sales Since Last Checkpoint)</h6>
+                <h6 class="card-header">Sales Since Last Checkpoint</h6>
                 <div class="card-body">
                     <table class="table table-striped">
                         <thhead>
@@ -69,7 +69,15 @@
                             </div>
                         </div>
                     {% endif %}
-                    {% if sale_tickets_form %}
+                    {% if all_sales_closed %}
+                        <div class="alert alert-info">
+                            Sales for this performance are now closed.
+                        </div>
+                    {% elif boxoffice_sales_closed %}
+                        <div class="alert alert-info">
+                            Box office and online sales for this performance are now closed and tickets can only be purchased at the venue.
+                        </div>
+                    {% elif sale_tickets_form %}
                         {% crispy sale_tickets_form %}
                     {% endif %}
                 </div>
@@ -91,9 +99,14 @@
             </div>
         {% else %}
             {% if sale.completed %}
-                <div class="alert alert-info">
-                    <p>This sale is now complete but you can still make changes to correct mistakes until you enter the next checkpoint.</p>
+                <div class="alert alert-danger">
+                    <p>This sale is now complete but you can still make changes to correct mistakes.</p>
                     <p>Select Close to begin a new sale.</p>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <p>Once the customer has paid select Complete to finish the sale.</p>
+                    <p>If you select Cancel (or leave this page) the sale will be cancelled and no tickets will be issued.</p>
                 </div>
             {% endif %}
             <div class="card">
@@ -118,9 +131,7 @@
                             <div class="col-6">{{ performance.date | date:'D, j M' }} at {{ performance.time | time:'h:ia' }}</div>
                             <div class="col-3"><a href="#tf-boxoffice-sale-tickets-{{ forloop.counter }}" data-toggle="collapse">{{ performance.tickets | length }} Tickets</a></div>
                             <div class="col-3 text-right">
-                                {% if not sale.completed %}
-                                    <a href="#" onclick="updateSalesTab('{% url "boxoffice:sale_remove_performance" sale.uuid performance.uuid %}')">Remove</a>
-                                {% endif %}
+                                <a href="#" onclick="updateSalesTab('{% url "boxoffice:sale_remove_performance" sale.uuid performance.uuid %}')">Remove</a>
                             </div>
                             <div id="tf-boxoffice-sale-tickets-{{ forloop.counter }}" class="col-12 collapse">
                                 {% for ticket in performance.tickets %}
@@ -130,9 +141,7 @@
                                         <div class="col-4">{{ ticket.description }}</div>
                                         <div class="col-2 text-right">{% if ticket.cost %}&#163;{{ ticket.cost }}{% endif %}</div>
                                         <div class="col-3">
-                                            {% if not sale.completed %}
-                                                <a href="#" onclick="updateSalesTab('{% url "boxoffice:sale_remove_ticket" sale.uuid ticket.uuid %}')">Remove</a>
-                                            {% endif %}
+                                            <a href="#" onclick="updateSalesTab('{% url "boxoffice:sale_remove_ticket" sale.uuid ticket.uuid %}')">Remove</a>
                                         </div>
                                     </div>
                                 {% endfor %}
@@ -146,14 +155,14 @@
                     <div class="row mb-2">
                         <div class="col-12">
                             {% if sale.completed %}
-                                <button class="btn btn-primary">E-mail</button>
+                                <button class="btn btn-primary" data-toggle="modal" data-target="#sale-email-modal">E-mail</button>
                                 <a class="btn btn-primary" href="{% url 'reports:sale_pdf' sale.uuid %}" target="_blank">PDF</a>
                                 <div class="float-right">
                                     <a class="btn btn-secondary" href="#" onclick="updateSalesTab('{% url "boxoffice:sale_close" sale.uuid %}')">Close</a>
                                 </div>
                             {% else %}
                                 <a class="btn btn-primary" href="#" onclick="updateSalesTab('{% url "boxoffice:sale_complete" sale.uuid %}')">Complete</a>
-                                <a class="btn btn-primary" href="#" onclick="updateSalesTab('{% url "boxoffice:sale_cancel" sale.uuid %}')">Cancel</a>
+                                <a class="btn btn-secondary" href="#" onclick="updateSalesTab('{% url "boxoffice:sale_cancel" sale.uuid %}')">Cancel</a>
                             {% endif %}
                         </div>
                     </div>
@@ -162,6 +171,25 @@
         {% endif %}
     </div>
 </div>
+
+{% if sale_email_form %}
+    <div id="sale-email-modal" class="modal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Send e-mail</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="sale-email-status"></div>
+                    {% crispy sale_email_form %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
 
 <script language="javascript">
 
@@ -195,6 +223,16 @@
                 updateSalesTab('{% url "boxoffice:sale_extras_update" sale.uuid %}', postData);
             }
         {% endif %}
+
+        function saleEMailSend() {
+            var data = $('#sale-email-form').serializeArray();
+            var url = '{% url "boxoffice:sale_email" sale.uuid %}'
+            $('#sale-email-status').load(url, data, function(response, status, xhr) {
+                if (status != 'success') {
+                    $('#sale-email-status').html('<div class="alert alert-danger">Sorry but there was an error. Please refresh the page and try again.</div>');
+                }
+            });
+        }
 
     {% endif %}
 

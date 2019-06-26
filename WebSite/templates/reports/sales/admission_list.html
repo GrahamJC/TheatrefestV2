@@ -1,0 +1,55 @@
+<h5>Box Office and Online Sales</h5>
+<table class="table table-sm">
+    <tr>
+        <th>Number</th>
+        <th>Customer</th>
+        <th>Type</th>
+        <th>Sale</th>
+    </tr>
+    {% for ticket in non_venue_tickets %}
+        <tr>
+            <td>{{ ticket.id }}</td>
+            <td>{% if ticket.user %} {{ ticket.user.username }} {%else%} {{ ticket.sale.customer }} {% endif %}</td>
+            <td>{{ ticket.description }}</td>
+            <td>{% if ticket.sale.boxoffice %}Box Office{% else %}Online{% endif %}</td>
+        </tr>
+    {% endfor %}
+</table>
+
+<h5>Venue Sales</h5>
+<table class="table table-sm">
+    <tr>
+        <th>Number</th>
+        <th>Customer</th>
+        <th>Type</th>
+        <th>Sale</th>
+    </tr>
+    {% for ticket in venue_tickets %}
+        <tr>
+            <td>{{ ticket.id }}</td>
+            <td>{% if ticket.user %} {{ ticket.user.username }} {%else%} {{ ticket.sale.customer }} {% endif %}</td>
+            <td>{{ ticket.description }}</td>
+            <td>Venue</td>
+        </tr>
+    {% endfor %}
+</table>
+
+{% if cancelled_tickets %}
+    <h5>Cancelled/Refunded Tickets</h5>
+    <table class="table table-sm">
+        <tr>
+            <th>Number</th>
+            <th>Customer</th>
+            <th>Type</th>
+            <th>Sale</th>
+        </tr>
+        {% for ticket in cancelled_tickets %}
+            <tr>
+                <td>{{ ticket.id }}</td>
+                <td>{% if ticket.user %} {{ ticket.user.username }} {% else %} {{ ticket.sale.customer }} {% endif %}</td>
+                <td>{{ ticket.description }}</td>
+                <td>{% if ticket.sale.boxoffice %}Box Office{% else %}Online{% endif %}</td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endif %}

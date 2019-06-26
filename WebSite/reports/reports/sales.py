@@ -23,6 +23,150 @@ from reportlab.lib import colors
 from program.models import Show, ShowPerformance
 from tickets.models import TicketType, Ticket
 
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_admin)
+def admission_list(request):
+
+    # Get selection criteria
+    #venue = Venue.objects.get(id = int(request.GET['venue']))
+    #date = datetime.datetime.strptime(request.GET['date'], '%Y%m%d')
+    performance = ShowPerformance.objects.get(id = int(request.GET['performance']))
+    venue = performance.show.venue
+
+
+    # Get tickets
+    venue_tickets = performance.tickets.filter(sale__venue__isnull = False, refund__isnull = True).order_by('id')
+    non_venue_tickets = performance.tickets.filter(sale__venue__isnull = True, refund__isnull = True).order_by('id')
+    cancelled_tickets = performance.tickets.filter(refund__isnull = False).order_by('id')
+
+    # Check for HTML
+    format = request.GET['format']
+    if format.lower() == 'html':
+
+        # Render tickets
+        context = {
+            'venue': venue,
+            'performance': performance,
+            'venue_tickets': venue_tickets,
+            'non_venue_tickets': non_venue_tickets,
+            'cancelled_tickets': cancelled_tickets,
+        }
+        return render(request, "reports/sales/admission_list.html", context)
+
+    # Render as PDF
+    response = HttpResponse(content_type = 'application/pdf')
+    response['Content-Disposition'] = 'inline'
+    doc = SimpleDocTemplate(
+        response,
+        pagesize = portrait(A4),
+        leftMargin = 2.5*cm,
+        rightMargin = 2.5*cm,
+        topMargin = 2.5*cm,
+        bottomMargin = 2.5*cm,
+    )
+    styles = getSampleStyleSheet()
+    story = []
+
+    # Festival banner
+    if request.festival.banner:
+        banner = Image(request.festival.banner.get_absolute_path(), width = 16*cm, height = 4*cm)
+        banner.hAlign = 'CENTER'
+        story.append(banner)
+        story.append(Spacer(1, 1*cm))
+
+    # Venue and performance
+    table = Table(
+        (
+            (Paragraph('<para><b>Venue:</b></para>', styles['Normal']), venue.name),
+            (Paragraph('<para><b>Show:</b></para>', styles['Normal']), performance.show.name),
+            (Paragraph('<para><b>Performance:</b></para>', styles['Normal']), f"{performance.date:%A, %d %B} at {performance.time:%I:%M%p}"),
+        ),
+        colWidths = (4*cm, 12*cm),
+        hAlign = 'LEFT'
+    )
+    story.append(table)
+
+    # Box Offixe and Online tickets
+    story.append(Paragraph('<para>Box Office and Online Sales</para>', styles['Heading3']))
+    table_data = []
+    table_data.append((
+        Paragraph(f"<para><b>Ticket No</b></para>", styles['Normal']),
+        Paragraph(f"<para><b>Name/e-mail</b></para>", styles['Normal']),
+        Paragraph(f"<para><b>Type</b></para>", styles['Normal']),
+        Paragraph(f"<para><b>Sale</b></para>", styles['Normal']),
+    ))
+    for ticket in non_venue_tickets:
+        name_email= ticket.user.email if ticket.user else ticket.sale.customer
+        sale_type = 'Venue' if ticket.sale.user else 'Box office' if ticket.sale.boxoffice else 'Online'
+        table_data.append((
+            str(ticket.id),
+            name_email,
+            ticket.description,
+            sale_type,
+        ))
+    table = Table(
+        table_data,
+        colWidths = (2.5*cm, 8.5*cm, 2.5*cm, 2.5*cm),
+        hAlign = 'LEFT',
+    )
+    story.append(table)
+
+    # Venue tickets
+    story.append(Paragraph('<para>Venue Sales</para>', styles['Heading3']))
+    table_data = []
+    table_data.append((
+        Paragraph(f"<para><b>Ticket No</b></para>", styles['Normal']),
+        Paragraph(f"<para><b>Name/e-mail</b></para>", styles['Normal']),
+        Paragraph(f"<para><b>Type</b></para>", styles['Normal']),
+        Paragraph(f"<para><b>Sale</b></para>", styles['Normal']),
+    ))
+    for ticket in venue_tickets:
+        name_email= ticket.user.email if ticket.user else ticket.sale.customer
+        sale_type = 'Venue' if ticket.sale.user else 'Box office' if ticket.sale.boxoffice else 'Online'
+        table_data.append((
+            str(ticket.id),
+            name_email,
+            ticket.description,
+            sale_type,
+        ))
+    table = Table(
+        table_data,
+        colWidths = (2.5*cm, 8.5*cm, 2.5*cm, 2.5*cm),
+        hAlign = 'LEFT',
+    )
+    story.append(table)
+
+    # Cancelled tickets
+    if cancelled_tickets:
+        story.append(Paragraph('<para>Cancelled Tickets</para>', styles['Heading3']))
+        table_data = []
+        table_data.append((
+            Paragraph(f"<para><b>Ticket No</b></para>", styles['Normal']),
+            Paragraph(f"<para><b>Name/e-mail</b></para>", styles['Normal']),
+            Paragraph(f"<para><b>Type</b></para>", styles['Normal']),
+            Paragraph(f"<para><b>Sale</b></para>", styles['Normal']),
+        ))
+        for ticket in cancelled_tickets:
+            name_email= ticket.user.email if ticket.user else ticket.sale.customer
+            sale_type = 'Venue' if ticket.sale.user else 'Box office' if ticket.sale.boxoffice else 'Online'
+            table_data.append((
+                str(ticket.id),
+                name_email,
+                ticket.description,
+                sale_type,
+            ))
+        table = Table(
+            table_data,
+            colWidths = (2.5*cm, 8.5*cm, 2.5*cm, 2.5*cm),
+            hAlign = 'LEFT',
+        )
+        story.append(table)
+
+    # Render PDF document and return it
+    doc.build(story)
+    return response
+
 def _get_performance_tickets_by_type(performance, ticket_types):
 
     tickets = {}

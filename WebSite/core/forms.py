@@ -15,7 +15,7 @@ from django_registration.forms import RegistrationForm as BaseRegistrationForm
 from core.models import User
 
 
-class UserCreationForm(forms.ModelForm):
+class AdminUserCreationForm(forms.ModelForm):
 
     password1 = forms.CharField(label='Password', widget=forms.PasswordInput)
     password2 = forms.CharField(label='Confirm password', widget=forms.PasswordInput)
@@ -39,7 +39,7 @@ class UserCreationForm(forms.ModelForm):
         return user
 
 
-class UserChangeForm(forms.ModelForm):
+class AdminUserChangeForm(forms.ModelForm):
 
     password = ReadOnlyPasswordHashField(help_text='<a href="../password/">change password</a>')
 

@@ -22,6 +22,7 @@ urlpatterns = [
     path('sale/<uuid:sale_uuid>/cancel', views.sale_cancel, name = 'sale_cancel'),
     path('sale/<uuid:sale_uuid>/close', views.sale_close, name = 'sale_close'),
     path('sale/<uuid:sale_uuid>/select', views.sale_select, name = 'sale_select'),
+    path('sale/<uuid:sale_uuid>/email', views.sale_email, name = 'sale_email'),
     # Checkpoints
     path('<uuid:boxoffice_uuid>/checkpoint/add', views.checkpoint_add, name = 'checkpoint_add'),
     path('checkpoint/<uuid:checkpoint_uuid>/select', views.checkpoint_select, name = 'checkpoint_select'),

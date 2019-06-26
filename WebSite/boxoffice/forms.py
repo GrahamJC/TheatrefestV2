@@ -51,6 +51,11 @@ class SaleExtrasForm(forms.Form):
     fringers = forms.IntegerField(label = 'Fringers (buy)', required = True, initial = 0, min_value = 0)
 
 
+class SaleEMailForm(forms.Form):
+
+    email = forms.EmailField(label = 'e-mail address', required = True)
+
+
 class CheckpointForm(forms.Form):
 
     cash = forms.DecimalField(label = 'Cash', required = True, max_digits = 5, decimal_places = 2)

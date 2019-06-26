@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block pagetitle %}Users{% endblock %}
+
+{% block content %}
+
+    <table class="table">
+        <thead class="thead-light">
+            <tr>
+                <th>e-mail</th>
+                <th>Status</th>
+                <th>Password</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in user_list %}
+                <tr>
+                    <td>{{ user.email }}</a></td>
+                    <td>
+                        {% if user.is_active %}
+                            Active
+                        {% else %}
+                            <a class="btn btn-primary" href="{% url 'festival:admin_user_activate' user.uuid %}">Activate</a>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <form action="{% url 'festival:admin_user_password' user.uuid %}" method="POST">
+                            {% csrf_token %}
+                            <input name="password" type="password"/>
+                            <button type="submit" class="btn-primary">Reset</a>
+                        </form>
+                    </td>
+                </tr>
+            {%endfor %}
+        </tbody>
+    </table>
+
+{% endblock %}

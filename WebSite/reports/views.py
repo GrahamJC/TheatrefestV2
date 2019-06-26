@@ -17,37 +17,46 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Field, Fieldset, HTML, Submit, Button, Row, Column
 from crispy_forms.bootstrap import FormActions, TabHolder, Tab, Div
 
-from .forms import SelectVenueDateForm, SelectBoxOfficeDateForm, SelectTicketedShowForm
+from program.models import ShowPerformance
+
+from .forms import SelectVenueForm, SelectBoxOfficeForm, SelectTicketsForm, SelectAdmissionForm
 
 # Report definitions
 reports = {
     'finance': {
         'venue_summary': {
             'title': 'Venue summary',
-            'select_form': SelectVenueDateForm,
+            'select_form': SelectVenueForm,
             'select_fields': ['venue', 'date'],
             'select_required': ['venue', 'date'],
             'report_url': reverse_lazy('reports:finance_venue_summary'),
         },
         'boxoffice_summary': {
             'title': 'Box Office summary',
-            'select_form': SelectBoxOfficeDateForm,
+            'select_form': SelectBoxOfficeForm,
             'select_fields': ['boxoffice', 'date'],
             'select_required': ['boxoffice', 'date'],
             'report_url': reverse_lazy('reports:finance_boxoffice_summary'),
         },
     },
     'sales': {
+        'admission_list': {
+            'title': 'Admission lists',
+            'select_form': SelectAdmissionForm,
+            'select_fields': ['date', 'venue', 'performance'],
+            'select_required': ['date', 'venue', 'performance'],
+            'report_url': reverse_lazy('reports:sales_admission_list'),
+        },
         'tickets_by_type': {
             'title': 'Ticket sales by ticket type',
-            'select_form': SelectTicketedShowForm,
+            'select_form': SelectTicketsForm,
             'select_fields': ['show'],
             'select_required': [],
             'report_url': reverse_lazy('reports:sales_tickets_by_type'),
         },
         'tickets_by_channel': {
             'title': 'Ticket sales by channel (online, box office or venue)',
-            'select_form': SelectTicketedShowForm,
+            'select_form': SelectTicketsForm,
             'select_fields': ['show'],
             'select_required': [],
             'report_url': reverse_lazy('reports:sales_tickets_by_channel'),
@@ -137,3 +146,14 @@ def select(request, category, report_name = None):
         'report_pdf_url': report_pdf_url,
     }
     return render(request, 'reports/main.html', context)
+
+
+def ajax_performances(request, date, venue_id):
+
+    date = datetime.datetime.strptime(date, '%Y%m%d')
+    venue_id = int(venue_id)
+    performances = ShowPerformance.objects.filter(date = date, show__venue_id = venue_id).order_by('time')
+    html = '<option value="">-- Select performance --</option>'
+    for performance in performances:
+        html += f"<option value=\"{performance.id}\">{performance.time:%I:%M%p}: {performance.show.name}</option>"
+    return HttpResponse(html)
