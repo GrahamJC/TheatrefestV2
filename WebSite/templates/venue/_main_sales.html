@@ -61,20 +61,20 @@
 
     <div class="col-6">
         {% if sale %}
-            <div class="alert alert-info">
-                {% if performance.has_close_checkpoint %}
-                    <p>This performance is now closed and you can no longer make any changes.</p>
-                {% elif sale.completed %}
-                    <p>This sale is complete but you can still make changes to correct mistakes.</p>
-                    <p></p>Once you have made any changes select Close to begin a new sale.</p>
-                {% else %}
-                    <p>Once the customer has paid select Complete to finish the sale.</p>
-                    <p>If you select Cancel (or leave this page) the sale will be cancelled and no tickets will be issued.</p>
-                {% endif %}
-            </div>
             <div class="card">
-                <h6 class="card-header"><i class="fa fa-user-circle {% if sale.customer_user %}text-primary{% endif %}"></i> {{ sale.customer }}</h6>
+                <h6 class="card-header"><i class="fa fa-user-circle {% if sale.customer_user %}text-primary{% endif %}"></i> {{ sale.customer }}<div class="float-right">Sale: {{ sale.id }}</div></h6>
                 <div class="card-body">
+                    <div class="alert alert-info">
+                        {% if performance.has_close_checkpoint %}
+                            <p>This performance is now closed and you can no longer make any changes.</p>
+                        {% elif sale.completed %}
+                            <p>This sale is complete but you can still make changes to correct mistakes.</p>
+                            <p></p>Once you have made any changes select Close to begin a new sale.</p>
+                        {% else %}
+                            <p>Once the customer has paid select Complete to finish the sale.</p>
+                            <p>If you select Cancel (or leave this page) the sale will be cancelled and no tickets will be issued.</p>
+                        {% endif %}
+                    </div>
                     {% if sale.buttons %}
                         <div class="row mb-2">
                             <div class="col-9"><strong>{{ sale.buttons }} x Badges</strong></div>
@@ -116,7 +116,9 @@
                                     </div>
                                 {% else %}
                                     <a class="btn btn-primary" href="#" onclick="updateSalesTab('{% url 'venue:sale_complete' performance.uuid sale.uuid %}')">Complete</a>
-                                    <a class="btn btn-secondary" href="#" onclick="updateSalesTab('{% url 'venue:sale_cancel' performance.uuid sale.uuid %}')">Cancel</a>
+                                    <div class="float-right">
+                                        <a class="btn btn-secondary" href="#" onclick="updateSalesTab('{% url 'venue:sale_cancel' performance.uuid sale.uuid %}')">Cancel</a>
+                                    </div>
                                 {% endif %}
                             </div>
                         </div>

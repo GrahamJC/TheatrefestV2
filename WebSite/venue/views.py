@@ -355,7 +355,7 @@ def main(request, venue_uuid):
 
     # Delete any imcomplete sales for this venue
     for sale in venue.sales.filter(completed__isnull = True):
-        logger.info("Sale %s auto-cancelled", sale)
+        logger.info("Incomplete venue sale %s (%s) at %s auto-cancelled", sale.id, sale.customer, venue.name)
         sale.delete()
 
     # Render page
@@ -769,8 +769,8 @@ def tickets(request, performance_uuid, format):
     venue = performance.show.venue
 
     # Get tickets
-    venue_tickets = performance.tickets.filter(sale__venue__isnull = False, refund__isnull = True).order_by('id')
-    non_venue_tickets = performance.tickets.filter(sale__venue__isnull = True, refund__isnull = True).order_by('id')
+    venue_tickets = performance.tickets.filter(sale__completed__isnull = False, sale__venue = venue, refund__isnull = True).order_by('id')
+    non_venue_tickets = performance.tickets.filter(sale__completed__isnull = False, sale__venue__isnull = True, refund__isnull = True).order_by('id')
     cancelled_tickets = performance.tickets.filter(refund__isnull = False).order_by('id')
 
     # Check for HTML

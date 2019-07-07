@@ -98,20 +98,20 @@
                 <p><strong>Important:</strong> if the customer wants to purchase tickets using an eFringer you must enter the e-mail address of the account used to purchase the eFringer.</p>
             </div>
         {% else %}
-            {% if sale.completed %}
-                <div class="alert alert-danger">
-                    <p>This sale is now complete but you can still make changes to correct mistakes.</p>
-                    <p>Select Close to begin a new sale.</p>
-                </div>
-            {% else %}
-                <div class="alert alert-info">
-                    <p>Once the customer has paid select Complete to finish the sale.</p>
-                    <p>If you select Cancel (or leave this page) the sale will be cancelled and no tickets will be issued.</p>
-                </div>
-            {% endif %}
             <div class="card">
-                <h6 class="card-header"><i class="fa fa-user-circle {% if sale.customer_user %}text-primary{% endif %}"></i> {{ sale.customer }}</h6>
+                <h6 class="card-header"><i class="fa fa-user-circle {% if sale.customer_user %}text-primary{% endif %}"></i> {{ sale.customer }}<div class="float-right">Sale: {{ sale.id }}</div></h6>
                 <div class="card-body">
+                    {% if sale.completed %}
+                        <div class="alert alert-danger">
+                            <p>This sale is now complete but you can still make changes to correct mistakes.</p>
+                            <p>Select Close to begin a new sale.</p>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <p>Once the customer has paid select Complete to finish the sale.</p>
+                            <p>If you select Cancel (or leave this page) the sale will be cancelled and no tickets will be issued.</p>
+                        </div>
+                    {% endif %}
                     {% if sale.buttons %}
                         <div class="row mb-2">
                             <div class="col-9"><strong>{{ sale.buttons }} x Badges</strong></div>
@@ -162,8 +162,10 @@
                                 </div>
                             {% else %}
                                 <a class="btn btn-primary" href="#" onclick="updateSalesTab('{% url "boxoffice:sale_complete" sale.uuid %}')">Complete</a>
-                                <a class="btn btn-secondary" href="#" onclick="updateSalesTab('{% url "boxoffice:sale_cancel" sale.uuid %}')">Cancel</a>
-                            {% endif %}
+                                <div class="float-right">
+                                    <a class="btn btn-secondary" href="#" onclick="updateSalesTab('{% url "boxoffice:sale_cancel" sale.uuid %}')">Cancel</a>
+                                </div>
+                                {% endif %}
                         </div>
                     </div>
                 </div>
@@ -203,12 +205,25 @@
     {% else %}
 
         function saleSelectShow(showUuid) {
-            updateSalesTab('{% url "boxoffice:sale_show_select" sale.uuid "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', showUuid));
+            url = '{% url "boxoffice:sale_show_select" sale.uuid "00000000-0000-0000-0000-000000000000" %}';
+            if (showUuid) {
+                url = url.replace('00000000-0000-0000-0000-000000000000', showUuid);
+            }
+            updateSalesTab(url);
         }
 
-        function saleSelectPerformance(performanceUuid) {
-            updateSalesTab('{% url "boxoffice:sale_performance_select" sale.uuid "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', performanceUuid));
-        }
+        {% if selected_show %}
+            function saleSelectPerformance(performanceUuid) {
+                if (performanceUuid) {
+                    url = '{% url "boxoffice:sale_performance_select" sale.uuid "00000000-0000-0000-0000-000000000000" %}';
+                    url = url.replace('00000000-0000-0000-0000-000000000000', performanceUuid);
+                    updateSalesTab(url);
+                }
+                else {
+                    saleSelectShow('{{ selected_show.uuid }}');
+                }
+            }
+        {% endif %}
 
         {% if sale_tickets_form %}
             function saleAddTickets() {

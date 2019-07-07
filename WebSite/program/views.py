@@ -241,7 +241,7 @@ def schedule_pdf(request, festival_uuid=None):
     )
 
     # Venues
-    venues = Venue.objects.filter(festival=festival, is_scheduled=True).order_by('map_index')
+    venues = Venue.objects.filter(festival=festival, is_ticketed=True).order_by('map_index')
     venues_data = []
     for v in venues:
         venues_data.append(Paragraph(f'<para align="center"><b>{v.name}</b></para>', venue_style))
@@ -252,7 +252,7 @@ def schedule_pdf(request, festival_uuid=None):
         table_styles.append(('BACKGROUND', (2*i, 0), (2*i + 1, 0), v.color ))
 
     # Days
-    days = ShowPerformance.objects.filter(show__festival=festival, show__is_cancelled=False, show__venue__is_scheduled=True).order_by('date').values('date').distinct()
+    days = ShowPerformance.objects.filter(show__festival=festival, show__is_cancelled=False, show__venue__is_ticketed=True).order_by('date').values('date').distinct()
     day_color = ('#fbe4d5', '#fff2cc', '#e2efd9', '#deeaf6')
     for index, day in enumerate(days):
 

@@ -5,8 +5,16 @@ from django.core.exceptions import ValidationError
 
 from bootstrap_datepicker_plus import DatePickerInput
 
-from program.models import Venue, Show, ShowPerformance
+from program.models import Company, Venue, Show, ShowPerformance
 from tickets.models import BoxOffice
+
+
+class SelectNullForm(forms.Form):
+
+    def __init__(self, festival, fields, required, *args, **kwargs):
+
+        # Call base
+        super().__init__(*args, **kwargs)
 
 
 class SelectVenueForm(forms.Form):
@@ -102,8 +110,8 @@ class SelectTicketsForm(forms.Form):
 class SelectAdmissionForm(forms.Form):
 
     date = forms.ChoiceField(choices = [], label = 'Date', required = True)
-    venue = forms.ChoiceField(choices = [], label = 'Venue', required = True)
-    performance = forms.ChoiceField(choices = [], label = 'Performance', required = True)
+    venue = forms.ChoiceField(choices = [], label = 'Venue', required = False)
+    performance = forms.ChoiceField(choices = [], label = 'Performance', required = False)
     template = 'reports/select_admission_form.html'
 
     def __init__(self, festival, fields, required, *args, **kwargs):
@@ -125,17 +133,39 @@ class SelectAdmissionForm(forms.Form):
             self.initial['date'] = f"{today:%Y%m%d}"
 
         # Venue
-        choices = [('', 'Select venue')]
+        choices = [('', 'All venues')]
         for venue in Venue.objects.filter(festival = self.festival, is_ticketed = True).order_by('name'):
             choices.append((venue.id, venue.name))
         self.fields['venue'].choices = choices
 
         # Performance
-        choices = [('', 'Select performance')]
-        if 'date' in self.data and 'venue' in self.data:
+        choices = [('', 'All performances')]
+        if self.data and self.data['date'] and self.data['venue']:
             date = datetime.datetime.strptime(self.data['date'], '%Y%m%d')
             venue_id = int(self.data['venue'])
             for performance in ShowPerformance.objects.filter(date = date, show__venue_id = venue_id).order_by('time'):
                 choices.append((performance.id, f"{performance.time:%I:%M%p}: {performance.show.name}"))
         self.fields['performance'].choices = choices
 
+
+class SelectCompanyForm(forms.Form):
+
+    company = forms.ChoiceField(choices = [], label = 'Company')
+
+    def __init__(self, festival, fields, required, *args, **kwargs):
+
+        # Save festival
+        self.festival = festival
+
+        # Call base
+        super().__init__(*args, **kwargs)
+
+        # Company
+        if 'company' in fields:
+            is_required = 'company' in required
+            self.fields['company'].required = is_required
+            choices = [('', 'Select company' if required else 'All companies')]
+            ticketed_company_ids = Show.objects.filter(festival = self.festival, venue__is_ticketed = True).values('company_id').distinct()
+            for company in Company.objects.filter(id__in = ticketed_company_ids).order_by('name'):
+                choices.append((company.id, company.name))
+            self.fields['company'].choices = choices

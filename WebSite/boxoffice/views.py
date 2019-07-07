@@ -1,4 +1,5 @@
 import datetime
+import uuid
 from decimal import Decimal
 
 from django.conf import settings
@@ -319,7 +320,7 @@ def main(request, boxoffice_uuid, tab = None):
 
     # Cancel any incomplete sales
     for sale in request.user.sales.filter(completed__isnull = True):
-        logger.info("Incomplete sale %s cancelled", sale)
+        logger.info("Incomplete box office sale %s (%s) at %s auto-cancelled", sale.id, sale.customer, boxoffice.name)
         sale.delete()
 
     # Render main page
@@ -370,13 +371,15 @@ def show_performances(request, show_uuid):
 @require_GET
 @login_required
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
-def sale_show_select(request, sale_uuid, show_uuid):
+def sale_show_select(request, sale_uuid, show_uuid = None):
 
     # Get sale, box office and show
     sale = get_object_or_404(Sale, uuid = sale_uuid)
     boxoffice = sale.boxoffice
     assert boxoffice
-    show = get_object_or_404(Show, uuid = show_uuid)
+    show = None
+    if show_uuid != uuid.UUID('00000000-0000-0000-0000-000000000000'):
+        show = get_object_or_404(Show, uuid = show_uuid)
 
     # Render sales tab content
     return render_sale(request, boxoffice, sale, show = show)
@@ -386,7 +389,7 @@ def sale_show_select(request, sale_uuid, show_uuid):
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
 def sale_performance_select(request, sale_uuid, performance_uuid):
 
-    # Get sale, box office and performance
+    # Get sale, box office, show and performance
     sale = get_object_or_404(Sale, uuid = sale_uuid)
     boxoffice = sale.boxoffice
     assert boxoffice
@@ -397,7 +400,7 @@ def sale_performance_select(request, sale_uuid, performance_uuid):
 
 @require_POST
 @login_required
-@user_passes_test(lambda u: u.is_venue or u.is_admin)
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
 @transaction.atomic
 def sale_tickets_add(request, sale_uuid, performance_uuid):
 
@@ -465,7 +468,7 @@ def sale_tickets_add(request, sale_uuid, performance_uuid):
 
 @require_POST
 @login_required
-@user_passes_test(lambda u: u.is_venue or u.is_admin)
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
 @transaction.atomic
 def sale_extras_update(request, sale_uuid):
 

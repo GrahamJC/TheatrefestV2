@@ -12,12 +12,7 @@
     function updatePerformances(e) {
         var date = $('#id_date').val();
         var venueId = $('#id_venue').val();
-        if (date && venueId) {
-            $('#id_performance').load('/reports/ajax/performances/' + date + '/' + venueId);
-        }
-        else {
-            $('#id_performance').html('<option value = "">-- Select performance --</option>');
-        }
+        $('#id_performance').load('/reports/ajax/venue/' + venueId + '/date/' + date + '/performances');
     }
 
 </script>

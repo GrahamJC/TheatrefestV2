@@ -1,0 +1,26 @@
+{% load tf_filters %}
+
+<table class="table table-sm">
+    {% for company in companies %}
+        <tr>
+            <th>{{ company.name }}</th>
+            {% for ticket_type in ticket_types %}
+                <th class="text-right">{{ ticket_type.name }}</th>
+            {% endfor %}
+            <th class="text-right"><strong>Payment</strong></th>
+        </tr>
+        {% for show in company.shows %}
+            <tr><th class="pl-2" colspan="{{ ticket_types | length | add:2 }}">{{ show.name }}</th></tr>
+            {% for performance in show.performances %}
+                <tr>
+                    <td class="pl-4">{{ performance.date | date:'l, F j' }} at {{ performance.time | time:'g:ia' }}</td>
+                    {% for ticket_type in ticket_types %}
+                        <td class="text-right">{{ performance.tickets | lookup:ticket_type.name }}</td>
+                    {% endfor %}
+                    <td class="text-right"><strong>{{ performance.payment | floatformat:2 }}</strong></td>
+                </tr>
+            {% endfor %}
+            <tr><th colspan="{{ ticket_types | length | add:2 }}">&nbsp;</th></tr>
+        {% endfor %}
+    {% endfor %}
+</table>

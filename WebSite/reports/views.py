@@ -17,19 +17,19 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Field, Fieldset, HTML, Submit, Button, Row, Column
 from crispy_forms.bootstrap import FormActions, TabHolder, Tab, Div
 
-from program.models import ShowPerformance
+from program.models import Show, ShowPerformance
 
-from .forms import SelectVenueForm, SelectBoxOfficeForm, SelectTicketsForm, SelectAdmissionForm
+from .forms import SelectNullForm, SelectVenueForm, SelectBoxOfficeForm, SelectTicketsForm, SelectAdmissionForm, SelectCompanyForm
 
 # Report definitions
 reports = {
     'finance': {
-        'venue_summary': {
-            'title': 'Venue summary',
-            'select_form': SelectVenueForm,
-            'select_fields': ['venue', 'date'],
-            'select_required': ['venue', 'date'],
-            'report_url': reverse_lazy('reports:finance_venue_summary'),
+        'festival_summary': {
+            'title': 'Festival summary',
+            'select_form': SelectNullForm,
+            'select_fields': [],
+            'select_required': [],
+            'report_url': reverse_lazy('reports:finance_festival_summary'),
         },
         'boxoffice_summary': {
             'title': 'Box Office summary',
@@ -38,14 +38,28 @@ reports = {
             'select_required': ['boxoffice', 'date'],
             'report_url': reverse_lazy('reports:finance_boxoffice_summary'),
         },
+        'venue_summary': {
+            'title': 'Venue summary',
+            'select_form': SelectVenueForm,
+            'select_fields': ['venue', 'date'],
+            'select_required': ['venue', 'date'],
+            'report_url': reverse_lazy('reports:finance_venue_summary'),
+        },
+        'company_payment': {
+            'title': 'Company payment',
+            'select_form': SelectCompanyForm,
+            'select_fields': ['company'],
+            'select_required': [],
+            'report_url': reverse_lazy('reports:finance_company_payment'),
+        },
     },
     'sales': {
-        'admission_list': {
+        'admission_lists': {
             'title': 'Admission lists',
             'select_form': SelectAdmissionForm,
             'select_fields': ['date', 'venue', 'performance'],
-            'select_required': ['date', 'venue', 'performance'],
-            'report_url': reverse_lazy('reports:sales_admission_list'),
+            'select_required': ['date'],
+            'report_url': reverse_lazy('reports:sales_admission_lists'),
         },
         'tickets_by_type': {
             'title': 'Ticket sales by ticket type',
@@ -69,7 +83,8 @@ reports = {
 def get_select_form(festival, report, post_data = None):
 
     # Create form
-    form = report['select_form'](festival, report['select_fields'], report['select_required'], data = post_data)
+    form_class = report['select_form']
+    form = form_class(festival, report['select_fields'], report['select_required'], data = post_data)
 
     # Create crispy forms helper
     helper = FormHelper()
@@ -124,9 +139,10 @@ def select(request, category, report_name = None):
             report_title = report['title']
             report_url = report['report_url']
             seperator = '&' if '?' in report_url else '?'
-            for field in report['select_fields']:
-                report_url += seperator + field + '=' + select_form.cleaned_data[field]
-                seperator = '&'
+            if report['select_fields']:
+                for field in report['select_fields']:
+                    report_url += seperator + field + '=' + select_form.cleaned_data[field]
+                    seperator = '&'
             report_html_url = report_url + seperator + 'format=HTML'
             report_pdf_url = report_url + seperator + 'format=PDF'
 
@@ -147,13 +163,14 @@ def select(request, category, report_name = None):
     }
     return render(request, 'reports/main.html', context)
 
+# AJAX support
+def ajax_venue_date_performances(request, date = None, venue_id = None):
 
-def ajax_performances(request, date, venue_id):
-
-    date = datetime.datetime.strptime(date, '%Y%m%d')
-    venue_id = int(venue_id)
-    performances = ShowPerformance.objects.filter(date = date, show__venue_id = venue_id).order_by('time')
-    html = '<option value="">-- Select performance --</option>'
-    for performance in performances:
-        html += f"<option value=\"{performance.id}\">{performance.time:%I:%M%p}: {performance.show.name}</option>"
+    html = '<option value="">All performances</option>'
+    date = datetime.datetime.strptime(date, '%Y%m%d') if date else None
+    venue_id = int(venue_id) if venue_id else None
+    if date and venue_id:
+        performances = ShowPerformance.objects.filter(date = date, show__venue_id = venue_id).order_by('time')
+        for performance in performances:
+            html += f"<option value=\"{performance.id}\">{performance.time:%I:%M%p}: {performance.show.name}</option>"
     return HttpResponse(html)

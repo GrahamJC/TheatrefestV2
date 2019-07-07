@@ -17,39 +17,39 @@
         <th width="20%" class="text-right">Close</th>
         <th width="20%" class="text-right">Variance</th>
     </tr>
-    {% for performance in performances %}
-        <tr><th colspan="5">{{ performance.time | date:'g:ia' }} {{ performance.show }}</th></tr>
+    {% for period in periods %}
+        <tr><th colspan="5">{{ period.title }}</th></tr>
         <tr>
             <td class="text-right">Cash</td>
-            <td class="text-right">{% if performance.open %}&#163;{{ performance.open.cash }}{% endif %}</td>
-            <td class="text-right">{% if performance.sales %}&#163;{{ performance.sales.cash }}{% endif %}</td>
-            <td class="text-right">{% if performance.close %}&#163;{{ performance.close.cash }}{% endif %}</td>
-            <td class="text-right">{% if performance.variance %}&#163;{{ performance.variance.cash }}{% endif %}</td>
+            <td class="text-right">{% if period.open %}&#163;{{ period.open.cash }}{% endif %}</td>
+            <td class="text-right">{% if period.sales %}&#163;{{ period.sales.cash }}{% endif %}</td>
+            <td class="text-right">{% if period.close %}&#163;{{ period.close.cash }}{% endif %}</td>
+            <td class="text-right">{% if period.variance %}&#163;{{ period.variance.cash }}{% endif %}</td>
         </tr>
         <tr>
             <td class="text-right">Fringers</td>
-            <td class="text-right">{% if performance.open %}{{ performance.open.fringers }}{% endif %}</td>
-            <td class="text-right">{% if performance.sales %}{{ performance.sales.fringers }}{% endif %}</td>
-            <td class="text-right">{% if performance.close %}{{ performance.close.fringers }}{% endif %}</td>
-            <td class="text-right">{% if performance.variance %}{{ performance.variance.fringers }}{% endif %}</td>
+            <td class="text-right">{% if period.open %}{{ period.open.fringers }}{% endif %}</td>
+            <td class="text-right">{% if period.sales %}{{ period.sales.fringers }}{% endif %}</td>
+            <td class="text-right">{% if period.close %}{{ period.close.fringers }}{% endif %}</td>
+            <td class="text-right">{% if period.variance %}{{ period.variance.fringers }}{% endif %}</td>
         </tr>
         <tr>
             <td class="text-right">Buttons</td>
-            <td class="text-right">{% if performance.open %}{{ performance.open.buttons }}{% endif %}</td>
-            <td class="text-right">{% if performance.sales %}{{ performance.sales.buttons }}{% endif %}</td>
-            <td class="text-right">{% if performance.close %}{{ performance.close.buttons }}{% endif %}</td>
-            <td class="text-right">{% if performance.variance %}{{ performance.variance.buttons }}{% endif %}</td>
+            <td class="text-right">{% if period.open %}{{ period.open.buttons }}{% endif %}</td>
+            <td class="text-right">{% if period.sales %}{{ period.sales.buttons }}{% endif %}</td>
+            <td class="text-right">{% if period.close %}{{ period.close.buttons }}{% endif %}</td>
+            <td class="text-right">{% if period.variance %}{{ period.variance.buttons }}{% endif %}</td>
         </tr>
-        {% if performance.open.notes %}
+        {% if period.open.notes %}
             <tr>
                 <td class="text-right">Open notes</td>
-                <td class="pl-4" colspan="4">{{ performance.open.notes }}</td>
+                <td class="pl-4" colspan="4">{{ period.open.notes }}</td>
             </tr>
         {% endif %}
-        {% if performance.close.notes %}
+        {% if period.close.notes %}
             <tr>
                 <td class="text-right">Close notes</td>
-                <td class="pl-4" colspan="4">{{ performance.close.notes }}</td>
+                <td class="pl-4" colspan="4">{{ period.close.notes }}</td>
             </tr>
         {% endif %}
         <tr><th colspan="5">&nbsp;</th></tr>

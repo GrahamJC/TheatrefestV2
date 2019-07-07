@@ -19,7 +19,7 @@
         <th width="16%" class="text-right">Variance</th>
     </tr>
     {% for period in periods %}
-        <tr><th colspan="6">{{ period.open.created | date:'g:ia' }} to {{ period.close.created | date:'g:ia' }}</th></tr>
+        <tr><th colspan="6">{{ period.title }}</th></tr>
         <tr>
             <td class="text-right">Cash</td>
             <td class="text-right">{% if period.open %}&#163;{{ period.open.cash }}{% endif %}</td>

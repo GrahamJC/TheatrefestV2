@@ -1,0 +1,16 @@
+{% load crispy_forms_tags %}
+
+{% crispy form %}
+
+<script language="javascript">
+
+    $(function() {
+        $('#id_company').on('change', updateShows);
+    });
+
+    function updateShows(e) {
+        var companyId = $('#id_company').val();
+        $('#id_show').load('/reports/ajax/company/' + companyId + '/shows');
+    }
+
+</script>

@@ -1,0 +1,132 @@
+<h5>Sales by Channel</h5>
+<table class="table">
+    <tr>
+        <th></th>
+        <th class="text-right">Pre-<br>sales</th>
+        {% for date in sales_by_channel.dates %}
+            <th class="text-right">{{ date | date:'D' }}<br>{{ date | date:'j-M' }}</th>
+        {% endfor %}
+        <th class="text-right">Total</th>
+    </tr>
+    <tr>
+        <td>Online</td>
+        <td class="text-right">&#163;{{ sales_by_channel.online.pre | floatformat:'0' | default:'' }}</td>
+        {% for x in sales_by_channel.online.dates %}
+            <td class="text-right">&#163;{{ x | floatformat:'0' | default:'' }}</td>
+        {% endfor %}
+        <td class="text-right">&#163;{{ sales_by_channel.online.total | floatformat:'0' | default:'' }}</td>
+    </tr>
+    {% for boxoffice_name, boxoffice_sales in sales_by_channel.boxoffices.items %}
+        <tr>
+            <td>{{ boxoffice_name }}</td>
+            <td></td>
+            {% for x in boxoffice_sales.dates %}
+                <td class="text-right">&#163;{{ x | floatformat:'0' | default:'' }}</td>
+            {% endfor %}
+            <td class="text-right">&#163;{{ boxoffice_sales.total | floatformat:'0' | default:'' }}</td>
+        </tr>
+    {% endfor %}
+    {% for venue_name, venue_sales in sales_by_channel.venues.items %}
+        <tr>
+            <td>{{ venue_name }}</td>
+            <td></td>
+            {% for x in venue_sales.dates %}
+                <td class="text-right">&#163;{{ x | floatformat:'0' | default:'' }}</td>
+            {% endfor %}
+            <td class="text-right">&#163;{{ venue_sales.total | floatformat:'0' | default:'' }}</td>
+        </tr>
+    {% endfor %}
+    <tr>
+        <td></td>
+        <td class="text-right"><strong>&#163;{{ sales_by_channel.totals.pre | floatformat:'0' | default:'' }}</strong></td>
+        {% for x in sales_by_channel.totals.dates %}
+            <td class="text-right"><strong>&#163;{{ x | floatformat:'0' | default:'' }}</strong></td>
+        {% endfor %}
+        <td class="text-right"><strong>&#163;{{ sales_by_channel.totals.total | floatformat:'0' | default:'' }}</strong></td>
+    </tr>
+</table>
+
+<h5>Sales by Type</h5>
+<table class="table">
+    <tr>
+        <th></th>
+        <th class="text-right">Pre-<br>sales</th>
+        {% for date in sales_by_type.dates %}
+            <th class="text-right">{{ date | date:'D' }}<br>{{ date | date:'j-M' }}</th>
+        {% endfor %}
+        <th class="text-right">Total</th>
+    </tr>
+    {% for type_name, type_sales in sales_by_type.types.items %}
+        <tr>
+            <td>{{ type_sales.title }}</td>
+            <td>&#163;{{ type_sales.pre | floatformat:'0' | default:'' }}</td>
+            {% for x in type_sales.dates %}
+                <td class="text-right">&#163;{{ x | floatformat:'0' | default:'' }}</td>
+            {% endfor %}
+            <td class="text-right">&#163;{{ type_sales.total | floatformat:'0' | default:'' }}</td>
+        </tr>
+    {% endfor %}
+    <tr>
+        <td></td>
+        <td class="text-right"><strong>&#163;{{ sales_by_type.totals.pre | floatformat:'0' | default:'' }}</strong></td>
+        {% for x in sales_by_type.totals.dates %}
+            <td class="text-right"><strong>&#163;{{ x | floatformat:'0' | default:'' }}</strong></td>
+        {% endfor %}
+        <td class="text-right"><strong>&#163;{{ sales_by_type.totals.total | floatformat:'0' | default:'' }}</strong></td>
+    </tr>
+</table>
+
+<h5>Tickets by Type</h5>
+<table class="table">
+    <tr>
+        <th>Type</th>
+        <th class="text-right">Online</th>
+        <th class="text-right">Box Office</th>
+        <th class="text-right">Venue</th>
+        <th class="text-right">Total</th>
+    </tr>
+    {% for type in tickets.types %}
+        <tr>
+            <td>{{ type.description }}</td>
+            <td class="text-right">{{ type.online }}</td>
+            <td class="text-right">{{ type.boxoffice }}</td>
+            <td class="text-right">{{ type.venue }}</td>
+            <td class="text-right">{{ type.total  }}</td>
+        </tr>
+    {% endfor %}
+    <tr>
+        <td></td>
+        <td class="text-right"><strong>{{ tickets.totals.online }}</strong></td>
+        <td class="text-right"><strong>{{ tickets.totals.boxoffice }}</strong></td>
+        <td class="text-right"><strong>{{ tickets.totals.venue }}</strong></td>
+        <td class="text-right"><strong>{{ tickets.totals.total  }}</strong></td>
+    </tr>
+</table>
+
+<h5>Fringer/Volunteer Tickets Use</h5>
+<table class="table">
+    <tr>
+        <th></th>
+        <th class="text-right">Sold/Earned</th>
+        <th class="text-right">Used</th>
+        <th class="text-right">Percent</th>
+    </tr>
+    <tr>
+        <td>Paper fringers</td>
+        <td class="text-right">{{ fringers.sold }} (x6)</td>
+        <td class="text-right">{{ fringers.used }}</td>
+        <td class="text-right">{{ fringers.percent | floatformat }}%</td>
+    </tr>
+    <tr>
+        <td>eFringers</td>
+        <td class="text-right">{{ efringers.sold }} (x6)</td>
+        <td class="text-right">{{ efringers.used }}</td>
+        <td class="text-right">{{ efringers.percent | floatformat }}%</td>
+    </tr>
+    <tr>
+        <td>Volunteers</td>
+        <td class="text-right">{{ volunteers.earned }}</td>
+        <td class="text-right">{{ volunteers.used }}</td>
+        <td class="text-right">{{ volunteers.percent | floatformat }}%</td>
+    </tr>
+</table>
