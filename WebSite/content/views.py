@@ -87,6 +87,13 @@ def page_test(request, page_uuid):
     return render(request, 'content/page.html', page_context)
 
 
+def page_name(request, page_name):
+
+    # Get page and render it
+    page = get_object_or_404(Page, festival=request.festival, name__iexact=page_name)
+    return page_test(request, page.uuid)
+
+
 def document(request, document_uuid):
 
     # Get the document

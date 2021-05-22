@@ -15,6 +15,8 @@ from django.urls import reverse
 from django.utils import timezone
 from django.template.loader import render_to_string
 from django.core.mail import send_mail
+from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.csrf import csrf_exempt
 
 from .models import Sale, Refund, Basket, FringerType, Fringer, TicketType, Ticket
 from .forms import BuyTicketForm, RenameFringerForm, BuyFringerForm
@@ -464,7 +466,7 @@ class CheckoutView(LoginRequiredMixin, View):
         # Display basket
         context = {
             'basket': basket,
-            "stripe_key": settings.STRIPE_PUBLIC_KEY,
+            'stripe_key': settings.STRIPE_PUBLIC_KEY,
         }
         return render(request, "tickets/checkout.html", context)
 
@@ -521,8 +523,8 @@ class CheckoutView(LoginRequiredMixin, View):
                         description = "Theatrefest tickets",
                         receipt_email = basket.user.email
                     )
-                    logger.info("Credit card charged GBP%.2f (%s)", sale.amount, stripe_token)
-                    messages.success(request, f"Purchase complete. Your card has been charged £{sale.amount}.")
+                    logger.info("Credit card charged GBP%.2f (%s)", sale.stripe_charge, stripe_token)
+                    messages.success(request, f"Purchase complete. Your card has been charged £{sale.stripe_charge}.")
 
             except stripe.error.CardError as ce:
                 logger.exception("Credit card charge failure")
@@ -611,6 +613,181 @@ class CheckoutConfirmView(View):
         sale = get_object_or_404(Sale, uuid = sale_uuid)
 
         # Render confirmation
+        context = {
+            'sale': sale,
+        }
+        return render(request, 'tickets/checkout_confirm.html', context)
+
+
+@login_required
+@require_POST
+def stripe_checkout_view(request):
+
+    # Get basket
+    basket = request.user.basket
+
+    # Check that tickets are still available
+    tickets_available = True
+    for p in basket.tickets.values('performance').annotate(count = Count('performance')):
+        performance = ShowPerformance.objects.get(pk = p["performance"])
+        if p["count"] > performance.tickets_available:
+            messages.error(request, f"Your basket contains {p['count']} tickets for {performance} but there are only {performance.tickets_available} tickets available.")
+            logger.warn("Basket contains %d tickets but only %d available: %s", p["count"], performance.tickets_available, performance)
+            tickets_available = False
+
+    # If tickets no longer available redisplay checkout with notifications
+    if not tickets_available:
+        messages.error(request, f"Your card has not been charged.")
+        context = {
+            'basket': basket,
+            'stripe_key': settings.STRIPE_PUBLIC_KEY,
+        }
+        return render(request, "tickets/checkout.html", context)
+
+    # Use a transaction to protect the conversion of basket to sale and creation of Stripe session
+    with transaction.atomic():
+
+        # Move tickets and fringers from basket to sale
+        sale = Sale(
+            festival = request.festival,
+            user = request.user,
+            customer = request.user.email,
+            amount = basket.total_cost,
+            stripe_fee = basket.stripe_fee,
+        )
+        sale.save()
+        for ticket in basket.tickets.all():
+            ticket.basket = None
+            ticket.sale = sale
+            ticket.save()
+            logger.info("Purchase complete: %s ticket for %s", ticket.description, ticket.performance)
+        for fringer in basket.fringers.all():
+            fringer.basket = None
+            fringer.sale = sale
+            fringer.save()
+            logger.info("Purchase complete: eFringer (%s)", fringer.name)
+
+        # Create Stripe session
+        stripe.api_key = settings.STRIPE_PRIVATE_KEY
+        session = stripe.checkout.Session.create(
+            client_reference_id = str(sale.id),
+            customer_email = basket.user.email,
+            payment_method_types = ['card'],
+            line_items = [
+                {
+                    'name': 'Theatrefest',
+                    'description': 'Tickets and eFringers',
+                    'amount': int(sale.stripe_charge * 100),
+                    'currency': 'GBP',
+                    'quantity': 1,
+                },
+            ],
+            success_url = request.build_absolute_uri(reverse('tickets:stripe_success', args=[sale.uuid])),
+            cancel_url = request.build_absolute_uri(reverse('tickets:stripe_cancel', args=[sale.uuid])),
+        )
+
+    # Stripe checkout
+    context = {
+        'stripe_key': settings.STRIPE_PUBLIC_KEY,
+        'stripe_session_id': session.id,
+    }
+    return render(request, 'tickets/stripe_checkout.html', context)
+
+
+@login_required
+@require_GET
+def stripe_success_view(request, sale_uuid):
+
+    # Get sale
+    sale = get_object_or_404(Sale, uuid = sale_uuid)
+
+    # Send e-mail to confirm tickets
+    if sale.tickets:
+        context = {
+            'festival': request.festival,
+            'tickets': sale.tickets.order_by('performance__date', 'performance__time', 'performance__show__name')
+        }
+        body = render_to_string('tickets/sale_email.txt', context)
+        send_mail('Tickets for ' + request.festival.title, body, settings.DEFAULT_FROM_EMAIL, [request.user.email])
+
+    # Display confirmation
+    context = {
+        'sale': sale,
+    }
+    return render(request, 'tickets/checkout_confirm.html', context)
+
+
+@login_required
+@require_GET
+def stripe_cancel_view(request, sale_uuid):
+
+    # Get basket and sale
+    basket = request.user.basket
+    sale = get_object_or_404(Sale, uuid = sale_uuid)
+
+    # Move sale items back into basket and delete sale
+    for ticket in sale.tickets.all():
+        ticket.basket = basket
+        ticket.sale = None
+        ticket.save()
+        logger.info("Purchase cancelled: %s ticket for %s", ticket.description, ticket.performance)
+    for fringer in sale.fringers.all():
+        fringer.basket = basket
+        fringer.sale = None
+        fringer.save()
+        logger.info("Purchase cancelled: eFringer (%s)", fringer.name)
+    sale.delete()
+
+    # Display checkout with notification
+    messages.error(request, f"Payment cancelled. Your card has not been charged.")
+    context = {
+        'basket': basket,
+        'stripe_key': settings.STRIPE_PUBLIC_KEY,
+    }
+    return render(request, "tickets/checkout.html", context)
+
+
+@require_POST
+@csrf_exempt
+def strike_webhook_view(request):
+
+    # Unpack and validate Stripe event
+    payload = request.body
+    sig_header = request.META['HTTP_STRIPE_SIGNATURE']
+    endpoint_secret = settings.STRIPE_WEBHOOK_SECRET
+    event = None
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
+    except ValueError:
+        logger.info("ValueError processing Stripe webhook event")
+        return HttpResponse(status = 400)
+    except stripe.error.SignatureVerificationError:
+        logger.info("SignatureVerificationError processing Stripe webhook event")
+        return HttpResponse(status = 400)
+
+    # Process event
+    logger.info("Processing Stripe webhook event %s", event['type'])
+    if event['type'] == 'checkout.session.completed':
+
+        # Get Stripe session and lookup sale
+        session = event['data']['object']
+        sale = get_object_or_404(Sale, id = session['client_reference_id'])
+
+        # Mark sale complete
+        sale.completed = datetime.now()
+        sale.save()
+        logger.info("Credit card charged GBP%.2f (%s)", sale.stripe_charge, session['id'])
+        logger.info("Sale %s completed", sale.id)
+
+    # Event processed
+    return HttpResponse(status = 200)
+
+
+class CheckoutConfirmStripeView(LoginRequiredMixin, View):
+
+    def get(self, request, session_id = None):
+        # Render confirmation
+        sale = None
         context = {
             'sale': sale,
         }

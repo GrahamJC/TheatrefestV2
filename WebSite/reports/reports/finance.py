@@ -48,7 +48,7 @@ def festival_summary(request):
     totals = {
         'pre': online_pre,
         'dates': [],
-        'total': 0
+        'total': online_pre,
     }
     for date in date_list:
         query = Sale.objects.filter(festival = request.festival, created__date = date, completed__isnull = False)
@@ -89,7 +89,7 @@ def festival_summary(request):
     totals = {
         'pre': efringers_pre + tickets_pre,
         'dates': [],
-        'total': 0,
+        'total': efringers_pre + tickets_pre,
     }
     for date in date_list:
         date_total = 0
@@ -606,7 +606,7 @@ def _get_show_tickets_by_type(show, ticket_types):
 
 def _get_company_tickets_by_type(company, ticket_types):
 
-    shows = [_get_show_tickets_by_type(s, ticket_types) for s in company.shows.filter(is_cancelled = False, venue__is_ticketed = True).order_by('name')]
+    shows = [_get_show_tickets_by_type(s, ticket_types) for s in company.shows.filter(venue__is_ticketed = True).order_by('name')]
     return {
         'name': company.name,
         'shows': shows,

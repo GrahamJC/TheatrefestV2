@@ -84,6 +84,28 @@
 
                     <div class="col-12 col-sm-6">
                         {% if not basket.is_empty %}
+                            <form method="POST" action="{% url 'tickets:stripe_checkout' %}">
+                                {% csrf_token %}
+                                <table class="table">
+                                    <tr>
+                                        <td>Tickets</td>
+                                        <td>&#163;{{ basket.ticket_cost }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Fringers</td>
+                                        <td>&#163;{{ basket.fringer_cost }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Booking fee</td>
+                                        <td>&#163;{{ basket.stripe_fee }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Total</strong></td>
+                                        <td><strong>&#163;{{ basket.stripe_charge }}</strong></td>
+                                    </tr>
+                                </table>
+                                <button class="btn btn-primary" tyoe="submit">New Checkout</button>
+                            </form>
                             <form method="POST">
                                 {% csrf_token %}
                                 <table class="table">

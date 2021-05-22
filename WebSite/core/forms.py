@@ -4,8 +4,8 @@ from django import forms
 from django.forms.utils import ErrorList, ErrorDict
 from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
-from django.utils.six.moves import reduce
 
+from six.moves import reduce
 from collections import OrderedDict
 from itertools import chain
 from operator import add

@@ -14,7 +14,7 @@
     <div class="d-block d-sm-none">
         {% if venue.image %}
             <a class="float-left mr-4" href="{% url 'program:venue' venue.uuid %}">
-                <img class="m-1 w-100" src="{{ MEDIA_ROOT }}{{ venue.image.url }}" />
+                <img class="m-1 w-100" src="{{ venue.image.url }}" />
             </a>
         {% endif %}
         <p>{{ venue.listing }}</p>
@@ -25,7 +25,7 @@
         <div class="col-4 col-md-3 col-lg-2">
             {% if venue.image %}
                 <a href="{% url 'program:venue' venue.uuid %}">
-                    <img class="m-1 w-100" src="{{ MEDIA_ROOT }}{{ venue.image.url }}" />
+                    <img class="m-1 w-100" src="{{ venue.image.url }}" />
                 </a>
             {% endif %}
         </div>

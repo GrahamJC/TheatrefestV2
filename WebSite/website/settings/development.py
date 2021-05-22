@@ -5,6 +5,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = [
     'localhost',
+    
     '127.0.0.1',
     'grahampc',
 ]
@@ -16,9 +17,9 @@ INTERNAL_IPS = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'theatrefest',
+        'NAME': 'theatrefestlive',
 #       'NAME': 'training',
-        'USER': 'theatrefest',
+        'USER': 'postgres',
         'PASSWORD': 'barnum',
         'HOST': 'localhost',
 #        'HOST': 'theatrefestvm.ukwest.cloudapp.azure.com',
@@ -48,6 +49,7 @@ EMAIL_USE_TLS = True
 # Stripe
 STRIPE_PUBLIC_KEY = get_secret("STRIPE_TEST_PUBLIC_KEY")
 STRIPE_PRIVATE_KEY = get_secret("STRIPE_TEST_PRIVATE_KEY")
+STRIPE_WEBHOOK_SECRET = get_secret("STRIPE_TEST_WEBHOOK_SECRET")
 STRIPE_FEE_FIXED = Decimal(0.2)
 STRIPE_FEE_PERCENT = Decimal(0.014)
 

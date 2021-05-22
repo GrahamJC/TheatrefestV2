@@ -27,7 +27,7 @@ class Page(TimeStampedModel):
         return self.navigators.count() == 0
 
     def get_absolute_url(self):
-        return reverse('content:page', args=[self.uuid])
+        return reverse('content:page_name', args=[self.name.lower()])
 
     def get_test_url(self):
         return reverse('content:page_test', args=[self.uuid])
@@ -87,7 +87,7 @@ class Navigator(TimeStampedModel):
         if self.type == Navigator.URL and self.url:
             return self.url
         elif self.type == Navigator.PAGE and self.page:
-            return reverse('content:page', args=[self.page.uuid])
+            return self.page.get_absolute_url()
         elif self.type == Navigator.SHOWS:
             return reverse('program:shows')
         elif self.type == Navigator.SCHEDULE:

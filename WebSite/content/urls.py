@@ -8,6 +8,7 @@ urlpatterns = [
     # Pages
     path('page/<uuid:page_uuid>', views.page, name='page'),
     path('page/<uuid:page_uuid>/test', views.page_test, name='page_test'),
+    path('page/<str:page_name>', views.page_name, name='page_name'),
     # Documents
     path('document/<uuid:document_uuid>', views.document, name='document'),
     # Resources
