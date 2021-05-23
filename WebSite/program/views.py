@@ -42,7 +42,6 @@ from .forms import (
    AdminShowForm, AdminShowPerformanceForm, AdminShowReviewForm, AdminShowImageForm,
 )
 
-
 def shows(request, festival_uuid=None):
 
     # Get festival
@@ -78,6 +77,22 @@ def shows(request, festival_uuid=None):
     # Render search results
     return render(request, 'program/shows.html', context)
 
+def shows_2021(request, festival_uuid=None):
+
+    # Get festival
+    festival = get_object_or_404(Festival, uuid=festival_uuid) if festival_uuid else request.festival
+
+    # Get shows
+    shows = Show.objects.filter(festival=festival).select_related('company').prefetch_related('genres', 'performances')
+
+    # Create context
+    context = {
+        'festival': festival,
+        'results': sorted(shows, key = lambda s: s.performances.all()[0].time)
+    }
+
+    # Render shows
+    return render(request, 'program/shows_2021.html', context)
 
 def show(request, show_uuid):
 

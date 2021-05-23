@@ -1,0 +1,50 @@
+﻿{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block pagetitle %}shows{% endblock %}
+
+{% block content %}
+
+    <div id="tf-program-shows">
+
+        <h2 style="color: #fd7f02">livestream</h2>
+        <h3>Sunday 27 June 13.00 - 21.00</h3>
+
+        {% for show in results %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    {% if show.image %}<a href="{% url 'program:show' show.uuid %}"><img class="float-right m-1 w-25" src="{{ show.image.url }}" /></a>{% endif %}
+                    {% for performance in show.performances.all %}
+                        <span style="font-size: 1.1em; line-height: 3; background-color: #f2e40b">{{ performance.time | time:'H:i' }}</span><br>
+                    {% endfor %}
+                    <h5 class="tf-show-name"><a href="{% url 'program:show' show.uuid %}">{{ show.name }}</a></h5>
+                    <h6 class="tf-company-name">{{ show.company.name }}</h6>
+                    <div class="tf-description">{{ show.listing | linebreaks }}</div>
+                    <div class="mt-2">
+                        {% if show.genre_list %}
+                        <span class="tf-genres d-none d-sm-inline">
+                            {{ show.genre_list }}
+                        </span>
+                        {% endif %}
+                        {% if show.has_warnings %}
+                            <a class="tf-warning" href="{% url 'program:show' show.uuid %}">(content)</a>
+                        {% endif %}
+                        {% if show.age_range %}
+                            <span class="tf-age-range">{{ show.age_range }}</span>
+                        {% endif %}
+                        {% if show.duration %}
+                            <span class="tf-duration">{{ show.duration }} mins</span>
+                        {% endif %}
+                        
+                    </div>
+                    <div class="mt-2">
+                        <a href="{% url 'program:show' show.uuid %}">more info ...</a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+        
+   </div>
+
+{% endblock %}
+

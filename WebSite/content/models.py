@@ -64,7 +64,7 @@ class Navigator(TimeStampedModel):
     TYPE_CHOICES = (
         (URL, 'URL'),
         (PAGE, 'Content page'),
-        (SHOWS, 'List/search shows'),
+        (SHOWS, 'List/Search shows'),
         (SCHEDULE, 'Schedule'),
         (VENUES, 'List venues'),
         (ARCHIVE_INDEX, 'Archive index'),

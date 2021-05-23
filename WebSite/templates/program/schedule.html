@@ -6,6 +6,7 @@
 
     <div id="tf-program-schedule">
 
+<!--
         <div class="text-right mb-3"><a class="btn btn-primary" href="{% url 'program:schedule_pdf' %}">Full schedule (PDF)</a></div>
         
         <div class="nav nav-pills nav-justified mb-3">
@@ -13,15 +14,17 @@
                 <a class="nav-item nav-link {% if forloop.first %}active{% endif %}" href="#tab{{ forloop.counter }}" data-toggle="tab">{{ day.date | date:"l" }}</a>
             {% endfor %}
         </div>
+-->
 
         <div class="tab-content">
             {% for day in days %}
                 <div id="tab{{ forloop.counter }}"class="tab-pane {% if forloop.first %}active{% endif %}">
                     <div class="row">
                         {% for venue in day.venues %}
-                            <div class="col-12 col-md-6 col-lg-4">
+                            <!--<div class="col-12 col-md-6 col-lg-4">-->
+                            <div class="col-12">
                                 <div class="mb-4 pl-2" {% if venue.color %}style="border-left: 1px solid {{ venue.color }};"{% endif %}>
-                                    <h5 class="tf-venue-name" {% if venue.color %}style="color: {{ venue.color }};"{% endif %}>{{ venue.name }}</h5>
+                                    <!--<h5 class="tf-venue-name" {% if venue.color %}style="color: {{ venue.color }};"{% endif %}>{{ venue.name }}</h5>-->
                                     <table class="table table-borderless table-sm">
                                         <colgroup>
                                             <col width="10%">
