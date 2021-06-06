@@ -61,12 +61,14 @@ class Navigator(TimeStampedModel):
     VENUES = 5
     ARCHIVE_INDEX = 6
     ARCHIVE_HOME = 7
+    DONATIONS = 8
     TYPE_CHOICES = (
         (URL, 'URL'),
         (PAGE, 'Content page'),
         (SHOWS, 'List/Search shows'),
         (SCHEDULE, 'Schedule'),
         (VENUES, 'List venues'),
+        (DONATIONS, 'Donations'),
         (ARCHIVE_INDEX, 'Archive index'),
         (ARCHIVE_HOME, 'Archive home'),
     )
@@ -94,6 +96,8 @@ class Navigator(TimeStampedModel):
             return reverse('program:schedule')
         elif self.type == Navigator.VENUES:
             return reverse('program:venues')
+        elif self.type == Navigator.DONATIONS:
+            return reverse('tickets:donations')
         elif self.type == Navigator.ARCHIVE_INDEX:
             return reverse('festival:archive_index')
         elif self.type == Navigator.ARCHIVE_HOME:

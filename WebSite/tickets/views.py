@@ -1,5 +1,7 @@
 import os
 from datetime import datetime, date, time
+import re
+import json
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
@@ -7,7 +9,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Count
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render, redirect
 from django.views import View
 from django.forms import formset_factory, modelformset_factory
@@ -18,8 +20,12 @@ from django.core.mail import send_mail
 from django.views.decorators.http import require_GET, require_POST
 from django.views.decorators.csrf import csrf_exempt
 
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Layout, Field, HTML, Submit, Button, Row, Column
+from crispy_forms.bootstrap import FormActions, TabHolder, Tab, Div
+
 from .models import Sale, Refund, Basket, FringerType, Fringer, TicketType, Ticket
-from .forms import BuyTicketForm, RenameFringerForm, BuyFringerForm
+from .forms import BuyTicketForm, RenameFringerForm, BuyFringerForm, DonationsForm
 from program.models import Show, ShowPerformance
 
 # Logging
@@ -817,6 +823,54 @@ def ticket_cancel(request, ticket_uuid):
     # Redisplay tickets
     return redirect(reverse("tickets:myaccount"))
 
+@require_GET
+def donations(request):
+
+    context = {
+        'stripe_key': settings.STRIPE_PUBLIC_KEY,
+    }
+    return render(request, 'tickets/donations.html', context)
+
+@require_POST
+@csrf_exempt
+def donation_stripe(request):
+
+    post_data = json.load(request)['post_data']
+
+    try:
+        session = stripe.checkout.Session.create(
+            customer_email = post_data['email'],
+            payment_method_types = ['card'],
+            line_items = [
+                {
+                    'name': 'Theatrefest',
+                    'description': post_data['description'],
+                    'amount': int(post_data['amount']) * 100,
+                    'currency': 'GBP',
+                    'quantity': 1,
+                },
+            ],
+            mode = 'payment',
+            success_url = request.build_absolute_uri(reverse('tickets:donation_success')),
+            cancel_url = request.build_absolute_uri(reverse('tickets:donation_cancel')),
+        )
+
+        return JsonResponse({ 'id': session.id })
+
+    except Exception as e:
+        return JsonResponse({ })
+
+@require_GET
+def donation_success(request):
+
+    messages.success(request, "Donaction completed")
+    return render(request, 'tickets/donation_success.html')
+
+@require_GET
+def donation_cancel(request):
+
+    messages.info(request, "Donaction cancelled")
+    return redirect(reverse("tickets:donations"))
 
 # PDF generation
 import os

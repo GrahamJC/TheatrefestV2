@@ -22,6 +22,10 @@ urlpatterns = [
     path('stripe/cancel/<uuid:sale_uuid>', views.stripe_cancel_view, name = 'stripe_cancel'),
     path('stripe/webhook', views.strike_webhook_view, name = 'stripe_webhook'),
     path('ticket/<uuid:ticket_uuid>/cancel', views.ticket_cancel, name = 'ticket_cancel'),
+    path('donations', views.donations, name = 'donations'),
+    path('donation/stripe', views.donation_stripe, name = 'donation_stripe'),
+    path('donation/success', views.donation_success, name = 'donation_success'),
+    path('donation/cancel', views.donation_cancel, name = 'donation_cancel'),
     path('print/sale/<uuid:sale_uuid>', views.PrintSaleView.as_view(), name = 'print_sale'),
     path('print/performance/<uuid:performance_uuid>', views.PrintPerformanceView.as_view(), name = 'print_performance'),
 ]
