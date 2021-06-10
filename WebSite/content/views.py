@@ -41,6 +41,7 @@ def page(request, page_uuid):
     page_urls = { page.name:page.get_absolute_url() for page in request.festival.pages.all() }
     resource_urls = { resource.name:resource.get_absolute_url() for resource in request.festival.resources.all() }
     body_context = {
+        'user': request.user,
         'page': page,
         'image_urls': image_urls,
         'document_urls': document_urls,
@@ -70,6 +71,7 @@ def page_test(request, page_uuid):
     page_urls = { page.name:page.get_test_url() for page in request.festival.pages.all() }
     resource_urls = { resource.name:resource.get_test_url() for resource in request.festival.resources.all() }
     body_context = {
+        'user': request.user,
         'page': page,
         'image_urls': image_urls,
         'document_urls': document_urls,
@@ -90,8 +92,8 @@ def page_test(request, page_uuid):
 def page_name(request, page_name):
 
     # Get page and render it
-    page = get_object_or_404(Page, festival=request.festival, name__iexact=page_name)
-    return page_test(request, page.uuid)
+    find_page = get_object_or_404(Page, festival=request.festival, name__iexact=page_name)
+    return page(request, find_page.uuid)
 
 
 def document(request, document_uuid):
