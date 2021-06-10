@@ -7,7 +7,7 @@ certifi==2019.3.9
 chardet==3.0.4
 colorama==0.4.1
 confusable-homoglyphs==3.2.0
-Django==2.2.1
+Django==3.2.4
 django-appconf==1.0.3
 django-autocomplete-light==3.3.4
 django-bootstrap-datepicker-plus==3.0.5
