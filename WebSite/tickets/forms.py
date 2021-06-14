@@ -52,24 +52,3 @@ class BuyFringerForm(forms.Form):
         if Fringer.objects.filter(user = self.user, name = name).exists():
             raise forms.ValidationError("Name has already been used")
         return name
-
-class DonationsForm(forms.Form):
-
-    amount = forms.TypedChoiceField(
-        label = 'Amount',
-        choices = (
-            (1, '£1'),
-            (2, '£2'),
-            (5, '£5'),
-            (10, '£10'),
-            (20, '£25'),
-        ),
-        coerce = lambda x: int(x),
-        widget = forms.RadioSelect,
-        initial = '1',
-        required = True,
-    )
-    email = forms.CharField(
-        label = 'e-mail',
-        required = True,
-    )

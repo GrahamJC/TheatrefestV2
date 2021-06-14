@@ -24,8 +24,8 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Field, HTML, Submit, Button, Row, Column
 from crispy_forms.bootstrap import FormActions, TabHolder, Tab, Div
 
-from .models import Sale, Refund, Basket, FringerType, Fringer, TicketType, Ticket
-from .forms import BuyTicketForm, RenameFringerForm, BuyFringerForm, DonationsForm
+from .models import Sale, Refund, Basket, FringerType, Fringer, TicketType, Ticket, Donation
+from .forms import BuyTicketForm, RenameFringerForm, BuyFringerForm
 from program.models import Show, ShowPerformance
 
 # Logging
@@ -836,22 +836,24 @@ def donations(request):
 def donation_stripe(request):
 
     post_data = json.load(request)['post_data']
+    amount = int(post_data['amount'])
+    email = post_data['email']
 
     try:
         session = stripe.checkout.Session.create(
-            customer_email = post_data['email'],
+            customer_email = email,
             payment_method_types = ['card'],
             line_items = [
                 {
                     'name': 'Theatrefest',
                     'description': post_data['description'],
-                    'amount': int(post_data['amount']) * 100,
+                    'amount': amount * 100,
                     'currency': 'GBP',
                     'quantity': 1,
                 },
             ],
             mode = 'payment',
-            success_url = request.build_absolute_uri(reverse('tickets:donation_success')),
+            success_url = request.build_absolute_uri(reverse('tickets:donation_success') + f"?amount={amount}&email={email}"),
             cancel_url = request.build_absolute_uri(reverse('tickets:donation_cancel')),
         )
 
@@ -863,6 +865,16 @@ def donation_stripe(request):
 @require_GET
 def donation_success(request):
 
+    # Save donation details
+    donation = Donation(
+        festival = request.festival,
+        amount = request.GET["amount"],
+        email = request.GET['email'],
+    )
+    donation.save()
+    logger.info("Donation of £%s received from %s", donation.amount, donation.email)
+
+    # Confirm donation received
     messages.success(request, "Donaction completed")
     return render(request, 'tickets/donation_success.html')
 

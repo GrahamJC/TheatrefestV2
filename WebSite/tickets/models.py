@@ -345,3 +345,15 @@ class Checkpoint(TimeStampedModel):
     buttons = models.IntegerField()
     fringers = models.IntegerField()
     notes = models.TextField(blank = True, default = '')
+
+class Donation(TimeStampedModel):
+    
+    festival = models.ForeignKey(Festival, on_delete=models.PROTECT, related_name='donations')
+    email = models.CharField(max_length = 64)
+    amount = models.DecimalField(max_digits = 5, decimal_places = 2)
+
+    class Meta:
+        ordering = ('festival', 'created')
+
+    def __str__(self):
+        return f'£{self.amount} {self.email} ({self.festival})'
