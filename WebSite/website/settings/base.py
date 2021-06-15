@@ -113,6 +113,9 @@ MESSAGE_TAGS = {
     messages.ERROR: 'alert alert-danger',
 }
 
+# Default auot-field type (to avoid unwanted migrations in the future)
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
 # User model
 AUTH_USER_MODEL = "core.User"
 
@@ -129,3 +132,6 @@ CRISPY_TEMPLATE_PACK = 'bootstrap4'
 # Application settings
 VENUE_SHOW_ALL_PERFORMANCES = True
 VOLUNTEER_CANCEL_SHIFTS = True
+
+# Suppress unwanted system checks
+SILENCED_SYSTEM_CHECKS = ["auth.W004"]
