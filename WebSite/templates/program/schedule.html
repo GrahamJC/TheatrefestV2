@@ -21,10 +21,9 @@
                 <div id="tab{{ forloop.counter }}"class="tab-pane {% if forloop.first %}active{% endif %}">
                     <div class="row">
                         {% for venue in day.venues %}
-                            <!--<div class="col-12 col-md-6 col-lg-4">-->
-                            <div class="col-12">
+                            <div class="col-12 col-md-6 col-lg-4">
                                 <div class="mb-4 pl-2" {% if venue.color %}style="border-left: 1px solid {{ venue.color }};"{% endif %}>
-                                    <!--<h5 class="tf-venue-name" {% if venue.color %}style="color: {{ venue.color }};"{% endif %}>{{ venue.name }}</h5>-->
+                                    <h5 class="tf-venue-name" {% if venue.color %}style="color: {{ venue.color }};"{% endif %}>{{ venue.name }}</h5>
                                     <table class="table table-borderless table-sm">
                                         <colgroup>
                                             <col width="10%">

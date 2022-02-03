@@ -5,9 +5,9 @@ from . import views
 app_name = "program"
 
 urlpatterns = [
-    path('shows', views.shows_2021, name = 'shows'),
+    path('shows', views.shows, name = 'shows'),
     path('show', views.shows, name = 'show_obsolete'),
-    path('shows/<uuid:festival_uuid>', views.shows_2021, name = 'shows'),
+    path('shows/<uuid:festival_uuid>', views.shows, name = 'shows'),
     path('show/<uuid:show_uuid>', views.show, name = 'show'),
     path('schedule', views.schedule, name = 'schedule'),
     path('schedule/<uuid:festival_id>', views.schedule, name = 'schedule'),

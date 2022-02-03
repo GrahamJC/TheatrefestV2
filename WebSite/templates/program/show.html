@@ -25,7 +25,6 @@
                         <p class="tf-duration">{{ show.duration }} mins</p>
                     {% endif %}
                 </div>
-<!--
                 <div class="tf-info2">
                     <h6><a class="tf-venue-name" style="{% if show.venue.color %}color: {{ show.venue.color }}{% endif %}" href="{% url 'program:venue' show.venue.uuid %}">{{ show.venue.name }}</a></h6>
                     {% if show.performances.all %}
@@ -62,7 +61,6 @@
                         {% endif %}
                     {% endif %}
                 </div>
--->
                 {% if show.venue.sponsor %}
                     <div class="tf-sponsor-name text-right" style="{% if show.venue.sponsor.background %}background-color: {{ show.venue.sponsor.background }};{% endif %}">
                         <a href="{{ show.venue.sponsor.url }}" target="_blank"  style="{% if show.venue.sponsor.color %}color: {{ show.venue.sponsor.color }};{% endif %}">
