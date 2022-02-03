@@ -41,7 +41,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 MEDIA_URL = "/media/"
 
 # Registration
-REGISTRATION_TWOSTEP = True
+REGISTRATION_TWOSTEP = False
 
 # E-mail
 EMAIL_HOST = "smtp.mailgun.org"

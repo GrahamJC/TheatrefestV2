@@ -23,7 +23,7 @@ urlpatterns = [
     path('volunteers/', include('volunteers.urls')),
     path('boxoffice/', include('boxoffice.urls')),
     path('reports/', include('reports.urls')),
-    path('admin', admin.site.urls),
+    path('admin/', admin.site.urls),
     # django.contrib.auth
     path('login/', auth_views.LoginView.as_view(), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),

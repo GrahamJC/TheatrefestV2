@@ -70,3 +70,9 @@ class PasswordResetForm(forms.Form):
         data = self.cleaned_data['password']
         validate_password(data)
         return data
+
+
+class EMailForm(forms.Form):
+
+    subject = forms.CharField(required = True, max_length = 64)
+    body = forms.CharField(required = True, widget = forms.Textarea)

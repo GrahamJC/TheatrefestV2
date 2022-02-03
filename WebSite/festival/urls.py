@@ -14,4 +14,6 @@ urlpatterns = [
     path('admin/user/list', views.admin_user_list, name='admin_user_list'),
     path('admin/user/<uuid:user_uuid>/activate', views.admin_user_activate, name='admin_user_activate'),
     path('admin/user/<uuid:user_uuid>/password', views.admin_user_password, name='admin_user_password'),
+    path('admin/user/email', views.admin_user_email, name='admin_user_email'),
+    path('admin/user/email/send', views.admin_user_email_send, name='admin_user_email_send'),
 ]
