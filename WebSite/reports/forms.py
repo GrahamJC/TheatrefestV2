@@ -3,7 +3,7 @@ import datetime
 from django import forms
 from django.core.exceptions import ValidationError
 
-from bootstrap_datepicker_plus import DatePickerInput
+from bootstrap_datepicker_plus.widgets import DatePickerInput
 
 from program.models import Company, Venue, Show, ShowPerformance
 from tickets.models import BoxOffice

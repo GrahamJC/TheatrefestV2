@@ -2,7 +2,7 @@ from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django import forms
 from collections import OrderedDict
 
-from bootstrap_datepicker_plus import DatePickerInput, TimePickerInput
+from bootstrap_datepicker_plus.widgets import DatePickerInput, TimePickerInput
 from django_select2.forms import Select2MultipleWidget
 
 from core.forms import MultiModelForm

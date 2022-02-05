@@ -1,7 +1,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 
-from bootstrap_datepicker_plus import DatePickerInput, TimePickerInput
+from bootstrap_datepicker_plus.widgets import DatePickerInput, TimePickerInput
 from django_select2.forms import Select2MultipleWidget
 
 from .models import Venue, VenueContact, VenueSponsor, Company, CompanyContact, Genre, Show, ShowPerformance, ShowImage, ShowReview
