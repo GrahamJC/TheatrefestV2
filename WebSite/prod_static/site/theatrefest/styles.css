@@ -1,0 +1,52 @@
+﻿.tf-warning {
+  color: #ff4040; }
+
+.tf-company-name {
+  color: #fd7f02; }
+
+#tf-navigator .navbar {
+  background-color: #fd7f02; }
+  #tf-navigator .navbar .nav-link {
+    color: #fff06d; }
+
+#tf-page-title {
+  color: #1a7cf3; }
+  #tf-page-title img {
+    width: 35px; }
+
+.tf-cancelled {
+  color: darkgrey; }
+  .tf-cancelled .tf-show-name, .tf-cancelled .tf-company-name, .tf-cancelled .tf-warning {
+    color: darkgrey; }
+  .tf-cancelled img {
+    filter: grayscale(100%) contrast(50%); }
+
+ul.tf-none {
+  list-style-type: none; }
+
+ul.tf-noindent {
+  padding: 0; }
+
+textarea.tf-nowrap {
+  white-space: nowrap;
+  overflow: scroll;
+  overflow-y: scroll;
+  overflow-x: scroll; }
+
+.youtube {
+  margin-top: 10px;
+  margin-bottom: 10px;
+  width: 100%;
+  height: 153px; }
+  @media (min-width: 768px) {
+    .youtube {
+      height: 299px; } }
+  @media (min-width: 992px) {
+    .youtube {
+      height: 349px; } }
+  @media (min-width: 1200px) {
+    .youtube {
+      height: 358px; } }
+  .youtube iframe {
+    width: 100%;
+    height: 100%; }
