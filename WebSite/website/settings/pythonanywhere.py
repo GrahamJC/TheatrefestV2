@@ -11,8 +11,8 @@ DATABASES = {
         'HOST': 'GrahamJC-139.postgres.eu.pythonanywhere-services.com',
         'PORT': '10139',
         'NAME': 'theatrefest',
-        'USER': 'theatrefest',
-        'PASSWORD': 'g25mwF7wE684',
+        'USER': get_secret("POSTGRES_USERNAME"),
+        'PASSWORD': get_secret("POSTGRES_PASSWORD"),
     },
 }
 
@@ -52,6 +52,39 @@ STRIPE_PRIVATE_KEY = get_secret("STRIPE_PRIVATE_KEY")
 STRIPE_WEBHOOK_SECRET = get_secret("STRIPE_WEBHOOK_SECRET")
 STRIPE_FEE_FIXED = Decimal(0.2)
 STRIPE_FEE_PERCENT = Decimal(0.014)
+
+# Logging
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        'request': {
+            '()': 'django_requestlogging.logging_filters.RequestFilter',
+        }
+    },
+    "formatters": {
+        "request": {
+            "format": "%(asctime)s %(levelname)-8s %(username)-32s %(name)-32s %(message)s",
+        }
+    },
+    "handlers": {
+        "theatrefest": {
+            "class": "logging.handlers.TimedRotatingFileHandler",
+            "filename": r"/home/GrahamJC/TheatrefestV2/log/theatrefest.log",
+            "when": "midnight",
+            "interval": 1,
+            "backupCount": 10,
+            "filters": ['request'],
+            "formatter": "request",
+        }
+    },
+    "loggers": {
+    },
+    "root": {
+        "level": "INFO",
+        "handlers": ["theatrefest"],
+    },
+}
 
 # Application settings
 VENUE_SHOW_ALL_PERFORMANCES = False
