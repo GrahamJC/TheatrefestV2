@@ -6,7 +6,6 @@
 
     <div id="tf-program-schedule">
 
-<!--
         <div class="text-right mb-3"><a class="btn btn-primary" href="{% url 'program:schedule_pdf' %}">Full schedule (PDF)</a></div>
         
         <div class="nav nav-pills nav-justified mb-3">
@@ -14,7 +13,6 @@
                 <a class="nav-item nav-link {% if forloop.first %}active{% endif %}" href="#tab{{ forloop.counter }}" data-toggle="tab">{{ day.date | date:"l" }}</a>
             {% endfor %}
         </div>
--->
 
         <div class="tab-content">
             {% for day in days %}

@@ -1,6 +1,6 @@
-from django.shortcuts import get_object_or_404
+# pylint: disable=missing-docstring
 
-from content.models import Image, Resource
+from django.shortcuts import get_object_or_404
 
 from .models import Festival
 
