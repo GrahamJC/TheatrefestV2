@@ -31,9 +31,9 @@
                         <h6 class="tf-company-name">{{ show.company.name }}</h6>
                         <div class="tf-description">
                             {% if show.replaced_by %}
-                                CHANGE TO BROCHURE: this show is cancelled and replaced by {{ show.replaced_by.company.name }} performing <a href="{% url 'program:show' show.replaced_by.uuid %}">{{ show.replaced_by.name }}</a>.
+                                CHANGE TO BROCHURE/LEAFLET: this show is cancelled and replaced by {{ show.replaced_by.company.name }} performing <a href="{% url 'program:show' show.replaced_by.uuid %}">{{ show.replaced_by.name }}</a>.
                             {% else %}
-                                CHANGE TO BROCHURE: this show is cancelled.
+                                CHANGE TO BROCHURE/LEAFLET: this show is cancelled.
                             {% endif %}
                         </div>
                         <div class="tf-info-1 d-none d-sm-block">

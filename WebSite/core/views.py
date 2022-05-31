@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model, login
 from django.contrib.auth.views import PasswordResetView as AuthPasswordResetView
+from django.http import HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 
@@ -59,6 +60,11 @@ class TwoStepRegistrationView(TwoStepViews.RegistrationView):
 
 
 class TwoStepActivationView(TwoStepViews.ActivationView):
+
+    # Protect against activation being called twice by Outlook safelinks which call the URL
+    # usinh HEAD first before the normal GET
+    def head(self, *args, **kwargs):
+        return HttpResponseNotAllowed(['GET'])
 
     def get_user(self, email):
 

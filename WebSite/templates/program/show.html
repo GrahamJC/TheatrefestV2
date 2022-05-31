@@ -40,24 +40,26 @@
                             {% endfor %}
                         </div>
                         {% if not show.festival.is_archived %}
-                            {% if not show.venue.is_ticketed %}
-                                <p>
-                                    This is a pay-what-you-will-show.
-                                    There are no tickets but there will be a bucket-collection.
-                                </p>
-                            {% elif show.festival.is_online_sales_closed %}
-                                <p>Online ticket sales are now closed.</p>
-                            {% elif show.festival.is_online_sales_open %}
-                                {% if show.is_suspended %}
-                                    <p>Online ticket sales for this show are temporarily unavailable.</p>
+                            <div class="tf-ticket-status">
+                                {% if not show.venue.is_ticketed %}
+                                    <p>
+                                        This is a pay-what-you-will-show.
+                                        There are no tickets but there will be a bucket-collection.
+                                    </p>
+                                {% elif show.festival.is_online_sales_closed %}
+                                    <p>Online ticket sales are now closed.</p>
+                                {% elif show.festival.is_online_sales_open %}
+                                    {% if show.is_suspended %}
+                                        <p>Online ticket sales for this show are temporarily unavailable.</p>
+                                    {% else %}
+                                        <p>Select a performance to buy tickets online.</p>
+                                    {% endif %}
+                                {% elif not show.festival.online_sales_open %}
+                                    <p>Online ticket sales are not yet open.</p>
                                 {% else %}
-                                    <p>Select a performance to buy tickets online.</p>
+                                    <p>Online ticket sales will open on {{ show.festival.online_sales_open | date:'M d' }}.</p>
                                 {% endif %}
-                            {% elif not show.festival.online_sales_open %}
-                                <p>Online ticket sales are not yet open.</p>
-                            {% else %}
-                                <p>Online ticket sales will open on {{ show.festival.online_sales_open | date:'M d' }}.</p>
-                            {% endif %}
+                            </div>
                         {% endif %}
                     {% endif %}
                 </div>

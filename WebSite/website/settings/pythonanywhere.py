@@ -1,7 +1,7 @@
 from .base import *
 
 ALLOWED_HOSTS = [
-    'pa.theatrefest.co.uk',
+    'www.theatrefest.co.uk',
 ]
 
 # Database
@@ -64,6 +64,9 @@ LOGGING = {
         }
     },
     "formatters": {
+        "basic": {
+            "format": "%(asctime)s %(levelname)-8s %(name)-32s %(message)s",
+        },
         "request": {
             "format": "%(asctime)s %(levelname)-8s %(username)-32s %(name)-32s %(message)s",
         }
@@ -77,13 +80,31 @@ LOGGING = {
             "backupCount": 10,
             "filters": ['request'],
             "formatter": "request",
-        }
+        },
+        "django": {
+            "class": "logging.handlers.TimedRotatingFileHandler",
+            "filename": r"/home/GrahamJC/TheatrefestV2/log/django.log",
+            "when": "midnight",
+            "interval": 1,
+            "backupCount": 10,
+            "formatter": "basic",
+       }
     },
     "loggers": {
+        "django": {
+            "level": "INFO",
+            "handlers": ["django"],
+            "propagate": False,
+        },
+        "django.server": {
+            "level": "WARNING",
+            "handlers": ["django"],
+            "propagate": False,
+        },
     },
     "root": {
         "level": "INFO",
-        "handlers": ["theatrefest"],
+        "handlers": ["theatrefest", "django"],
     },
 }
 
