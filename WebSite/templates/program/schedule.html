@@ -16,7 +16,7 @@
 
         <div class="tab-content">
             {% for day in days %}
-                <div id="tab{{ forloop.counter }}"class="tab-pane {% if forloop.first %}active{% endif %}">
+                <div id="tab{{ forloop.counter }}" class="tab-pane {% if forloop.first %}active{% endif %}">
                     <div class="row">
                         {% for venue in day.venues %}
                             <div class="col-12 col-md-6 col-lg-4">

@@ -1,10 +1,5 @@
 {% extends "base.html" %}
 
-{% block head-script %}
-    {{ block.super}}
-    <script src="https://js.stripe.com/v3/" ></script>
-{% endblock %}
-
 {% block pagetitle %}Donations{% endblock %}
 
 {% block content %}
@@ -24,7 +19,7 @@
         <div class="card">
             <h6 class="card-header">Make a Donation</h6>
             <div class="card-body">
-                <form id="donationForm">
+                <form id="donationForm" method="POST" action="{% url 'tickets:donation_stripe' %}">
                     <div class="form-group">
                         <label for="donationAmount">Amount</label>
                         <div class="input-group">
@@ -67,42 +62,6 @@
         $("#donationPreset10").on("click", function (event) { $("input[name=donationAmount]").val(10); });
         $("#donationPreset20").on("click", function (event) { $("input[name=donationAmount]").val(20); });
         $("#donationPreset50").on("click", function (event) { $("input[name=donationAmount]").val(50); });
-
-        var stripe = Stripe('{{ stripe_key }}');
-
-        $("#donationForm").on("submit", function (event) {
-
-            event.preventDefault();
-            var amount = $("input[name=donationAmount]").val();
-            var email = $("input[name=donationEmail]").val();
-
-            var data = {
-                method: 'POST',
-                body: JSON.stringify({
-                    post_data: {
-                        amount: amount,
-                        email: email,
-                        description: "Donation"
-                    }
-                })
-            }
-
-            fetch("{% url 'tickets:donation_stripe' %}", data)
-            .then(function (response) {
-                return response.json();
-            })
-            .then(function (session) {
-                return stripe.redirectToCheckout({ sessionId: session.id });
-            })
-            .then(function (result) {
-                if (result.error) {
-                    alert(result.error.message);
-                }
-            })
-            .catch(function (error) {
-                console.error("Error: ", error);
-            });
-        });
 
     </script>
 {% endblock %}
