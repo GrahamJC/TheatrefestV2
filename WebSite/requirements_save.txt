@@ -34,7 +34,7 @@ pytest==4.5.0
 pytest-django==3.4.8
 python-dateutil==2.8.0
 pytz==2019.1
-reportlab==3.5.21
+reportlab==3.5.55
 requests==2.22.0
 setuptools==41.0.1
 six==1.12.0
