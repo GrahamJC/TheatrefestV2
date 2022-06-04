@@ -61,7 +61,7 @@ class CheckpointForm(forms.Form):
     cash = forms.DecimalField(label = 'Cash', required = True, max_digits = 5, decimal_places = 2)
     buttons = forms.IntegerField(label = 'Badges', required = True)
     fringers = forms.IntegerField(label = 'Fringers', required = True)
-    notes = forms.CharField(label = 'Notes', widget = forms.Textarea(attrs = { 'rows': 4 }), required = False)
+    notes = forms.CharField(label = 'Notes', widget = forms.Textarea(attrs = { 'cols': 30, 'rows': 4 }), required = False)
 
     def __init__(self, checkpoint, *args, **kwargs):
         if checkpoint:

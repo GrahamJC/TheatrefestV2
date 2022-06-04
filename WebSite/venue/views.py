@@ -354,7 +354,7 @@ def main(request, venue_uuid):
         performance = venue.get_next_performance(datetime.date.today()) or venue.get_last_performance(datetime.date.today())
 
     # Delete any imcomplete sales for this venue
-    for sale in venue.sales.filter(completed__isnull = True):
+    for sale in venue.sales.filter(user_id = request.user.id, completed__isnull = True):
         logger.info("Incomplete venue sale %s (%s) at %s auto-cancelled", sale.id, sale.customer, venue.name)
         sale.delete()
 

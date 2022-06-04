@@ -42,7 +42,7 @@ class MyAccountView(LoginRequiredMixin, View):
     def _get_performances(self, user):
         current = []
         past = []
-        for ticket in user.tickets.filter(basket = None, refund = None).order_by('performance__date', 'performance__time', 'performance__show__name').values('performance_id').distinct():
+        for ticket in user.tickets.filter(sale__completed__isnull = False, refund__isnull = True).order_by('performance__date', 'performance__time', 'performance__show__name').values('performance_id').distinct():
             performance = ShowPerformance.objects.get(pk = ticket['performance_id'])
             tickets = user.tickets.filter(performance_id = ticket['performance_id'], sale__completed__isnull = False, refund__isnull = True)
             p = {

@@ -49,7 +49,7 @@ class Sale(TimeStampedModel):
 
     @property
     def button_cost(self):
-        return self.buttons * Decimal('1.00')
+        return self.buttons * self.festival.button_price
 
     @property
     def fringer_cost(self):

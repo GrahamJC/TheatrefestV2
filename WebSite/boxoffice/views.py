@@ -318,8 +318,8 @@ def main(request, boxoffice_uuid, tab = None):
     # Get box office
     boxoffice = get_object_or_404(BoxOffice, uuid = boxoffice_uuid)
 
-    # Cancel any incomplete sales
-    for sale in request.user.sales.filter(completed__isnull = True):
+    # Cancel any incomplete box-office sales
+    for sale in boxoffice.sales.filter(user_id = request.user.id, completed__isnull = True):
         logger.info("Incomplete box office sale %s (%s) at %s auto-cancelled", sale.id, sale.customer, boxoffice.name)
         sale.delete()
 
@@ -491,9 +491,9 @@ def sale_extras_update(request, sale_uuid):
             sale.fringers.first().delete()
         while (sale.fringers.count() or 0) < form_fringers:
             fringer = Fringer(
-                description = '6 shows for £18',
-                shows = 6,
-                cost = 18,
+                description = f'{request.festival.fringer_shows} shows for £{request.festival.fringer_price:.0f}',
+                shows = request.festival.fringer_shows,
+                cost = request.festival.fringer_price,
                 sale = sale,
             )
             fringer.save()

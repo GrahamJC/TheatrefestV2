@@ -32,6 +32,9 @@ class Festival(TimeStampedModel):
     online_sales_open = models.DateField(null=True, blank=True)
     online_sales_close = models.DateField(null=True, blank=True)
     is_archived = models.BooleanField(default=False)
+    button_price = models.DecimalField(max_digits = 4, decimal_places = 2, blank = True, default = 0)
+    fringer_price = models.DecimalField(max_digits = 4, decimal_places = 2, blank = True, default = 0)
+    fringer_shows = models.PositiveIntegerField(blank = True, default = 0)
 
     def __str__(self):
         return self.title
