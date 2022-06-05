@@ -474,20 +474,22 @@ class CheckoutView(LoginRequiredMixin, View):
 
         # Cancel incompelte sales (can happen if user uses browser back button to return to checkout
         # from Stripe payment page)
-        for sale in request.user.sales.filter(boxoffice__isnull = True, venue__isnull = True, completed__isnull = True):
-            for ticket in sale.tickets.all():
-                ticket.basket = basket
-                ticket.sale = None
-                ticket.save()
-                logger.info(f"{ticket.description} ticket for {ticket.performance} returned to basket")
-            for fringer in sale.fringers.all():
-                fringer.basket = basket
-                fringer.sale = None
-                fringer.save()
-                logger.info(f"eFringer ({fringer.name}) returned to basket")
-            logger.info(f"Incomplete sale {sale.id} cancelled")
-            sale.delete()
-        messages.error(request, f"Payment cancelled. Your card has not been charged.")
+        incomplete = request.user.sales.filter(boxoffice__isnull = True, venue__isnull = True, completed__isnull = True) 
+        if incomplete:
+            for sale in incomplete:
+                for ticket in sale.tickets.all():
+                    ticket.basket = basket
+                    ticket.sale = None
+                    ticket.save()
+                    logger.info(f"{ticket.description} ticket for {ticket.performance} returned to basket")
+                for fringer in sale.fringers.all():
+                    fringer.basket = basket
+                    fringer.sale = None
+                    fringer.save()
+                    logger.info(f"eFringer ({fringer.name}) returned to basket")
+                logger.info(f"Incomplete sale {sale.id} cancelled")
+                sale.delete()
+            messages.error(request, f"Payment cancelled. Your card has not been charged.")
 
         # Display basket
         context = {
