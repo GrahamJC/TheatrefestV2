@@ -17,6 +17,7 @@ from django.forms import formset_factory, modelformset_factory
 from django.http import JsonResponse
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_GET, require_POST
+from django.utils import timezone
 
 import arrow
 
@@ -256,6 +257,7 @@ def render_sale(request, boxoffice, sale = None, show = None, performance = None
         boxoffice_sales_closed = False
         all_sales_closed = False
         if performance:
+            # Ok to use naive datetimes to calculate differenc since both are local
             delta = datetime.datetime.combine(performance.date, performance.time) - datetime.datetime.now()
             boxoffice_sales_closed = delta.days < 0 or delta.total_seconds() <= (30 * 60)
             all_sales_closed = delta.days < 0 or delta.total_seconds() <= 0
@@ -361,6 +363,7 @@ def show_performances(request, show_uuid):
     html = '<option value="">-- Select performance --</option>'
     for performance in show.performances.order_by('date', 'time'):
         dt = datetime.datetime.combine(performance.date, performance.time)
+        # Ok to use naive datetimes to calculate differenc since borh are local
         mins_remaining = (dt - datetime.datetime.now()).total_seconds() / 60
         dt = arrow.get(dt)
         html += f'<option value="{performance.uuid}">{dt:ddd, MMM D} at {dt:h:mm a} ({performance.tickets_available} available)</option>'
@@ -420,7 +423,7 @@ def sale_tickets_add(request, sale_uuid, performance_uuid):
         available_tickets = performance.tickets_available
         if requested_tickets <= available_tickets:
 
-            # Ad tickets
+            # Add tickets
             for ticket_type in form.ticket_types:
                 for n in range(form.cleaned_data[SaleTicketsForm.ticket_field_name(ticket_type)]):
                     new_ticket = Ticket(
@@ -551,7 +554,7 @@ def sale_complete(request, sale_uuid):
         logger.error('sale_complete: sale %s completed', sale)
     else:
         sale.amount = sale.total_cost
-        sale.completed = datetime.datetime.now()
+        sale.completed = timezone.now()
         sale.save()
         logger.info("Sale %s completed", sale)
     return render_sale(request, sale.boxoffice, sale)

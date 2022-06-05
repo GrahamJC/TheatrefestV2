@@ -55,6 +55,7 @@ class MyAccountView(LoginRequiredMixin, View):
                 'time': performance.time,
                 'tickets': [{'id': t.id, 'uuid': t.uuid, 'description': t.description, 'cost': t.cost, 'fringer_name': (t.fringer.name if t.fringer else None)} for t in tickets],
             }
+            # Ok to compare naive datetimes since both are local
             if datetime.combine(performance.date, performance.time) >= datetime.now():
                 current.append(p)
             else:
@@ -204,6 +205,7 @@ class BuyView(LoginRequiredMixin, View):
         fringer_types = FringerType.objects.filter(festival=request.festival, is_online=True)
 
         # Check if online ticket sales are still open
+        # Ok to use naive datetimes to calculate differenc since both are local
         delta = datetime.combine(performance.date, performance.time) - datetime.now()
         if delta.total_seconds() <= (30 * 60):
             return redirect(reverse('tickets:buy_closed', args = [performance.uuid]))
@@ -303,7 +305,7 @@ class BuyView(LoginRequiredMixin, View):
                     festival = request.festival,
                     user = request.user,
                     customer = request.user.email,
-                    completed = datetime.now(),
+                    completed = timezone.now(),
                 )
                 sale.save()
 
@@ -411,6 +413,7 @@ class BuyClosedView(LoginRequiredMixin, View):
         context = {
             'basket': basket,
             'performance': performance,
+            # Ok to use naive datetimes to calculate differenc since both are local
             'last_30mins': (datetime.combine(performance.date, performance.time) - datetime.now()).total_seconds() > 0,
         }
         return render(request, "tickets/buy_closed.html", context)
@@ -643,7 +646,7 @@ def checkout_success(request, sale_uuid):
 
     # Get sale and mark as complete
     sale = get_object_or_404(Sale, uuid = sale_uuid)
-    sale.completed = datetime.now()
+    sale.completed = timezone.now()
     sale.save()
     logger.info("Credit card charged GBP%.2f", sale.stripe_charge)
     logger.info("Sale %s completed", sale.id)
@@ -704,7 +707,7 @@ def ticket_cancel(request, ticket_uuid):
         festival = request.festival,
         user = request.user,
         customer = request.user.email,
-        completed = datetime.now(),
+        completed = timezone.now(),
     )
     refund.save()
     ticket.refund = refund

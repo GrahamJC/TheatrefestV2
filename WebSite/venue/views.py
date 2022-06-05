@@ -14,6 +14,7 @@ from django.views import View
 from django.views.decorators.http import require_GET, require_POST
 from django.forms import formset_factory, modelformset_factory
 from django.http import HttpResponse, JsonResponse
+from django.utils import timezone
 
 import arrow
 
@@ -712,7 +713,7 @@ def sale_complete(request, performance_uuid, sale_uuid):
 
     # Complete the sale
     sale.amount = sale.total_cost
-    sale.completed = datetime.datetime.now()
+    sale.completed = timezone.now()
     sale.save()
     logger.info("Sale %s completed", sale)
 
