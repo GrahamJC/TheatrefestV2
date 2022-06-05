@@ -26,5 +26,5 @@ def user_logged_in_signal(sender, user, request, **kwargs):
 
 
 @receiver(user_logged_out)
-def user_logged_in_signal(sender, user, request, **kwargs):
+def user_logged_out_signal(sender, user, request, **kwargs):
     logger.info(f"User {user.email} logged out")

@@ -15,10 +15,12 @@ from django.views import View
 from django.forms import formset_factory, modelformset_factory
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.decorators import method_decorator
 from django.template.loader import render_to_string
 from django.core.mail import send_mail
 from django.views.decorators.http import require_GET, require_POST
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.cache import never_cache
 
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Field, HTML, Submit, Button, Row, Column
@@ -464,10 +466,28 @@ class BuyConfirmFringersView(LoginRequiredMixin, View):
 
 class CheckoutView(LoginRequiredMixin, View):
 
+    @method_decorator(never_cache)
     def get(self, request):
 
         # Get basket
         basket = request.user.basket
+
+        # Cancel incompelte sales (can happen if user uses browser back button to return to checkout
+        # from Stripe payment page)
+        for sale in request.user.sales.filter(boxoffice__isnull = True, venue__isnull = True, completed__isnull = True):
+            for ticket in sale.tickets.all():
+                ticket.basket = basket
+                ticket.sale = None
+                ticket.save()
+                logger.info(f"{ticket.description} ticket for {ticket.performance} returned to basket")
+            for fringer in sale.fringers.all():
+                fringer.basket = basket
+                fringer.sale = None
+                fringer.save()
+                logger.info(f"eFringer ({fringer.name}) returned to basket")
+            logger.info(f"Incomplete sale {sale.id} cancelled")
+            sale.delete()
+        messages.error(request, f"Payment cancelled. Your card has not been charged.")
 
         # Display basket
         context = {
