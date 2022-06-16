@@ -92,10 +92,14 @@ class AdminShiftForm(forms.ModelForm):
             'location', 
             'date', 'start_time', 'end_time',
             'role',
+            'needs_dbs',
             'volunteer_can_accept',
             'volunteer',
             'notes',
         ]
+        labels = {
+            'needs_dbs': 'Needs DBS check',
+        }
         widgets = {
             'date': DatePickerInput(),
             'start_time': TimePickerInput(),
@@ -166,8 +170,12 @@ class VolunteerRolesForm(forms.ModelForm):
     class Meta:
         model = Volunteer
         fields = [
+            'is_dbs',
             'roles',
         ]
+        labels = {
+            'is_dbs': 'Is DBS checked',
+        }
         widgets = {
             'roles': Select2MultipleWidget(attrs={'style': 'width: 100%'}),
         }

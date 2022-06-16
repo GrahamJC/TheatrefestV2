@@ -34,6 +34,8 @@ def render_shifts(request, volunteer):
 
     # Get days that have shifts defined
     shifts = Shift.objects.filter(location__festival=volunteer.user.festival, volunteer_can_accept=True, volunteer__isnull=True, role__in=volunteer.roles.all())
+    if volunteer.is_dbs == False:
+        shifts = shifts.filter(needs_dbs = False)
     days = []
     for day in shifts.order_by('date').values('date').distinct():
         days.append({
@@ -421,6 +423,7 @@ class AdminShiftCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
                 Column('end_time', css_class='col-sm-4'),
                 css_class='form-row',
             ),
+            Field('needs_dbs'),
             Field('volunteer_can_accept'),
             Field('volunteer'),
             Field('notes'),
@@ -459,6 +462,7 @@ class AdminShiftUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
                 Column('end_time', css_class='col-sm-4'),
                 css_class='form-row',
             ),
+            Field('needs_dbs'),
             Field('volunteer_can_accept'),
             Field('volunteer'),
             Field('notes'),
@@ -519,6 +523,10 @@ def admin_volunteers(request):
 
     # Create context and render page
     context = {
+        'breadcrumbs': [
+            { 'text': 'Volunteer Admin', 'url': reverse('volunteers:admin_home') },
+            { 'text': 'Volunteers' },
+        ],
         'form': form,
     }
     return render(request, 'volunteers/admin_volunteers.html', context)
@@ -551,6 +559,7 @@ class AdminVolunteerUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
             'user-last_name',
             'user-is_boxoffice',
             'user-is_venue',
+            'volunteer-is_dbs',
             'volunteer-roles',
             FormActions(
                 Submit('save', 'Save'),

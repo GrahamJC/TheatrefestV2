@@ -2,8 +2,7 @@
 {% load i18n %}
 {% load widget_tweaks %}
 
-{% block pagetitle %}Volunteers Administration: Volunteers{% endblock %}
-{% block banner %}{% endblock %}
+{% block pagetitle %}Volunteers{% endblock %}
 
 {% block content %}
 
@@ -25,6 +24,7 @@
             <tr>
                 <th>Name</th>
                 <th>Roles</th>
+                <th>Quals</th>
                 <th>Shifts</th>
             </tr>
         </thead>
@@ -33,6 +33,7 @@
                 <tr>
                     <td><a href="{% url 'volunteers:admin_volunteer_update' user.volunteer.uuid %}">{{ user.last_name }}, {{ user.first_name }}</a></td>
                     <td>{{ user.volunteer.roles.all|join:', ' }}</td>
+                    <td>{% if user.volunteer.is_dbs %}DBS{% endif %}</td>
                     <td>{{ user.volunteer.shifts.count }}</td>
                 </tr>
             {% endfor %}

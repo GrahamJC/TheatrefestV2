@@ -2,7 +2,6 @@
 {% load crispy_forms_tags %}
 
 {% block pagetitle %}Shifts{% endblock %}
-{% block banner %}{% endblock %}
 
 {% block content %}
 
@@ -21,6 +20,7 @@
                 <th>End</th>
                 <th>Location</th>
                 <th>Role</th>
+                <th>Needs</th>
                 <th>Volunteer</th>
             </tr>
         </thead>
@@ -32,6 +32,7 @@
                     <td>{{ shift.end_time }}</td>
                     <td>{{ shift.location.description }}</td>
                     <td><a href="{% url 'volunteers:admin_shift_update' shift.uuid %}">{{ shift.role.description }}</a></td>
+                    <td>{% if shift.needs_dbs %}DBS{% endif %}</td>
                     <td>{% if shift.volunteer %}{{ shift.volunteer.user.first_name }} {{ shift.volunteer.user.last_name }}{% endif %}</td>
                 </tr>
             {%endfor %}
