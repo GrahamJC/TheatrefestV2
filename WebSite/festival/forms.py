@@ -1,9 +1,14 @@
+from datetime import datetime
 from django import forms
 from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
 
+from bootstrap_datepicker_plus.widgets import DatePickerInput
+
 from core.models import User
 from content.models import Page, PageImage, Navigator
+from program.models import Venue
+from tickets.models import BoxOffice
 
 class PageForm(forms.ModelForm):
 
@@ -76,3 +81,19 @@ class EMailForm(forms.Form):
 
     subject = forms.CharField(required = True, max_length = 64)
     body = forms.CharField(required = True, widget = forms.Textarea)
+
+
+class AdminSaleListForm(forms.Form):
+
+    date = forms.DateField(required = False, initial = datetime.today(), widget = DatePickerInput)
+    customer = forms.CharField(required = False, label = 'Customer (contains)', widget = forms.TextInput(attrs = {'size': 64}))
+    sale_type = forms.ChoiceField(choices = (('All', 'All'), ('Online', 'Online'), ('Boxoffice', 'Boxoffice'), ('Venue', 'Venue')), initial = 'All', widget = forms.RadioSelect)
+
+    def __init__(self, festival, *args, **kwargs):
+
+        # Call base class
+        super().__init__(*args, **kwargs)
+
+        # Add venue field
+        self.fields['boxoffice'] = forms.ModelChoiceField(BoxOffice.objects.filter(festival = festival), required = False)
+        self.fields['venue'] = forms.ModelChoiceField(Venue.objects.filter(festival = festival, is_ticketed = True), required = False)

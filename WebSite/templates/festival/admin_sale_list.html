@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+
+{% block pagetitle %}Sales{% endblock %}
+
+{% block content %}
+
+    {% crispy form %}
+
+    <table class="table">
+        <thead class="thead-light">
+            <tr>
+                <th>Date</th>
+                <th>Customer</th>
+                <th>Total</th>
+                <th>Type</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sale in sales %}
+                <tr>
+                    <td>{{ sale.date | date:'M-d' }}</td>
+                    <td>{{ sale.customer }}</td>
+                    <td><a data-toggle="collapse" href=".sale-{{sale.id}}">£{{ sale.total | floatformat:2 }}</a></td>
+                    <td>{{ sale.type }}</td>
+                    <td>
+                        {% if sale.type == 'Online' and sale.tickets.count > 0 %}
+                            <a class="btn btn-primary" href="#" onclick="email_confirmation('{% url 'festival:admin_sale_confirmation' sale.uuid %}', '{{ sale.customer }}')">e-mail</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% if sale.buttons > 0 %}
+                    <tr class="bg-white sale-{{sale.id}} collapse">
+                        <td/>
+                        <td>Buttons</td>
+                        <td>£{{ sale.buttons }}</td>
+                        <td colspan="2" />
+                    </tr>
+                {% endif %}
+                {% if sale.fringers > 0 %}
+                    <tr class="bg-white sale-{{sale.id}} collapse">
+                        <td/>
+                        <td>Fringers</td>
+                        <td>£{{ sale.fringers }}</td>
+                        <td colspan="2" />
+                    </tr>
+                {% endif %}
+                {% for ticket in sale.tickets %}
+                    <tr class="bg-white sale-{{sale.id}} collapse">
+                        <td/>
+                        <td>{{ ticket.description }}</td>
+                        <td>£{{ ticket.cost }}</td>
+                        <td colspan="2">{{ ticket.performance.show.name }} on {{ ticket.performance.date | date:'M-d' }} at {{ ticket.performance.time }}</td>
+                    </tr>
+                {% endfor %}
+            {%endfor %}
+        </tbody>
+    </table>
+
+{% endblock %}
+
+{% block body-script %}
+    
+<script language="javascript">
+
+    function email_confirmation(url, email) {
+        $.ajax({
+            url: url,
+            beforeSend: function () {
+                $('body').css({
+                    'cursor': 'wait'
+                });
+            },
+            complete: function () {
+                $('body').css({
+                    'cursor': 'default'
+                });
+            },
+            success: function(response) {
+                if (response.is_sent) {
+                    $('#tf-alerts').append('<div class="alert alert-info"><a class="close" data-dismiss="alert">x</a><span>Confirmation e-mail sent to ' + email + '.</span></div>');
+                }
+                else {
+                    $('#tf-alerts').append('<div class="alert alert-error"><a class="close" data-dismiss="alert">x</a><span>Confirmation e-mail failed.</span></div>');
+                }
+            },
+            error: function(response) {
+                $('#tf-alerts').append('<div class="alert alert-error"><a class="close" data-dismiss="alert">x</a><span>Confirmation e-mail failed.</span></div>');
+            }
+        });
+    }
+
+</script>
+
+{% endblock %}

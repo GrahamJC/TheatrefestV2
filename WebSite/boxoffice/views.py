@@ -363,7 +363,7 @@ def show_performances(request, show_uuid):
     html = '<option value="">-- Select performance --</option>'
     for performance in show.performances.order_by('date', 'time'):
         dt = datetime.datetime.combine(performance.date, performance.time)
-        # Ok to use naive datetimes to calculate differenc since borh are local
+        # Ok to use naive datetimes to calculate differenc since both are local
         mins_remaining = (dt - datetime.datetime.now()).total_seconds() / 60
         dt = arrow.get(dt)
         html += f'<option value="{performance.uuid}">{dt:ddd, MMM D} at {dt:h:mm a} ({performance.tickets_available} available)</option>'

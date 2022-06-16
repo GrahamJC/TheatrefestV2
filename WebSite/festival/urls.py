@@ -16,4 +16,6 @@ urlpatterns = [
     path('admin/user/<uuid:user_uuid>/password', views.admin_user_password, name='admin_user_password'),
     path('admin/user/email', views.admin_user_email, name='admin_user_email'),
     path('admin/user/email/send', views.admin_user_email_send, name='admin_user_email_send'),
+    path('admin/sale/list', views.AdminSaleListView.as_view(), name='admin_sale_list'),
+    path('admin/sale/<uuid:sale_uuid>/confirmation/', views.admin_sale_confirmation, name='admin_sale_confirmation'),
 ]

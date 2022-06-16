@@ -1,11 +1,17 @@
 import os
 
+from datetime import datetime, timedelta
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils.safestring import mark_safe
+from django.views import View
 from django.views.decorators.http import require_GET, require_POST
 from django.core.mail import send_mail
 
@@ -15,7 +21,9 @@ from crispy_forms.bootstrap import FormActions, TabHolder, Tab, Div
 
 from core.models import Festival, User
 
-from .forms import PasswordResetForm, EMailForm
+from tickets.models import BoxOffice, Sale
+
+from .forms import PasswordResetForm, EMailForm, AdminSaleListForm
 
 # Logging
 import logging
@@ -209,4 +217,121 @@ def admin_user_email_send(request):
     return render(request, 'festival/admin_user_email.html', context)
 
 
+class AdminSaleListView(LoginRequiredMixin, View):
+
+    def _get_form(self, festival, post_data = None):
+        form = AdminSaleListForm(festival, data = post_data)
+        helper = FormHelper()
+        helper.form_method = 'POST'
+        #helper.add_input(Submit('submit', 'Search'))
+        helper.layout = Layout(
+            Row(
+                Column('date', css_class='col-4'),
+                Column('customer', css_class='col-8'),
+                css_class='form-row',
+            ),
+            Row(
+                Column('sale_type', css_class='col-4'),
+                Column(Div('boxoffice', 'venue', css_class='col-8')),
+                css_class='form-row',
+            ),
+            FormActions(
+                Submit('search', 'Search'),
+            )
+        )
+        form.helper = helper
+        return form
+
+    def get(self, request):
+
+        # Render search form
+        form = self._get_form(request.festival)
+        context = {
+            'breadcrumbs': [
+                { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+                { 'text': 'Sales' },
+            ],
+            'form': form,
+            'sales': None,
+        }
+        return render(request, 'festival/admin_sale_list.html', context)
+
+    def post(self, request):
+
+        # Get search criteria
+        form = self._get_form(request.festival, request.POST)
+
+        # Get results
+        sales = None
+        if form.is_valid():
+            sales = Sale.objects.filter(festival = request.festival, completed__isnull = False)
+            date = form.cleaned_data['date']
+            if date:
+                sales = sales.filter(completed__date = date)
+            customer = form.cleaned_data['customer']
+            if customer:
+                sales = sales.filter(customer__icontains = customer)
+            sale_type = form.cleaned_data['sale_type']
+            if sale_type == 'Boxoffice':
+                boxoffice = form.cleaned_data['boxoffice']
+                if boxoffice:
+                    sales = sales.filter(boxoffice = boxoffice)
+                else:
+                    sales = sales.filter(boxoffice__isnull = False)
+            elif sale_type == 'Venue':
+                venue = form.cleaned_data['venue']
+                if venue:
+                    sales = sales.filter(venue = venue)
+                else:
+                    sales = sales.filter(venue__isnull = False)
+            elif sale_type == 'Online':
+                sales = sales.filter(user__isnull = False)
+            sales = sales.order_by('completed__date', 'customer')[:50]
+            if sales.count() == 0:
+                messages.warning(request, "No sales found")
+
+        # Render search form and result list
+        context = {
+            'breadcrumbs': [
+                { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+                { 'text': 'Sales' },
+            ],
+            'form': form,
+            'sales': [
+                {
+                    'id': sale.id,
+                    'uuid': sale.uuid,
+                    'date': sale.completed.date,
+                    'customer': sale.customer,
+                    'buttons': sale.button_cost,
+                    'fringers': sale.fringer_cost,
+                    'tickets': sale.tickets.all(),
+                    'stripe': sale.stripe_fee,
+                    'total': sale.total_cost,
+                    'type': 'Boxoffice' if sale.boxoffice else f'Venue ({sale.venue.name})' if sale.venue else 'Online',
+                }
+                for sale in sales
+            ],
+        }
+        return render(request, 'festival/admin_sale_list.html', context)
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_admin)
+def admin_sale_confirmation(request, sale_uuid):
+
+    is_sent = False
+    sale = get_object_or_404(Sale, uuid = sale_uuid)
+    if sale.tickets:
+        context = {
+            'festival': request.festival,
+            'tickets': sale.tickets.order_by('performance__date', 'performance__time', 'performance__show__name')
+        }
+        body = render_to_string('tickets/sale_email.txt', context)
+        send_mail('Tickets for ' + request.festival.title, body, settings.DEFAULT_FROM_EMAIL, [sale.user.email])
+        is_sent = True
+
+    return JsonResponse({
+        'is_sent': is_sent
+    })
 
