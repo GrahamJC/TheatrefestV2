@@ -112,6 +112,7 @@ class AdminShiftForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['role'].queryset = Role.objects.filter(festival=festival)
         self.fields['location'].queryset = Location.objects.filter(festival=festival)
+        self.fields['volunteer'].queryset = Volunteer.objects.filter(user__festival=festival).order_by('user__last_name', 'user__first_name')
 
     def validate_unique(self):
         exclude = self._get_validation_exclusions()
