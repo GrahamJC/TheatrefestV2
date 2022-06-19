@@ -14,6 +14,7 @@
                 <th>Customer</th>
                 <th>Type</th>
                 <th>Sale</th>
+                <th>Token</th>
             </tr>
             {% for ticket in non_venue_tickets %}
                 <tr>
@@ -21,6 +22,7 @@
                     <td>{% if ticket.user %} {{ ticket.user.username }} {%else%} {{ ticket.sale.customer }} {% endif %}</td>
                     <td>{{ ticket.description }}</td>
                     <td>{% if ticket.sale.boxoffice %}Box Office{% else %}Online{% endif %}</td>
+                    <td><input id="token_{{ ticket.uuid }}" type="checkbox" onclick="toggle_token('{{ ticket.uuid }}')" {% if ticket.token_issued %}checked{% endif %} /></td>
                 </tr>
             {% endfor %}
         </table>
@@ -32,6 +34,7 @@
                 <th>Customer</th>
                 <th>Type</th>
                 <th>Sale</th>
+                <th>Token</th>
             </tr>
             {% for ticket in venue_tickets %}
                 <tr>
@@ -39,6 +42,7 @@
                     <td>{% if ticket.user %} {{ ticket.user.username }} {%else%} {{ ticket.sale.customer }} {% endif %}</td>
                     <td>{{ ticket.description }}</td>
                     <td>Venue</td>
+                    <td><input id="token_{{ ticket.uuid }}" type="checkbox" onclick="toggle_token('{{ ticket.uuid }}')" {% if ticket.token_issued %}checked{% endif %} /></td>
                 </tr>
             {% endfor %}
         </table>

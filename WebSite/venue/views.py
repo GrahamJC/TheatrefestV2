@@ -7,13 +7,12 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db import transaction
 from django.db.models import Q, Sum
 from django.db.models.functions import Coalesce
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
 from django.views import View
 from django.views.decorators.http import require_GET, require_POST
 from django.forms import formset_factory, modelformset_factory
-from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 
 import arrow
@@ -657,7 +656,7 @@ def sale_update(request, performance_uuid, sale_uuid):
                         payment = 0,
                     )
                     new_ticket.save()
-                    logger.info("Sale %s ticket aded: %s", sale, new_ticket)
+                    logger.info("Sale %s ticket added: %s", sale, new_ticket)
                 elif sale_ticket and not use_volunteer:
                     logger.info("Sale %s ticket deleted: %s", sale, sale_ticket)
                     sale_ticket.delete()
@@ -711,6 +710,11 @@ def sale_complete(request, performance_uuid, sale_uuid):
     assert sale.venue == venue
     assert not sale.completed
 
+    # Mark tokens issued for tickets
+    for ticket in sale.tickets.all():
+        ticket.token_issued = True
+        ticket.save()
+        
     # Complete the sale
     sale.amount = sale.total_cost
     sale.completed = timezone.now()
@@ -899,3 +903,20 @@ def tickets(request, performance_uuid, format):
     # Render PDF document and return it
     doc.build(story)
     return response
+
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_venue or u.is_admin)
+@transaction.atomic
+def ticket_token(request, ticket_uuid):
+
+    # Get ticket and toggle token issued state
+    ticket = get_object_or_404(Ticket, uuid = ticket_uuid)
+    ticket.token_issued = not ticket.token_issued
+    ticket.save()
+
+    # Return token issued state
+    return JsonResponse({
+        'token_issued': ticket.token_issued
+    })

@@ -116,6 +116,28 @@
             });
         }
 
+        function toggle_token(ticket_uuid) {
+            $.ajax({
+                url: '{% url 'venue:ticket_token' '00000000-0000-0000-0000-000000000000' %}'.replace('00000000-0000-0000-0000-000000000000', ticket_uuid),
+                beforeSend: function () {
+                    $('body').css({
+                        'cursor': 'wait'
+                    });
+                },
+                complete: function () {
+                    $('body').css({
+                        'cursor': 'default'
+                    });
+                },
+                success: function(response) {
+                    $('#token_' + ticket_uuid).prop('checked', response.token_issued);
+                },
+                error: function(response) {
+                    $('#tf-alerts').append('<div class="alert alert-error"><a class="close" data-dismiss="alert">x</a><span>An error occured.</span></div>');
+                }
+            });
+        }
+
     </script>
     
 {% endblock %}

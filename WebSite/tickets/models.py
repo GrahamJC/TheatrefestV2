@@ -318,6 +318,7 @@ class Ticket(TimeStampedModel):
     sale = models.ForeignKey(Sale, on_delete = models.CASCADE, null = True, blank = True, related_name = 'tickets')
     refund = models.ForeignKey(Refund, on_delete = models.SET_NULL, null = True, blank = True, related_name = 'tickets')
     payment = models.DecimalField(max_digits = 4, decimal_places = 2, blank = True, default = 0)
+    token_issued = models.BooleanField(default = False)
 
     class Meta:
         ordering = ['performance']
