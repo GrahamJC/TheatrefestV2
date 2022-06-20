@@ -76,8 +76,8 @@ class SelectBoxOfficeForm(forms.Form):
             is_required = 'date' in required
             self.fields['date'].required = is_required
             choices = [('', 'Select date' if is_required else 'All dates')]
-            first_date = datetime.date(2019, 6, 24)
-            last_date = datetime.date(2019, 6, 30)
+            first_date = festival.boxoffice_open
+            last_date = festival.boxoffice_close
             dates = [first_date + datetime.timedelta(days = x) for x in range(0, (last_date - first_date).days + 1)]            
             for x in range(0, (last_date - first_date).days + 1):
                 date = first_date + datetime.timedelta(days = x)

@@ -36,6 +36,8 @@ class Festival(TimeStampedModel):
     fringer_price = models.DecimalField(max_digits = 4, decimal_places = 2, blank = True, default = 0)
     fringer_shows = models.PositiveIntegerField(blank = True, default = 0)
     volunteer_comps = models.PositiveIntegerField(blank = True, default = 0)
+    boxoffice_open = models.DateField(null=True, blank=True)
+    boxoffice_close = models.DateField(null=True, blank=True)
 
     def __str__(self):
         return self.title
