@@ -18,9 +18,13 @@ class AdminRoleForm(forms.ModelForm):
         model = Role
         fields = [
             'description',
+            'comps_per_shift',
             'information',
         ]
-
+        labels = {
+            'comps_per_shift': 'Complimentary tickets per shift',
+        }
+        
     def __init__(self, festival, *args, **kwargs):
         self.festival = festival
         super().__init__(*args, **kwargs)

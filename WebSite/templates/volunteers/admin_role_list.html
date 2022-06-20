@@ -9,6 +9,7 @@
         <thead class="thead-light">
             <tr>
                 <th>Description</th>
+                <th>Comps</th>
                 <th>Shifts</th>
                 <th>Volunteers</th>
             </tr>
@@ -17,6 +18,7 @@
             {% for role in roles %}
                 <tr>
                     <td><a href="{% url 'volunteers:admin_role_update' role.uuid %}">{{ role.description }}</a></td>
+                    <td>{{ role.comps_per_shift }}</td>
                     <td>{{ role.shifts.count }}</td>
                     <td>{{ role.volunteers.count }}</td>
                 </tr>

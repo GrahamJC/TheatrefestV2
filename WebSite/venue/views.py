@@ -160,11 +160,12 @@ def create_sale_form(performance, sale, post_data = None):
                 efringers_in_sale.append(fringer)
                 initial_data[SaleForm.efringer_field_name(fringer)] = True
 
-    # Get volunteer shifts (capped at four) and number of complimentary tickets used so far
+    # Get volunteer complimentary tickets details
     volunteer = sale.customer_user.volunteer if sale.customer_user and sale.customer_user.is_volunteer else None
     if volunteer:
-        volunteer_earned = min(volunteer.shifts.count(), 4)
-        volunteer_used = Ticket.objects.filter(user = volunteer.user, description = 'Volunteer', sale__completed__isnull = False).count()
+        volunteer_earned = volunteer.comps_earned
+        volunteer_used = volunteer.comps_used
+        volunteer_available = volunteer.comps_available
         initial_data['volunteer'] = sale.tickets.filter(user = volunteer.user, description = 'Volunteer').exists()
 
     # Create form
@@ -210,7 +211,7 @@ def create_sale_form(performance, sale, post_data = None):
         ))
     if volunteer:
         status = f"Used {volunteer_used} of {volunteer_earned} volunteer tickets."
-        if volunteer_earned > volunteer_used:
+        if volunteer_available > 0:
             tabs.append(Tab('Volunteer', HTML(f"<p>{status}<p>"), Field('volunteer'), css_class = 'pt-2'))
         else:
             tabs.append(Tab('Volunteer', HTML(f"<p>{status}<p>"), css_class = 'pt-2'))

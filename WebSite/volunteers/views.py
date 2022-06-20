@@ -146,6 +146,7 @@ class AdminRoleCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         form.helper = FormHelper()
         form.helper.layout = Layout(
             'description',
+            'comps_per_shift',
             'information',
             FormActions(
                 Submit('save', 'Save'),
@@ -176,6 +177,7 @@ class AdminRoleUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
         form.helper = FormHelper()
         form.helper.layout = Layout(
             'description',
+            'comps_per_shift',
             'information',
             FormActions(
                 Submit('save', 'Save'),

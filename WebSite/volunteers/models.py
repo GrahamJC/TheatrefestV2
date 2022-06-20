@@ -11,6 +11,7 @@ class Role(TimeStampedModel):
 
     festival = models.ForeignKey(Festival, on_delete=models.CASCADE, related_name='roles')
     description = models.CharField(blank = True, max_length=32, default = '')
+    comps_per_shift = models.FloatField(blank = False, default = 0)
     information = models.TextField(blank=True, default='')
 
     class Meta:
@@ -46,6 +47,26 @@ class Volunteer(TimeStampedModel):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='volunteer')
     roles = models.ManyToManyField(Role, related_name = 'volunteers', blank = True)
     is_dbs = models.BooleanField(default=False)
+
+    @property
+    def comps_earned(self):
+
+        # Calculate comps earned
+        comps = 0
+        for shift in self.shifts.all():
+            comps += shift.role.comps_per_shift
+        
+        # Round down and limit to a maximum of 4
+        max_comps = self.user.festival.volunteer_comps
+        return int(comps) if max_comps == 0 else max(int(comps), max_comps)
+
+    @property
+    def comps_used(self):
+        return self.user.tickets.filter(description = 'Volunteer', sale__completed__isnull = False).count()
+
+    @property
+    def comps_available(self):
+        return self.comps_earned - self.comps_used
 
     def __str__(self):
         return f'{self.user.get_full_name()}'
