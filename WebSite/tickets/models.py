@@ -33,6 +33,8 @@ class Sale(TimeStampedModel):
     amount = models.DecimalField(blank = True, default = 0, max_digits = 5, decimal_places = 2)
     stripe_fee = models.DecimalField(blank = True, default = 0, max_digits = 4, decimal_places = 2)
     completed = models.DateTimeField(null = True, blank = True)
+    cancelled = models.DateTimeField(null = True, blank = True)
+    stripe_pi = models.CharField(max_length = 64, null = True, blank = True)
 
     @property
     def customer_user(self):

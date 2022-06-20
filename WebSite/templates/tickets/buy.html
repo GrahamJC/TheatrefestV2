@@ -43,7 +43,7 @@
                                             <table class="table table-striped">
                                                 {% for form in ticket_formset.forms %}
                                                     <tr>
-                                                        <td>{{ form.id }}<p class="form-control-plaintext">{{ form.name.value }}</p></td>
+                                                        <td>{{ form.id }} {{form.name}} <p class="form-control-plaintext">{{ form.name.value }}</p></td>
                                                         <td><p class="form-control-plaintext">&#163;{{ form.price.value|floatformat }}</p></td>
                                                         <td>{{ form.quantity | add_class:'form-control' }}</td>
                                                     </tr>

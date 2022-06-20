@@ -1,3 +1,5 @@
+from datetime import timezone
+
 from django.contrib.auth import user_logged_in, user_logged_out
 from django.dispatch import receiver
 
@@ -15,14 +17,15 @@ def user_logged_in_signal(sender, user, request, **kwargs):
             ticket.basket = user.basket
             ticket.sale = None
             ticket.save()
-            logger.info(f"{ticket.description} ticket for {ticket.performance} returned to basket")
+            logger.info(f"{ticket.description} ticket for {ticket.performance.show.name} on {ticket.performance.date} at {ticket.performance.time} returned to basket {user.id}")
         for fringer in sale.fringers.all():
             fringer.basket = user.basket
             fringer.sale = None
             fringer.save()
-            logger.info(f"eFringer ({fringer.name}) returned to basket")
-        logger.info(f"Incomplete sale {sale.id} cancelled")
-        sale.delete()
+            logger.info(f"eFringer {fringer.name} returned to basket {user.id}")
+        logger.info(f"Incomplete sale {sale.id} auto-cancelled")
+        sale.cancelled = timezone.now()
+        sale.save
 
 
 @receiver(user_logged_out)

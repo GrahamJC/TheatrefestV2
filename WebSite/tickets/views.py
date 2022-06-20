@@ -116,7 +116,7 @@ class MyAccountView(LoginRequiredMixin, View):
 
                 # Save changes
                 for fringer in formset.save():
-                    logger.info("eFringer renamed to %s", fringer.name)
+                    logger.info(f"eFringer renamed to {fringer.name}")
                     messages.success(request, f"eFringer renamed to {fringer.name}")
 
                 # Reset formset
@@ -149,7 +149,7 @@ class MyAccountView(LoginRequiredMixin, View):
                     basket = basket,
                 )
                 fringer.save()
-                logger.info("eFringer %s (%s) added to basket", fringer.name, fringer.description)
+                logger.info(f"eFringer {fringer.name} ({fringer.description}) added to basket")
                 messages.success(request, f"Fringer {fringer.name} ({fringer.description}) added to basket")
 
                 # Confirm purchase
@@ -242,7 +242,7 @@ class BuyView(LoginRequiredMixin, View):
 
         # Get the requested action
         action = request.POST.get("action")
-        tab = None
+        tab = 'tickets'
 
         # Add tickets to basket
         if action == "AddTickets":
@@ -278,20 +278,20 @@ class BuyView(LoginRequiredMixin, View):
                                 ticket.save()
 
                             # Confirm purchase
-                            logger.info("%d x %s tickets added to basket: %s", quantity, ticket_type, performance)
-                            messages.success(request, f"{quantity} x {ticket_type} tickets added to basket.")
+                            logger.info(f"{quantity} x {ticket_type.name} tickets for {performance.show.name} on {performance.date} at {performance.time} added to basket")
+                            messages.success(request, f"{quantity} x {ticket_type.name} tickets added to basket.")
 
                     # Confirm purchase
                     return redirect(reverse('tickets:buy_confirm_tickets', args = [performance.uuid]))
 
                 # Insufficient tickets available
                 else:
-                    logger.info("Tickets not available (%d requested, %d available): %s", tickets_requested, performance.tickets_available, performance)
+                    logger.info(f"Insufficient tickets ({tickets_requested} requested, {performance.tickets_available} available) for {performance.show.name} on {performance.date} at {performance.time}")
                     messages.error(request, f"There are only {performance.tickets_available} tickets available for this perfromance.")
 
             # Reset buy fringer form
             buy_fringer_form = self._create_buy_fringer_form(fringer_types, request.user)
-            tab = 'tickets',
+            tab = 'tickets'
 
         # Use fringer credits
         elif action == "UseFringers":
@@ -329,25 +329,25 @@ class BuyView(LoginRequiredMixin, View):
                         ticket.save()
 
                         # Confirm purchase
-                        logger.info("Ticket purchased with eFringer (%s): %s", fringer.name, performance)
+                        logger.info(f"Ticket for {performance.show.name} on {performance.date} at {performance.time} purchased with eFringer {fringer.name}")
                         messages.success(request, f"Ticket purchased with eFringer {fringer.name}")
 
                     else:
                         # Fringer already used for this performance
-                        logger.warn("eFringer (%s) already used: %s", fringer.name, performance)
+                        logger.warn(f"eFringer {fringer.name} already used for this perfromance")
 
                 # Confirm purchase
                 return redirect(reverse('tickets:buy_confirm_fringer_tickets', args = [performance.uuid]))
 
             # Insufficient tickets available
             else:
-                logger.info("Tickets not available (%d requested, %d available): %s", tickets_requested, performance.tickets_available, performance)
+                logger.info(f"Insufficient tickets ({tickets_requested} requested, {performance.tickets_available} available) for {performance.show.name} on {performance.date} at {performance.time}")
                 messages.error(request, f"There are only {performance.tickets_available} tickets available for this perfromance.")
 
             # Reset ticket formset and buy fringer form
             ticket_formset = self.get_ticket_formset(ticket_types)
             buy_fringer_form = self._create_buy_fringer_form(fringer_types, request.user)
-            tab = 'fringers',
+            tab = 'fringers'
 
         # Add fringer vouchers to basket
         elif action == "AddFringers":
@@ -375,22 +375,22 @@ class BuyView(LoginRequiredMixin, View):
                     basket = basket,
                 )
                 fringer.save()
-                logger.info("eFringer %s (%s) added to basket", fringer.name, fringer.description)
-                messages.success(request, f"Fringer {fringer.name} ({fringer.description}) added to basket")
+                logger.info(f"eFringer {fringer.name} ({fringer.description}) added to basket")
+                messages.success(request, f"eFringer {fringer.name} ({fringer.description}) added to basket")
 
                 # Confirm purchase
                 return redirect(reverse('tickets:buy_confirm_fringers', args = [performance.uuid]))
 
             # Reset ticket formset
             ticket_formset = self.get_ticket_formset(ticket_types, None)
-            tab = 'fringers',
+            tab = 'fringers'
 
         # Get fringers available for this performance
         fringers = Fringer.get_available(request.user, performance)
 
         # Display buy page
         context = {
-            'tab': 'fringers',
+            'tab': tab,
             'sales_open': request.user.is_superuser or (date.today() >= date(2018, 6, 1)),
             'basket': basket,
             'performance': performance,
@@ -475,7 +475,7 @@ class CheckoutView(LoginRequiredMixin, View):
         # Get basket
         basket = request.user.basket
 
-        # Cancel incompelte sales (can happen if user uses browser back button to return to checkout
+        # Cancel incomplete sales (can happen if user uses browser back button to return to checkout
         # from Stripe payment page)
         incomplete = request.user.sales.filter(boxoffice__isnull = True, venue__isnull = True, completed__isnull = True) 
         if incomplete:
@@ -484,14 +484,15 @@ class CheckoutView(LoginRequiredMixin, View):
                     ticket.basket = basket
                     ticket.sale = None
                     ticket.save()
-                    logger.info(f"{ticket.description} ticket for {ticket.performance} returned to basket")
+                    logger.info(f"{ticket.description} ticket for {ticket.performance.show.name} on {ticket.performance.date} at {ticket.performance.time} returned to basket {basket.user.id}")
                 for fringer in sale.fringers.all():
                     fringer.basket = basket
                     fringer.sale = None
                     fringer.save()
-                    logger.info(f"eFringer ({fringer.name}) returned to basket")
-                logger.info(f"Incomplete sale {sale.id} cancelled")
-                sale.delete()
+                    logger.info(f"eFringer {fringer.name} returned to basket {basket.user.id}")
+                sale.cancelled = timezone.now()
+                sale.save()
+                logger.info(f"Incomplete sale {sale.id} auto-cancelled")
             messages.error(request, f"Payment cancelled. Your card has not been charged.")
 
         # Display basket
@@ -511,8 +512,8 @@ class CheckoutRemoveFringerView(LoginRequiredMixin, View):
         fringer = get_object_or_404(Fringer, uuid = fringer_uuid)
 
         # Delete fringer
-        logger.info("eFringer %s (%s) removed from basket", fringer.name, fringer.description)
-        messages.success(request, f"Fringer {fringer.name} ({fringer.description}) removed from basket")
+        logger.info(f"eFringer {fringer.name} removed from basket {basket.user.id}")
+        messages.success(request, f"Fringer {fringer.name} removed from basket")
         fringer.delete()
 
         # Redisplay checkout
@@ -530,9 +531,9 @@ class CheckoutRemovePerformanceView(LoginRequiredMixin, View):
 
         # Delete all tickets for the performance
         for ticket in basket.tickets.filter(performance = performance):
-            logger.info("%s ticket for %s removed from basket", ticket.description, ticket.performance)
+            logger.info(f"{ticket.description} ticket for {performance.show.name} on {performance.date} at {performance.time} removed from basket {basket.user.id}")
             ticket.delete()
-        messages.success(request, f"{performance} removed from basket")
+        messages.success(request, f"{performance.show.name} removed from basket {basket.user.id}")
 
         # Redisplay checkout
         return redirect(reverse("tickets:checkout"))
@@ -548,8 +549,8 @@ class CheckoutRemoveTicketView(LoginRequiredMixin, View):
         ticket = get_object_or_404(Ticket, uuid = ticket_uuid)
 
         # Delete ticket
-        logger.info("%s ticket for %s removed from basket", ticket.description, ticket.performance)
-        messages.success(request, f"{ticket.description} ticket for {ticket.performance} removed from basket")
+        logger.info(f"{ticket.description} ticket for {ticket.performance.show.name} on {ticket.performance.date} at {ticket.performance.time} removed from basket {basket.user.id}")
+        messages.success(request, f"{ticket.description} ticket for {ticket.performance.show.name} removed from basket")
         ticket.delete()
 
         # Redisplay checkout
@@ -582,13 +583,13 @@ def checkout_stripe(request):
     for p in basket.tickets.values('performance').annotate(count = Count('performance')):
         performance = ShowPerformance.objects.get(pk = p["performance"])
         if p["count"] > performance.tickets_available:
-            messages.error(request, f"Your basket contains {p['count']} tickets for {performance} but there are only {performance.tickets_available} tickets available.")
-            logger.warn("Basket contains %d tickets but only %d available: %s", p["count"], performance.tickets_available, performance)
+            messages.error(request, f"Your basket contains {p['count']} tickets for {performance.show.name} but there are only {performance.tickets_available} tickets available.")
+            logger.info(f"Basket contains {p['count']} tickets for {performance.show.name} but there are only {performance.tickets_available} available")
             tickets_available = False
 
     # If tickets no longer available redisplay checkout with notifications
     if not tickets_available:
-        messages.error(request, f"Your card has not been charged.")
+        messages.error(request, "Your card has not been charged.")
         context = {
             'basket': basket
         }
@@ -606,16 +607,17 @@ def checkout_stripe(request):
             stripe_fee = basket.stripe_fee,
         )
         sale.save()
+        logger.info(f"Sale {sale.id} created")
         for ticket in basket.tickets.all():
             ticket.basket = None
             ticket.sale = sale
             ticket.save()
-            logger.info("Purchase complete: %s ticket for %s", ticket.description, ticket.performance)
+            logger.info(f"{ticket.description} ticket for {ticket.performance.show.name} on {ticket.performance.date} at {ticket.performance.time} added to sale {sale.id}")
         for fringer in basket.fringers.all():
             fringer.basket = None
             fringer.sale = sale
             fringer.save()
-            logger.info("Purchase complete: eFringer (%s)", fringer.name)
+            logger.info(f"eFringer {fringer.name} added to sale {sale.id}")
 
         # Create Stripe session
         stripe.api_key = settings.STRIPE_PRIVATE_KEY
@@ -636,6 +638,9 @@ def checkout_stripe(request):
             success_url = request.build_absolute_uri(reverse('tickets:checkout_success', args=[sale.uuid])),
             cancel_url = request.build_absolute_uri(reverse('tickets:checkout_cancel', args=[sale.uuid])),
         )
+        sale.stripe_pi = session.payment_intent
+        sale.save()
+        logger.info(f"Stripe PI {session.payment_intent} created for sale {sale.id}")
 
     return redirect(session.url, code=303)
 
@@ -648,8 +653,9 @@ def checkout_success(request, sale_uuid):
     sale = get_object_or_404(Sale, uuid = sale_uuid)
     sale.completed = timezone.now()
     sale.save()
-    logger.info("Credit card charged GBP%.2f", sale.stripe_charge)
-    logger.info("Sale %s completed", sale.id)
+    logger.info(f"Stripe payment for sale {sale.id} succeeded")
+    logger.info(f"Credit card charged £{sale.stripe_charge:2f}")
+    logger.info(f"Sale {sale.id} completed")
 
     # Send e-mail to confirm tickets
     if sale.tickets:
@@ -674,19 +680,22 @@ def checkout_cancel(request, sale_uuid):
     # Get basket and sale
     basket = request.user.basket
     sale = get_object_or_404(Sale, uuid = sale_uuid)
+    logger.info(f"Stripe payment for sale {sale.id} cancelled")
 
     # Move sale items back into basket and delete sale
     for ticket in sale.tickets.all():
         ticket.basket = basket
         ticket.sale = None
         ticket.save()
-        logger.info("Purchase cancelled: %s ticket for %s", ticket.description, ticket.performance)
+        logger.info(f"{ticket.description} ticket for {ticket.performance.show.name} on {ticket.performance.date} at {ticket.performance.time} returned to basket {basket.user.id}")
     for fringer in sale.fringers.all():
         fringer.basket = basket
         fringer.sale = None
         fringer.save()
-        logger.info("Purchase cancelled: eFringer (%s)", fringer.name)
-    sale.delete()
+        logger.info(f"eFringer {fringer.name} returned to basket {basket.user.id}")
+    sale.cancelled = timezone.now()
+    sale.save()
+    logger.info(f"Sale {sale.id} cancelled")
 
     # Display checkout with notification
     messages.error(request, f"Payment cancelled. Your card has not been charged.")
@@ -712,8 +721,8 @@ def ticket_cancel(request, ticket_uuid):
     refund.save()
     ticket.refund = refund
     ticket.save()
-    logger.info("%s ticket for %s cancelled", ticket.description, ticket.performance)
-    messages.success(request, f"{ticket.description} ticket for {ticket.performance} cancelled")
+    logger.info(f"{ticket.description} ticket for {ticket.performance.show.name} on {ticket.performance.date} at {ticket.performance.time} cancelled")
+    messages.success(request, f"{ticket.description} ticket for {ticket.performance.show.name} cancelled")
 
     # Redisplay tickets
     return redirect(reverse("tickets:myaccount"))
