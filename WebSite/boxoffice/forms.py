@@ -76,22 +76,3 @@ class CheckpointForm(forms.Form):
             self.fields['cash'].disabled = True
             self.fields['buttons'].disabled = True
             self.fields['fringers'].disabled = True
-
-
-class UserLookupForm(forms.Form):
-
-    def __init__(self, festival, *args, **kwargs):
-
-        # Call base class
-        super().__init__(*args, **kwargs)
-
-        # Restrict users to current festival
-        self.fields['user'] = forms.ModelChoiceField(
-            queryset = User.objects.filter(festival = festival, is_active = True),
-            widget = ModelSelect2(
-                url = 'boxoffice:user_autocomplete',
-                attrs = {
-                    'data-theme': 'bootstrap4',
-                }
-            )
-        )

@@ -31,7 +31,7 @@ from core.models import User
 from program.models import Show, ShowPerformance
 from tickets.models import BoxOffice, Sale, TicketType, Ticket, Fringer, Checkpoint
 
-from .forms import CheckpointForm, SaleStartForm, SaleTicketsForm, SaleExtrasForm, SaleEMailForm, UserLookupForm
+from .forms import CheckpointForm, SaleStartForm, SaleTicketsForm, SaleExtrasForm, SaleEMailForm
 
 # Logging
 import logging
@@ -218,14 +218,6 @@ def create_checkpoint_form(boxoffice, checkpoint, post_data = None):
     # Return form
     return form
 
-def create_user_lookup_form(festival, post_data = None):
-
-    # Create form
-    form = UserLookupForm(festival, data = post_data)
-
-    # Return form
-    return form
-
 def render_main(request, boxoffice, tab = None, checkpoint_form = None):
 
     # Render main page
@@ -241,7 +233,6 @@ def render_main(request, boxoffice, tab = None, checkpoint_form = None):
         'sales': get_sales(boxoffice),
         'checkpoint_form': checkpoint_form or create_checkpoint_form(boxoffice, None),
         'checkpoints': get_checkpoints(boxoffice),
-        'user_lookup_form': create_user_lookup_form(request.festival),
     }
     return render(request, 'boxoffice/main.html', context)
 
@@ -293,16 +284,6 @@ def render_checkpoint(request, boxoffice, checkpoint, checkpoint_form = None):
         'checkpoint': checkpoint,
     }
     return render(request, 'boxoffice/_main_checkpoints.html', context)
-
-def render_user(request, boxoffice, user = None, lookup_form = None):
-
-    # Render users tab content
-    context = {
-        'boxoffice': boxoffice,
-        'user_lookup_form': lookup_form or create_user_lookup_form(request.festival),
-        'lookup_user': user,
-    }
-    return render(request, 'boxoffice/_main_users.html', context)
 
 # View functions
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
@@ -701,31 +682,3 @@ def checkpoint_cancel(request, checkpoint_uuid):
 
     # Render checkpoint tab content
     return render_checkpoint(request, boxoffice, None)
-
-class UserAutoComplete(Select2QuerySetView):
-
-    def get_queryset(self):
-        qs = User.objects.filter(festival = self.request.festival, is_active = True)
-        if self.q:
-            qs = qs.filter(email__istartswith = self.q)
-        return qs
-
-    def get_result_label(self, item):
-        return item.email
-
-@require_POST
-@login_required
-@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
-def user_lookup(request, boxoffice_uuid):
-
-    # Get box office
-    boxoffice = get_object_or_404(BoxOffice, uuid = boxoffice_uuid)
-
-    # Get e-mail address and lookup user
-    user = None
-    form = create_user_lookup_form(request.festival, request.POST)
-    if form.is_valid():
-        user = form.cleaned_data['user']
-    
-    # Render user tab
-    return render_user(request, boxoffice, user = user, lookup_form = form)
