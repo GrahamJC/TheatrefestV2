@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 def get_sales(boxoffice):
 
     # Get last checkpoint for today
-    checkpoint = Checkpoint.objects.filter(boxoffice = boxoffice, created__gte = datetime.date.today()).order_by('created').last()
+    checkpoint = Checkpoint.objects.filter(boxoffice = boxoffice, created__date = timezone.now().date()).order_by('created').last()
     if not checkpoint:
         return Sale.objects.none()
 
@@ -51,7 +51,7 @@ def get_sales(boxoffice):
 def get_checkpoints(boxoffice):
 
     # Get today's checkpoints
-    return boxoffice.checkpoints.filter(created__gte = datetime.date.today()).order_by('-created')
+    return boxoffice.checkpoints.filter(created__date = timezone.now().date()).order_by('-created')
 
 def create_sale_start_form(post_data = None):
 
