@@ -104,7 +104,7 @@ LOGGING = {
     },
     "root": {
         "level": "INFO",
-        "handlers": ["theatrefest", "django"],
+        "handlers": ["theatrefest"],
     },
 }
 
