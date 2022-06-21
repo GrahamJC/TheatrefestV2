@@ -38,7 +38,7 @@
         function updateSalesTab(url, data) {
             $('#sales-tab-content').load(url, data, function(response, status, xhr) {
                 if (status != 'success') {
-                    $('#sales-tab-content').html('Sorry but there was an error. Please refresh the page and try again.');
+                    $('#sales-tab-content').html('Sorry but there was an error. Please try again.');
                 }
             });
         }
@@ -46,7 +46,7 @@
         function updateCheckpointsTab(url, data) {
             $('#checkpoints-tab-content').load(url, data, function(response, status, xhr) {
                 if (status != 'success') {
-                    $('#checkpoints-tab-content').html('Sorry but there was an error. Please refresh the page and try again.');
+                    $('#checkpoints-tab-content').html('Sorry but there was an error. Please try again.');
                 }
             });
         }
