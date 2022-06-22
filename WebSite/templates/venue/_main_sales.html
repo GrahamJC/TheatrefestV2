@@ -83,7 +83,7 @@
                     {% endif %}
                     {% if sale.fringers.count > 0 %}
                         <div class="row mb-2">
-                            <div class="col-9"><strong>{{ sale.fringers.count }} x Paper fringers (6 shows for &#163;18)</strong></div>
+                            <div class="col-9"><strong>{{ sale.fringers.count }} x Paper fringers ({{ sale.festival.fringer_shows }} shows for &#163;{{ sale.festival.fringer_price | floatformat:0 }})</strong></div>
                             <div class="col-3 text-right">&#163;{{ sale.fringer_cost }}</div>
                         </div>
                     {% endif %}

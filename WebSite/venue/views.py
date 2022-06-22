@@ -375,7 +375,7 @@ def performance(request, performance_uuid):
 
     # Delete any imcomplete sales for this venue
     for sale in venue.sales.filter(completed__isnull = True):
-        logger.info("Sale %s auto-cancelled", sale)
+        logger.info(f"Sale {sale.id} auto-cancelled")
         sale.delete()
 
     # Render page
@@ -409,7 +409,7 @@ def performance_open(request, performance_uuid):
             notes = open_form.cleaned_data['notes'],
         )
         checkpoint.save()
-        logger.info("Open checkpoint completed for %s (%s)", performance.show.name, performance)
+        logger.info(f"Open checkpoint created at {venue.name} for {performance.show.name} on {performance.date} at {performance.time}")
         open_form = None
 
     # Render page
@@ -437,7 +437,7 @@ def checkpoint_update_open(request, checkpoint_uuid):
         # Update checkpoint
         checkpoint.notes = open_form.cleaned_data['notes']
         checkpoint.save()
-        logger.info("Open checkpoint updated for {%s} on {%s}", performance.show.name, performance)
+        logger.info(f"Open checkpoint updated at {venue.name} for {performance.show.name} on {performance.date} at {performance.time}")
         messages.success(request, "Checkpoint updated")
         open_form = None
 
@@ -476,7 +476,7 @@ def performance_close(request, performance_uuid):
             notes = close_form.cleaned_data['notes'],
         )
         checkpoint.save()
-        logger.info("Close checkpoint completed for {%s} on {%s}", performance.show.name, performance)
+        logger.info(f"Close checkpoint created at {venue.name} for {performance.show.name} on {performance.date} at {performance.time}")
         close_form = None
 
     # Render page
@@ -508,7 +508,7 @@ def checkpoint_update_close(request, checkpoint_uuid):
         # Update checkpoint
         checkpoint.notes = close_form.cleaned_data['notes']
         checkpoint.save()
-        logger.info("Close checkpoint updated for {%s} on {%s}", performance.show.name, performance)
+        logger.info(f"Close checkpoint updated at {venue.name} for {performance.show.name} on {performance.date} at {performance.time}")
         messages.success(request, "Checkpoint updated")
         close_form = None
 
@@ -573,7 +573,7 @@ def sale_start(request, performance_uuid):
             customer = customer,
         )
         sale.save()
-        logger.info("Sale %s started", sale)
+        logger.info(f"Sale {sale.id} ({sale.customer}) started at {venue.name} for {performance.show.name} on {performance.date} at {performance.time}")
         start_form = None
 
     # Render sales tab content
@@ -605,13 +605,13 @@ def sale_update(request, performance_uuid, sale_uuid):
 
             # Adjust ticket numbers
             for ticket_type in sale_form.ticket_types:
-                form_tickets = sale_form.cleaned_data[SaleForm.ticket_field_name(ticket_type)]
-                while sale.tickets.filter(description = ticket_type.name).count() > form_tickets:
-                    sale_ticket = sale.tickets.filter(description = ticket_type.name).last()
-                    logger.info("Sale %s ticket deleted: %s", sale, sale_ticket)
-                    sale_ticket.delete()
-                while sale.tickets.filter(description = ticket_type.name).count() < form_tickets:
-                    new_ticket = Ticket(
+                quantity = sale_form.cleaned_data[SaleForm.ticket_field_name(ticket_type)]
+                while sale.tickets.filter(description = ticket_type.name).count() > quantity:
+                    ticket = sale.tickets.filter(description = ticket_type.name).last()
+                    logger.info(f"{ticket_type.name} ticket {ticket.id} removed from sale {sale.id}")
+                    ticket.delete()
+                while sale.tickets.filter(description = ticket_type.name).count() < quantity:
+                    ticket = Ticket(
                         sale = sale,
                         user = sale.customer_user,
                         performance = performance,
@@ -619,15 +619,15 @@ def sale_update(request, performance_uuid, sale_uuid):
                         cost = ticket_type.price,
                         payment = ticket_type.payment,
                     )
-                    new_ticket.save()
-                    logger.info("Sale %s ticket aded: %s", sale, new_ticket)
+                    ticket.save()
+                    logger.info(f"{ticket_type.name} ticket {ticket.id} added to sale {sale.id}")
 
             # Update eFringers
             for efringer in sale_form.efringers:
                 form_is_used = sale_form.cleaned_data[SaleForm.efringer_field_name(efringer)]
-                sale_ticket = sale.tickets.filter(fringer = efringer).first()
-                if form_is_used and not sale_ticket:
-                    new_ticket = Ticket(
+                ticket = sale.tickets.filter(fringer = efringer).first()
+                if form_is_used and not ticket:
+                    ticket = Ticket(
                         sale = sale,
                         user = sale.customer_user,
                         performance = performance,
@@ -636,19 +636,19 @@ def sale_update(request, performance_uuid, sale_uuid):
                         cost = 0,
                         payment = efringer.payment,
                     )
-                    new_ticket.save()
-                    logger.info("Sale %s ticket aded: %s", sale, new_ticket)
-                elif sale_ticket and not form_is_used:
-                    logger.info("Sale %s ticket deleted: %s", sale, sale_ticket)
-                    sale_ticket.delete()
+                    ticket.save()
+                    logger.info(f"eFringer {efringer.name} ticket {ticket.id} added to sale {sale.id}")
+                elif ticket and not form_is_used:
+                    logger.info(f"eFringer {efringer.name} ticket {ticket.id} removed from sale {sale.id}")
+                    ticket.delete()
 
 
             # Update volunteer complimentary tickets
             if sale.customer_user and sale.customer_user.is_volunteer:
-                sale_ticket = sale.tickets.filter(user = sale.customer_user, description = 'Volunteer').first()
+                ticket = sale.tickets.filter(user = sale.customer_user, description = 'Volunteer').first()
                 use_volunteer = sale_form.cleaned_data['volunteer']
-                if use_volunteer and not sale_ticket:
-                    new_ticket = Ticket(
+                if use_volunteer and not ticket:
+                    ticket = Ticket(
                         sale = sale,
                         user = sale.customer_user,
                         performance = performance,
@@ -656,40 +656,48 @@ def sale_update(request, performance_uuid, sale_uuid):
                         cost = 0,
                         payment = 0,
                     )
-                    new_ticket.save()
-                    logger.info("Sale %s ticket added: %s", sale, new_ticket)
-                elif sale_ticket and not use_volunteer:
-                    logger.info("Sale %s ticket deleted: %s", sale, sale_ticket)
-                    sale_ticket.delete()
+                    ticket.save()
+                    logger.info(f"Volunteer ticket {ticket.id} added to sale {sale.id}")
+                elif ticket and not use_volunteer:
+                    logger.info(f"Volunteer ticket {ticket.id} removed from sale {sale.id}")
+                    ticket.delete()
 
             # Update buttons
-            sale.buttons = sale_form.cleaned_data['buttons']
-            sale.save()
+            buttons = sale_form.cleaned_data['buttons']
+            if sale.buttons != buttons:
+                sale.buttons = buttons
+                sale.save()
+                logger.info(f"Buttons updated to {buttons} for sale {sale.id}")
 
             # Update paper fringers
-            form_fringers = sale_form.cleaned_data['fringers']
-            while (sale.fringers.count() or 0) > form_fringers:
-                sale.fringers.first().delete()
-            while (sale.fringers.count() or 0) < form_fringers:
-                fringer = Fringer(
-                    description = '6 shows for £18',
-                    shows = 6,
-                    cost = 18,
-                    sale = sale,
-                )
-                fringer.save()
+            fringers = sale_form.cleaned_data['fringers']
+            if sale.fringers != fringers:
+                while (sale.fringers.count() or 0) > fringers:
+                    fringer = sale.fringers.first()
+                    logger.info(f"Fringer {fringer.id} removed from sale {sale.id}")
+                    fringer.delete()
+                while (sale.fringers.count() or 0) < fringers:
+                    fringer = Fringer(
+                        description = f'{request.festival.fringer_shows} shows for £{request.festival.fringer_price:.0f}',
+                        shows = request.festival.fringer_shows,
+                        cost = request.festival.fringer_price,
+                        sale = sale,
+                    )
+                    fringer.save()
+                    logger.info(f"Fringer {fringer.id} added to sale {sale.id}")
 
             # If the sale is completed update the amount
             if sale.completed:
                 sale.amount = sale.total_cost
                 sale.save()
+                logger.warning(f"Completed sale {sale.id} updated")
 
             # Destroy sale form
             sale_form = None
 
         # Insufficient tickets
         else:
-            logger.info("Sale %s tickets not available (%d requested, %d available): %s", sale, requested_tickets, available_tickets, performance)
+            logger.info(f"Sale {sale.id} insufficient tickets ({requested_tickets} requested, {available_tickets} available)")
             sale_form.add_error(None, f"There are only {available_tickets} tickets available for this performance.")
 
     # Render sales tab content

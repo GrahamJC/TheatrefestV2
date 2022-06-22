@@ -93,26 +93,35 @@
         });
 
         function updateSalesTab(url, data) {
+            $('#tf-alerts').empty();
+            $('body').css({ 'cursor': 'wait' });
             $('#sales-tab-content').load(url, data, function(response, status, xhr) {
                 if (status != 'success') {
-                    $('#sales-tab-content').html('Sorry but there was an error. Please refresh the page and try again.');
+                    $('#tf-alerts').append('<div class="alert alert-danger"><a class="close" data-dismiss="alert">x</a><span>Sorry but there was an error. Please try again.</span></div>');
                 }
+                $('body').css({ 'cursor': 'default' });
             });
         }
 
         function updateTicketsTab(url, data) {
+            $('#tf-alerts').empty();
+            $('body').css({ 'cursor': 'wait' });
             $('#tickets-tab-content').load(url, data, function(response, status, xhr) {
                 if (status != 'success') {
-                    $('#tickets-tab-content').html('Sorry but there was an error. Please refresh the page and try again.');
+                    $('#tf-alerts').append('<div class="alert alert-danger"><a class="close" data-dismiss="alert">x</a><span>Sorry but there was an error. Please try again.</span></div>');
                 }
+                $('body').css({ 'cursor': 'default' });
             });
         }
 
         function updateInfoTab(url, data) {
+            $('#tf-alerts').empty();
+            $('body').css({ 'cursor': 'wait' });
             $('#info-tab-content').load(url, data, function(response, status, xhr) {
                 if (status != 'success') {
-                    $('#info-tab-content').html('Sorry but there was an error. Please refresh the page and try again.');
+                    $('#tf-alerts').append('<div class="alert alert-danger"><a class="close" data-dismiss="alert">x</a><span>Sorry but there was an error. Please try again.</span></div>');
                 }
+                $('body').css({ 'cursor': 'default' });
             });
         }
 
@@ -133,7 +142,7 @@
                     $('#token_' + ticket_uuid).prop('checked', response.token_issued);
                 },
                 error: function(response) {
-                    $('#tf-alerts').append('<div class="alert alert-error"><a class="close" data-dismiss="alert">x</a><span>An error occured.</span></div>');
+                    $('#tf-alerts').append('<div class="alert alert-error"><a class="close" data-dismiss="alert">x</a><span>Sorry but there was an error. Please try again.</span></div>');
                 }
             });
         }

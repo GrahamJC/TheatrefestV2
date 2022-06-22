@@ -303,7 +303,7 @@ def main(request, boxoffice_uuid, tab = None):
 
     # Cancel any incomplete box-office sales
     for sale in boxoffice.sales.filter(user_id = request.user.id, completed__isnull = True):
-        logger.info("Incomplete box office sale %s (%s) at %s auto-cancelled", sale.id, sale.customer, boxoffice.name)
+        logger.info(f"Incomplete sale {sale.id} auto-cancelled at {boxoffice.name}")
         sale.delete()
 
     # Render main page
@@ -330,27 +330,10 @@ def sale_start(request, boxoffice_uuid):
         )
         sale.save()
         form = None
-        logger.info("Sale %s started", sale)
+        logger.info(f"Sale {sale.id} ({sale.customer}) started at {boxoffice.name}")
 
     # Render sales tab content
     return render_sale(request, boxoffice, sale, start_form = form)
-
-@require_GET
-@login_required
-@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
-def show_performances(request, show_uuid):
-
-    show = get_object_or_404(Show, uuid = show_uuid)
-    html = '<option value="">-- Select performance --</option>'
-    for performance in show.performances.order_by('date', 'time'):
-        dt = datetime.datetime.combine(performance.date, performance.time)
-        # Ok to use naive datetimes to calculate differenc since both are local
-        mins_remaining = (dt - datetime.datetime.now()).total_seconds() / 60
-        dt = arrow.get(dt)
-        html += f'<option value="{performance.uuid}">{dt:ddd, MMM D} at {dt:h:mm a} ({performance.tickets_available} available)</option>'
-        #if mins_remaining >= -30:
-            #html += f'<option disabled value="{performance.uuid}">{dt:ddd, MMM D} at {dt:h:mm a} ({performance.tickets_available} available - venue only)</option>'
-    return HttpResponse(html)
 
 @require_GET
 @login_required
@@ -409,7 +392,7 @@ def sale_tickets_add(request, sale_uuid, performance_uuid):
                 quantity = form.cleaned_data[SaleTicketsForm.ticket_field_name(ticket_type)]
                 if quantity > 0:
                     for n in range(quantity):
-                        new_ticket = Ticket(
+                        ticket = Ticket(
                             sale = sale,
                             user = sale.customer_user,
                             performance = performance,
@@ -417,8 +400,8 @@ def sale_tickets_add(request, sale_uuid, performance_uuid):
                             cost = ticket_type.price,
                             payment = ticket_type.payment,
                         )
-                        new_ticket.save()
-                    logger.info(f"{quantity} {ticket_type.name} tickets for {performance.show.name} on {performance.date} at {performance.time} added to sale {sale.id}")
+                        ticket.save()
+                        logger.info(f"{ticket_type.name} ticket {ticket.id} for {performance.show.name} on {performance.date} at {performance.time} added to sale {sale.id}")
 
             # Update eFringers
             for efringer in form.efringers:
@@ -433,7 +416,7 @@ def sale_tickets_add(request, sale_uuid, performance_uuid):
                         payment = efringer.payment,
                     )
                     new_ticket.save()
-                    logger.info(f"eFringer {efringer.name} ticket for {performance.show.name} on {performance.date} at {performance.time} added to sale {sale.id}")
+                    logger.info(f"eFringer {efringer.name} ticket {ticket.id} for {performance.show.name} on {performance.date} at {performance.time} added to sale {sale.id}")
 
             # If sale is complete then update the total
             if sale.completed:
@@ -469,23 +452,27 @@ def sale_extras_update(request, sale_uuid):
 
         # Update buttons
         buttons = form.cleaned_data['buttons']
-        sale.buttons = buttons
-        sale.save()
-        logger.info(f"Sale {sale.id} buttons updated to {buttons}")
+        if sale.buttons != buttons:
+            sale.buttons = buttons
+            sale.save()
+            logger.info(f"Buttons updated to {buttons} for {sale.id}")
 
         # Update paper fringers
         fringers = form.cleaned_data['fringers']
-        while (sale.fringers.count() or 0) > fringers:
-            sale.fringers.first().delete()
-        while (sale.fringers.count() or 0) < fringers:
-            fringer = Fringer(
-                description = f'{request.festival.fringer_shows} shows for £{request.festival.fringer_price:.0f}',
-                shows = request.festival.fringer_shows,
-                cost = request.festival.fringer_price,
-                sale = sale,
-            )
-            fringer.save()
-        logger.info(f"Sale {sale.id} fringers updated to {fringers}")
+        if sale.fringers != fringers:
+            while (sale.fringers.count() or 0) > fringers:
+                fringer = sale.fringers.first()
+                logger.info(f"Fringer {fringer.id} removed from {sale.id}")
+                fringer.delete()
+            while (sale.fringers.count() or 0) < fringers:
+                fringer = Fringer(
+                    description = f'{request.festival.fringer_shows} shows for £{request.festival.fringer_price:.0f}',
+                    shows = request.festival.fringer_shows,
+                    cost = request.festival.fringer_price,
+                    sale = sale,
+                )
+                fringer.save()
+                logger.info(f"Fringer {fringer.id} added to {sale.id}")
 
         # If sale is complete then update the total
         if sale.completed:
@@ -508,7 +495,7 @@ def sale_remove_performance(request, sale_uuid, performance_uuid):
     performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
     tickets = 0
     for ticket in sale.tickets.filter(performance = performance):
-        logger.info(f"{ticket.description} ticket for {performance.show.name} on {performance.date} at {performance.time} removed from sale {sale.id}")
+        logger.info(f"{ticket.description} ticket {ticket.id} for {performance.show.name} on {performance.date} at {performance.time} removed from sale {sale.id}")
         ticket.delete()
         tickets += 1
     if sale.completed:
@@ -524,7 +511,7 @@ def sale_remove_ticket(request, sale_uuid, ticket_uuid):
     ticket = get_object_or_404(Ticket, uuid = ticket_uuid)
     assert ticket.sale == sale
     performance = ticket.performance
-    logger.info(f"{ticket.description} ticket for {performance.show.name} on {performance.date} at {performance.time} removed from sale {sale.id}")
+    logger.info(f"{ticket.description} ticket {ticket.id} for {performance.show.name} on {performance.date} at {performance.time} removed from sale {sale.id}")
     ticket.delete()
     if sale.completed:
         logger.warning(f"Completed sale {sale.id} updated")
