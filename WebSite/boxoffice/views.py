@@ -558,7 +558,7 @@ def sale_cancel(request, sale_uuid):
         logger.info(f"Sale {sale.id} cancelled")
         sale.delete()
         sale = None
-    return render_sale(request, boxoffice, sale)
+    return render_sale(request, boxoffice, None)
 
 @require_GET
 @login_required

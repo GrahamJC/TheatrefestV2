@@ -36,18 +36,24 @@
     <script language="javascript">
 
         function updateSalesTab(url, data) {
+            $('#tf-alerts').empty();
+            $('body').css({ 'cursor': 'wait' });
             $('#sales-tab-content').load(url, data, function(response, status, xhr) {
                 if (status != 'success') {
-                    $('#sales-tab-content').html('Sorry but there was an error. Please try again.');
+                    $('#tf-alerts').append('<div class="alert alert-danger"><a class="close" data-dismiss="alert">x</a><span>Sorry but there was an error. Please try again.</span></div>');
                 }
+                $('body').css({ 'cursor': 'default' });
             });
         }
 
         function updateCheckpointsTab(url, data) {
+            $('#tf-alerts').empty();
+            $('body').css({ 'cursor': 'wait' });
             $('#checkpoints-tab-content').load(url, data, function(response, status, xhr) {
                 if (status != 'success') {
-                    $('#checkpoints-tab-content').html('Sorry but there was an error. Please try again.');
+                    $('#tf-alerts').append('<div class="alert alert-danger"><a class="close" data-dismiss="alert">x</a><span>Sorry but there was an error. Please try again.</span></div>');
                 }
+                $('body').css({ 'cursor': 'default' });
             });
         }
 

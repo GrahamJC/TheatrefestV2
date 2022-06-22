@@ -102,7 +102,7 @@
                 <h6 class="card-header"><i class="fa fa-user-circle {% if sale.customer_user %}text-primary{% endif %}"></i> {{ sale.customer }}<div class="float-right">Sale: {{ sale.id }}</div></h6>
                 <div class="card-body">
                     {% if sale.completed %}
-                        <div class="alert alert-danger">
+                        <div class="alert alert-success">
                             <p>This sale is now complete but you can still make changes to correct mistakes.</p>
                             <p>Select Close to begin a new sale.</p>
                         </div>
@@ -244,7 +244,7 @@
             var url = '{% url "boxoffice:sale_email" sale.uuid %}'
             $('#sale-email-status').load(url, data, function(response, status, xhr) {
                 if (status != 'success') {
-                    $('#sale-email-status').html('<div class="alert alert-danger">Sorry but there was an error. Please refresh the page and try again.</div>');
+                    $('#sale-email-status').html('<div class="alert alert-danger">Sorry but there was an error. Please try again.</div>');
                 }
             });
         }
