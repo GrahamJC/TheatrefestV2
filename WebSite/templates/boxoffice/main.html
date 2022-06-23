@@ -8,6 +8,9 @@
 
     <div class="nav nav-tabs nav-justified mb-3">
         <a id="sales-tab" class="nav-item nav-link {% if tab == 'sales' %}active{% endif %}" href="#sales-tab-content" data-toggle="tab">Sales</a>
+        {% if request.user.is_admin %}
+            <a id="refunds-tab" class="nav-item nav-link {% if tab == 'refunds' %}active{% endif %}" href="#refunds-tab-content" data-toggle="tab">Refunds</a>
+        {% endif %}
         <a id="checkpoints-tab" class="nav-item nav-link {% if tab == 'checkpoints' %}active{% endif %}" href="#checkpoints-tab-content" data-toggle="tab">Checkpoints</a>
     </div>
 
@@ -22,6 +25,18 @@
                 </div>
             {% endif %}
         </div>
+
+        {% if request.user.is_admin %}
+            <div id="refunds-tab-content" class="tab-pane {% if tab == 'refunds' %}active{% endif %}">
+                {% if checkpoints %}
+                    {% include 'boxoffice/_main_refunds.html' %}
+                {% else %}
+                    <div class="alert alert-info">
+                        You cannot enter refunds until you have completed the first checkpoint for today.
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
 
         <div id="checkpoints-tab-content" class="tab-pane {% if tab == 'checkpoints' %}active{% endif %}">
             {% include 'boxoffice/_main_checkpoints.html' %}
@@ -46,6 +61,19 @@
             });
         }
 
+        {% if request.user.is_admin %}
+            function updateRefundsTab(url, data) {
+                $('#tf-alerts').empty();
+                $('body').css({ 'cursor': 'wait' });
+                $('#refunds-tab-content').load(url, data, function(response, status, xhr) {
+                    if (status != 'success') {
+                        $('#tf-alerts').append('<div class="alert alert-danger"><a class="close" data-dismiss="alert">x</a><span>Sorry but there was an error. Please try again.</span></div>');
+                    }
+                    $('body').css({ 'cursor': 'default' });
+                });
+            }
+        {% endif %}
+        
         function updateCheckpointsTab(url, data) {
             $('#tf-alerts').empty();
             $('body').css({ 'cursor': 'wait' });

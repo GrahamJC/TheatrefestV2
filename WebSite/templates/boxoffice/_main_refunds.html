@@ -1,0 +1,196 @@
+{% load crispy_forms_tags %}
+{% load widget_tweaks %}
+
+<style type="text/css">
+    div.alert-danger ul {
+        margin-bottom: 0;
+        list-style-type: none;
+        padding-left: 0;
+    }
+</style>
+
+<div class="row">
+    <div class="col-6">
+        {% if not refund %}
+            <div class="card mb-2">
+                <h6 class="card-header">New Refund</h6>
+                <div class="card-body">
+                    {% crispy refund_start_form %}
+                </div>
+            </div>
+            <div class="card">
+                <h6 class="card-header">Refunds Since Last Checkpoint</h6>
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <thhead>
+                            <tr>
+                                <th>Refund No</th>
+                                <th>Customer</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thhead>
+                        <tbody>
+                            {% for refund in refunds %}
+                                <tr>
+                                    <td><a href="#" onclick="updateRefundsTab('{% url "boxoffice:refund_select" refund.uuid %}')">{{ refund.id }}</a></td>
+                                    <td>{{ refund.customer }}</td>
+                                    <td>&#163;{{ refund.amount }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% else %}
+            <div class="card mb-2">
+                <h6 class="card-header">Add Tickets</h6>
+                <div class="card-body">
+                    <div class="row form-group">
+                        <label class="col-4 form-control-label">Show</label>
+                        <div class="col-8">
+                            <select id="refund-show-select" class="form-control" onchange="refundSelectShow(this.value)">
+                                <option value="" {% if not selected_show %}selected{%endif %}>-- Select show --</option>
+                                {% for s in shows %}
+                                    <option value="{{ s.uuid }}" {% if s == selected_show %}selected{%endif %}>{{ s.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    {% if performances %}
+                        <div class="row form-group">
+                            <label class="col-4 form-control-label">Performance</label>
+                            <div class="col-8">
+                                <select id="refund-performance-select" class="form-control" onchange="refundSelectPerformance(this.value)">
+                                    <option value="" {% if not selected_performance %}selected{%endif %}>-- Select performance --</option>
+                                    {% for p in performances %}
+                                        <option value="{{ p.uuid }}" {% if p == selected_performance %}selected{% endif %}>{{ p.date | date:'D, j M' }} at {{ p.time | time:'h:ip' }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    {% endif %}
+                    {% if selected_performance %}
+                        {% if refund_tickets %}
+                            <table class="table table-striped">
+                                <thead>
+                                    <th>No</th>
+                                    <th>Customer</th>
+                                    <th>Type</th>
+                                    <th></th>
+                                </thead>
+                                <tbody>
+                                    {% for ticket in refund_tickets %}
+                                        <tr>
+                                            <td>{{ ticket.id }}</td>
+                                            <td>{{ ticket.sale.customer }}</td>
+                                            <td>{{ ticket.description }}</td>
+                                            <td><a href="#" onclick="updateRefundsTab('{% url "boxoffice:refund_add_ticket" refund.uuid ticket.uuid %}')">Add</a></td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
+                        <div class="alert alert-info">
+                            There are no refundable tickets for this performance.
+                        </div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="col-6">
+        {% if not refund %}
+            <div class="alert alert-info">
+                <p>To start a new refund enter the customer name or e-mail address and click Start.</p>
+            </div>
+        {% else %}
+            <div class="card">
+                <h6 class="card-header">{{ refund.customer }}<div class="float-right">Refund: {{ refund.id }}</div></h6>
+                <div class="card-body">
+                    {% if refund.completed %}
+                        <div class="alert alert-success">
+                            <p>This refund is now complete but you can still make changes to correct mistakes.</p>
+                            <p>Select Close to begin a new refund.</p>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <p>Once the customer has been refunded select Complete to finish the refund.</p>
+                            <p>If you select Cancel (or leave this page) the refund will be cancelled and tickets will remain valid.</p>
+                        </div>
+                    {% endif %}
+                    {% for performance in refund.performances %}
+                        <div class="row mt-2"><div class="col-12"><strong>{{ performance.show }}</strong></div></div>
+                        <div class="row"><div class="col-12">{{ performance.date | date:'D, j M' }} at {{ performance.time | time:'h:ia' }}</div></div>
+                        {% for ticket in performance.tickets %}
+                            <div class="row">
+                                <div class="col-1"></div>
+                                <div class="col-2">{{ ticket.id }}</div>
+                                <div class="col-4">{{ ticket.description }}</div>
+                                <div class="col-2 text-right">{% if ticket.cost %}&#163;{{ ticket.cost }}{% endif %}</div>
+                                <div class="col-3">
+                                    <a href="#" onclick="updateRefundsTab('{% url "boxoffice:refund_remove_ticket" refund.uuid ticket.uuid %}')">Remove</a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+                    <div class="row mt-2">
+                        <div class="col-9"><strong>Total</strong></div>
+                        <div class="col-3 text-right">{% if refund %}&#163;{{ refund.total_cost }}{% endif %}</div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-12">
+                            {% if refund.completed %}
+                                <div class="float-right">
+                                    <a class="btn btn-secondary" href="#" onclick="updateRefundsTab('{% url "boxoffice:refund_close" refund.uuid %}')">Close</a>
+                                </div>
+                            {% else %}
+                                <a class="btn btn-primary" href="#" onclick="updateRefundsTab('{% url "boxoffice:refund_complete" refund.uuid %}')">Complete</a>
+                                <div class="float-right">
+                                    <a class="btn btn-secondary" href="#" onclick="updateRefundsTab('{% url "boxoffice:refund_cancel" refund.uuid %}')">Cancel</a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script language="javascript">
+
+    {% if not refund %}
+
+        function refundStart() {
+            var postData = $('#refund-start-form').serializeArray();
+            updateRefundsTab('{% url "boxoffice:refund_start" boxoffice.uuid %}', postData);
+        }
+
+    {% else %}
+
+        function refundSelectShow(refundUuid) {
+            url = '{% url "boxoffice:refund_show_select" refund.uuid "00000000-0000-0000-0000-000000000000" %}';
+            if (refundUuid) {
+                url = url.replace('00000000-0000-0000-0000-000000000000', refundUuid);
+            }
+            updateRefundsTab(url);
+        }
+
+        {% if selected_show %}
+            function refundSelectPerformance(performanceUuid) {
+                if (performanceUuid) {
+                    url = '{% url "boxoffice:refund_performance_select" refund.uuid "00000000-0000-0000-0000-000000000000" %}';
+                    url = url.replace('00000000-0000-0000-0000-000000000000', performanceUuid);
+                    updateRefundsTab(url);
+                }
+                else {
+                    refundSelectShow('{{ selected_show.uuid }}');
+                }
+            }
+        {% endif %}
+
+    {% endif %}
+
+</script>

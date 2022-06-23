@@ -15,6 +15,13 @@ class SaleStartForm(forms.Form):
     customer.widget.attrs['placeholder'] = '-- Enter customer name or e-mail --'
 
 
+class RefundStartForm(forms.Form):
+
+    customer = forms.CharField(label = 'Customer', required = True, widget = forms.TextInput(attrs = { 'style': 'width: 100%' }))
+    customer.widget.attrs['placeholder'] = '-- Enter customer name or e-mail --'
+    reason = forms.CharField(label = 'Reason', required = False, widget = forms.Textarea(attrs = { 'style': 'width: 100%; height: 200px' }))
+
+
 class SaleTicketsForm(forms.Form):
 
     def __init__(self, ticket_types, efringers, *args, **kwargs):
@@ -22,7 +29,7 @@ class SaleTicketsForm(forms.Form):
         self.efringers = efringers
         super().__init__(*args, **kwargs)
         for tt in self.ticket_types:
-            label = 'Fringer (use)' if tt.name == 'Fringer' else tt.name
+            label = 'Paper fringer (use)' if tt.name == 'Fringer' else tt.name
             self.fields[self.ticket_field_name(tt)] = forms.IntegerField(label = label, required = True, initial = 0, min_value = 0, widget = forms.NumberInput(attrs = { 'style': 'width: 75px' }))
         if efringers:
             for ef in self.efringers:
@@ -48,7 +55,7 @@ class SaleTicketsForm(forms.Form):
 class SaleExtrasForm(forms.Form):
 
     buttons = forms.IntegerField(label = 'Badges', required = True, initial = 0, min_value = 0, widget = forms.NumberInput(attrs = { 'style': 'width: 75px' }))
-    fringers = forms.IntegerField(label = 'Fringers (buy)', required = True, initial = 0, min_value = 0, widget = forms.NumberInput(attrs = { 'style': 'width: 75px' }))
+    fringers = forms.IntegerField(label = 'Paper fringers (buy)', required = True, initial = 0, min_value = 0, widget = forms.NumberInput(attrs = { 'style': 'width: 75px' }))
 
 
 class SaleEMailForm(forms.Form):

@@ -29,9 +29,9 @@ from dal.autocomplete import Select2QuerySetView
 
 from core.models import User
 from program.models import Show, ShowPerformance
-from tickets.models import BoxOffice, Sale, TicketType, Ticket, Fringer, Checkpoint
+from tickets.models import BoxOffice, Sale, Refund, TicketType, Ticket, Fringer, Checkpoint
 
-from .forms import CheckpointForm, SaleStartForm, SaleTicketsForm, SaleExtrasForm, SaleEMailForm
+from .forms import CheckpointForm, SaleStartForm, SaleTicketsForm, SaleExtrasForm, SaleEMailForm, RefundStartForm
 
 # Logging
 import logging
@@ -47,6 +47,16 @@ def get_sales(boxoffice):
 
     # Get sales since last checkpoint
     return boxoffice.sales.filter(created__gte = checkpoint.created).order_by('-id')
+
+def get_refunds(boxoffice):
+
+    # Get last checkpoint for today
+    checkpoint = Checkpoint.objects.filter(boxoffice = boxoffice, created__date = timezone.now().date()).order_by('created').last()
+    if not checkpoint:
+        return Refund.objects.none()
+
+    # Get refunds since last checkpoint
+    return boxoffice.refunds.filter(created__gte = checkpoint.created).order_by('-id')
 
 def get_checkpoints(boxoffice):
 
@@ -184,6 +194,23 @@ def create_sale_email_form(sale, post_data = None):
     # Return form
     return form
 
+def create_refund_start_form(post_data = None):
+
+    # Create form
+    form = RefundStartForm(data = post_data)
+
+    # Add crispy forms helper
+    form.helper = FormHelper()
+    form.helper.form_id = 'refund-start-form'
+    form.helper.layout = Layout(
+        Field('customer'),
+        Field('reason'),
+        Button('start', 'Start', css_class = 'btn-primary',  onclick = 'refundStart()'),
+    )
+
+    # Return form
+    return form
+
 def create_checkpoint_form(boxoffice, checkpoint, post_data = None):
 
     # Create form
@@ -231,6 +258,9 @@ def render_main(request, boxoffice, tab = None, checkpoint_form = None):
         'sale_extras_form': None,
         'sale': None,
         'sales': get_sales(boxoffice),
+        'refund_start_form': create_refund_start_form(),
+        'refund': None,
+        'refunds': get_refunds(boxoffice),
         'checkpoint_form': checkpoint_form or create_checkpoint_form(boxoffice, None),
         'checkpoints': get_checkpoints(boxoffice),
     }
@@ -274,6 +304,36 @@ def render_sale(request, boxoffice, sale = None, show = None, performance = None
         }
     return render(request, 'boxoffice/_main_sales.html', context)
 
+def render_refund(request, boxoffice, refund = None, show = None, performance = None, start_form = None):
+
+    # Show and performance must match
+    assert not performance or show == performance.show
+
+    # Check if there is an active refund 
+    if refund:
+
+        # Get refundable tickets
+        refund_tickets = None
+        if performance:
+            refund_tickets = performance.tickets.filter(sale__completed__isnull = False, refund__isnull = True).order_by('id')
+        context = {
+            'boxoffice': boxoffice,
+            'refund': refund,
+            'shows': Show.objects.filter(festival = request.festival, venue__is_ticketed = True),
+            'selected_show': show,
+            'performances': show.performances.order_by('date', 'time') if show else None,
+            'selected_performance': performance,
+            'refund_tickets': refund_tickets,
+            'refunds': get_refunds(boxoffice),
+        }
+    else:
+        context = {
+            'boxoffice': boxoffice,
+            'refund_start_form': start_form or create_refund_start_form(),
+            'refunds': get_refunds(boxoffice),
+        }
+    return render(request, 'boxoffice/_main_refunds.html', context)
+
 def render_checkpoint(request, boxoffice, checkpoint, checkpoint_form = None):
 
     # Render checkpoint tab content
@@ -301,10 +361,13 @@ def main(request, boxoffice_uuid, tab = None):
     # Get box office
     boxoffice = get_object_or_404(BoxOffice, uuid = boxoffice_uuid)
 
-    # Cancel any incomplete box-office sales
+    # Cancel any incomplete box-office sales and refunds
     for sale in boxoffice.sales.filter(user_id = request.user.id, completed__isnull = True):
         logger.info(f"Incomplete sale {sale.id} auto-cancelled at {boxoffice.name}")
         sale.delete()
+    for refund in boxoffice.refunds.filter(user_id = request.user.id, completed__isnull = True):
+        logger.info(f"Incomplete refund {refund.id} auto-cancelled at {boxoffice.name}")
+        refund.delete()
 
     # Render main page
     return render_main(request, boxoffice, tab)
@@ -493,11 +556,9 @@ def sale_extras_update(request, sale_uuid):
 def sale_remove_performance(request, sale_uuid, performance_uuid):
     sale = get_object_or_404(Sale, uuid = sale_uuid)
     performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
-    tickets = 0
     for ticket in sale.tickets.filter(performance = performance):
         logger.info(f"{ticket.description} ticket {ticket.id} for {performance.show.name} on {performance.date} at {performance.time} removed from sale {sale.id}")
         ticket.delete()
-        tickets += 1
     if sale.completed:
         logger.warning(f"Completed sale {sale.id} updated")
     return render_sale(request, sale.boxoffice, sale)
@@ -588,6 +649,142 @@ def sale_email(request, sale_uuid):
 
     # Return status
     return HttpResponse('<div class="alert alert-danger">Invalid e-mail address.</div>')
+
+# Refunds
+@require_POST
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+@transaction.atomic
+def refund_start(request, boxoffice_uuid):
+    boxoffice = get_object_or_404(BoxOffice, uuid = boxoffice_uuid)
+    refund = None
+    form = create_refund_start_form(request.POST)
+    if form.is_valid():
+
+        # Create new refund
+        customer = form.cleaned_data['customer']
+        reason = form.cleaned_data['reason']
+        refund = Refund(
+            festival = boxoffice.festival,
+            boxoffice = boxoffice,
+            user = request.user,
+            customer = customer,
+            reason = reason
+        )
+        refund.save()
+        form = None
+        logger.info(f"Refund {refund.id} ({refund.customer}) started at {boxoffice.name}")
+
+    # Render refunds tab content
+    return render_refund(request, boxoffice, refund, start_form = form)
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+def refund_show_select(request, refund_uuid, show_uuid = None):
+
+    # Get refund, box office and show
+    refund = get_object_or_404(Refund, uuid = refund_uuid)
+    boxoffice = refund.boxoffice
+    assert boxoffice
+    show = None
+    if show_uuid != uuid.UUID('00000000-0000-0000-0000-000000000000'):
+        show = get_object_or_404(Show, uuid = show_uuid)
+
+    # Render refunds tab content
+    return render_refund(request, boxoffice, refund, show = show)
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+def refund_performance_select(request, refund_uuid, performance_uuid):
+
+    # Get refund, box office, show and performance
+    refund = get_object_or_404(Refund, uuid = refund_uuid)
+    boxoffice = refund.boxoffice
+    assert boxoffice
+    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+
+    # Render refunds tab content
+    return render_refund(request, boxoffice, refund, show = performance.show, performance = performance)
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+@transaction.atomic
+def refund_add_ticket(request, refund_uuid, ticket_uuid):
+    refund = get_object_or_404(Refund, uuid = refund_uuid)
+    ticket = get_object_or_404(Ticket, uuid = ticket_uuid)
+    assert ticket.refund == None
+    performance = ticket.performance
+    logger.info(f"{ticket.description} ticket {ticket.id} for {performance.show.name} on {performance.date} at {performance.time} added to refund {refund.id}")
+    ticket.refund = refund
+    ticket.save()
+    if refund.completed:
+        logger.warning(f"Completed refund {refund.id} updated")
+    return render_refund(request, refund.boxoffice, refund, show = ticket.performance.show, performance = ticket.performance)
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+@transaction.atomic
+def refund_remove_ticket(request, refund_uuid, ticket_uuid):
+    refund = get_object_or_404(Refund, uuid = refund_uuid)
+    ticket = get_object_or_404(Ticket, uuid = ticket_uuid)
+    assert ticket.refund == refund
+    performance = ticket.performance
+    logger.info(f"{ticket.description} ticket {ticket.id} for {performance.show.name} on {performance.date} at {performance.time} removed from refund {refund.id}")
+    ticket.refund = None
+    ticket.save()
+    if refund.completed:
+        logger.warning(f"Completed refund {refund.id} updated")
+    return render_refund(request, refund.boxoffice, refund, show = performance.show, performance = performance)
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+@transaction.atomic
+def refund_complete(request, refund_uuid):
+    refund = get_object_or_404(Refund, uuid = refund_uuid)
+    if refund.completed:
+        logger.error(f"Attempt to complete refund {refund.id} which is already completed")
+    else:
+        refund.amount = refund.total_cost
+        refund.completed = timezone.now()
+        refund.save()
+        logger.info(f"Refund {refund.id} completed")
+    return render_refund(request, refund.boxoffice, refund)
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+@transaction.atomic
+def refund_cancel(request, refund_uuid):
+    refund = get_object_or_404(Refund, uuid = refund_uuid)
+    boxoffice = refund.boxoffice
+    if refund.completed:
+        logger.error(f"Attempt to cancel refund {refund.id} which is already completed")
+    else:
+        logger.info(f"Refund {refund.id} cancelled")
+        refund.delete()
+        refund = None
+    return render_refund(request, boxoffice, None)
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+@transaction.atomic
+def refund_close(request, refund_uuid):
+    refund = get_object_or_404(Refund, uuid = refund_uuid)
+    return render_refund(request, refund.boxoffice, None)
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+@transaction.atomic
+def refund_select(request, refund_uuid):
+    refund = get_object_or_404(Refund, uuid = refund_uuid)
+    return render_refund(request, refund.boxoffice, refund)
 
 # Checkpoints
 @require_POST

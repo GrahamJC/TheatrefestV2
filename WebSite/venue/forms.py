@@ -35,7 +35,7 @@ class SaleStartForm(forms.Form):
 class SaleForm(forms.Form):
 
     buttons = forms.IntegerField(label = 'Badges', required = True, initial = 0, min_value = 0, widget = forms.NumberInput(attrs = { 'style': 'width: 75px' }))
-    fringers = forms.IntegerField(label = 'Fringers (buy)', required = True, initial = 0, min_value = 0, widget = forms.NumberInput(attrs = { 'style': 'width: 75px' }))
+    fringers = forms.IntegerField(label = 'Paper fringers (buy)', required = True, initial = 0, min_value = 0, widget = forms.NumberInput(attrs = { 'style': 'width: 75px' }))
     volunteer = forms.BooleanField(label = 'Use volunteer ticket', required = False, initial = False)
 
     def __init__(self, ticket_types, efringers, *args, **kwargs):
@@ -43,7 +43,7 @@ class SaleForm(forms.Form):
         self.efringers = efringers
         super().__init__(*args, **kwargs)
         for tt in self.ticket_types:
-            label = 'Fringer (use)' if tt.name == 'Fringer' else tt.name
+            label = 'Paper fringer (use)' if tt.name == 'Fringer' else tt.name
             self.fields[self.ticket_field_name(tt)] = forms.IntegerField(label = label, required = True, initial = 0, min_value = 0, widget = forms.NumberInput(attrs = { 'style': 'width: 75px' }))
         if efringers:
             for ef in self.efringers:
