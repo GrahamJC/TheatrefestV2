@@ -329,7 +329,7 @@ def admin_sale_confirmation(request, sale_uuid):
             'tickets': sale.tickets.order_by('performance__date', 'performance__time', 'performance__show__name')
         }
         body = render_to_string('tickets/sale_email.txt', context)
-        send_mail('Tickets for ' + request.festival.title, body, settings.DEFAULT_FROM_EMAIL, [sale.user.email])
+        send_mail('Tickets for ' + request.festival.title, body, settings.DEFAULT_FROM_EMAIL, [sale.customer])
         is_sent = True
 
     return JsonResponse({
