@@ -303,7 +303,7 @@ class AdminSaleListView(LoginRequiredMixin, View):
                     'uuid': sale.uuid,
                     'date': sale.completed.date,
                     'customer': sale.customer,
-                    'is_customer_email': sale._is_customer_email,
+                    'is_customer_email': sale.is_customer_email,
                     'buttons': sale.button_cost,
                     'fringers': sale.fringer_cost,
                     'tickets': sale.tickets.all(),
