@@ -1,5 +1,7 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from django.utils import timezone
 from django.db import models
 from decimal import Decimal, ROUND_05UP
@@ -44,6 +46,14 @@ class Sale(TimeStampedModel):
         except user_model.DoesNotExist:
             user = None
         return user
+
+    @property
+    def is_customer_email(self):
+        try:
+            validate_email(self.customer)
+        except ValidationError:
+            return False
+        return True
 
     @property
     def is_empty(self):

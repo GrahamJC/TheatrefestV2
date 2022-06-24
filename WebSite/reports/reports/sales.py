@@ -112,6 +112,7 @@ def admission_lists(request):
             Paragraph(f"<para><b>Name/e-mail</b></para>", styles['Normal']),
             Paragraph(f"<para><b>Type</b></para>", styles['Normal']),
             Paragraph(f"<para><b>Sale</b></para>", styles['Normal']),
+            Paragraph(f"<para><b>Token</b></para>", styles['Normal']),
         ))
         for ticket in admission_list['non_venue_tickets']:
             name_email= ticket.user.email if ticket.user else ticket.sale.customer
@@ -121,10 +122,11 @@ def admission_lists(request):
                 name_email,
                 ticket.description,
                 sale_type,
+                'Yes' if ticket.token_issued else 'No',
             ))
         table = Table(
             table_data,
-            colWidths = (2.5*cm, 8.5*cm, 2.5*cm, 2.5*cm),
+            colWidths = (1.5*cm, 8.5*cm, 2*cm, 2*cm, 2*cm),
             hAlign = 'LEFT',
         )
         story.append(table)
@@ -137,6 +139,7 @@ def admission_lists(request):
             Paragraph(f"<para><b>Name/e-mail</b></para>", styles['Normal']),
             Paragraph(f"<para><b>Type</b></para>", styles['Normal']),
             Paragraph(f"<para><b>Sale</b></para>", styles['Normal']),
+            Paragraph(f"<para><b>Token</b></para>", styles['Normal']),
         ))
         for ticket in admission_list['venue_tickets']:
             name_email= ticket.user.email if ticket.user else ticket.sale.customer
@@ -145,10 +148,11 @@ def admission_lists(request):
                 name_email,
                 ticket.description,
                 'Venue',
+                'Yes' if ticket.token_issued else 'No',
             ))
         table = Table(
             table_data,
-            colWidths = (2.5*cm, 8.5*cm, 2.5*cm, 2.5*cm),
+            colWidths = (1.5*cm, 8.5*cm, 2*cm, 2*cm, 2*cm),
             hAlign = 'LEFT',
         )
         story.append(table)
@@ -174,7 +178,7 @@ def admission_lists(request):
                 ))
             table = Table(
                 table_data,
-                colWidths = (2.5*cm, 8.5*cm, 2.5*cm, 2.5*cm),
+                colWidths = (1.5*cm, 10.5*cm, 2*cm, 2*cm),
                 hAlign = 'LEFT',
             )
             story.append(table)

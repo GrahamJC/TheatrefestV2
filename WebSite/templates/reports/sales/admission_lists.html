@@ -11,6 +11,7 @@
             <th>Customer</th>
             <th>Type</th>
             <th>Sale</th>
+            <th>Token</th>
         </tr>
         {% for ticket in list.non_venue_tickets %}
             <tr>
@@ -18,6 +19,7 @@
                 <td>{% if ticket.user %} {{ ticket.user.username }} {%else%} {{ ticket.sale.customer }} {% endif %}</td>
                 <td>{{ ticket.description }}</td>
                 <td>{% if ticket.sale.boxoffice %}Box Office{% else %}Online{% endif %}</td>
+                <td>{% if ticket.token_issued %}Yes{% else %}No{% endif %}</td>
             </tr>
         {% endfor %}
     </table>
@@ -29,6 +31,7 @@
             <th>Customer</th>
             <th>Type</th>
             <th>Sale</th>
+            <th>Token</th>
         </tr>
         {% for ticket in list.venue_tickets %}
             <tr>
@@ -36,6 +39,7 @@
                 <td>{% if ticket.user %} {{ ticket.user.username }} {%else%} {{ ticket.sale.customer }} {% endif %}</td>
                 <td>{{ ticket.description }}</td>
                 <td>Venue</td>
+                <td>{% if ticket.token_issued %}Yes{% else %}No{% endif %}</td>
             </tr>
         {% endfor %}
     </table>

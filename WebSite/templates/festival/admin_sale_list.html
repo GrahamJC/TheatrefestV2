@@ -26,7 +26,7 @@
                     <td><a data-toggle="collapse" href=".sale-{{sale.id}}">£{{ sale.total | floatformat:2 }}</a></td>
                     <td>{{ sale.type }}</td>
                     <td>
-                        {% if sale.type == 'Online' and sale.tickets.count > 0 %}
+                        {% if sale.customer_email and sale.tickets.count > 0 %}
                             <a class="btn btn-primary" href="#" onclick="email_confirmation('{% url 'festival:admin_sale_confirmation' sale.uuid %}', '{{ sale.customer }}')">e-mail</a>
                         {% endif %}
                     </td>
