@@ -261,9 +261,9 @@ def render_main(request, venue, performance, tab = None, open_form = None, start
 
     # Render page
     if settings.VENUE_SHOW_ALL_PERFORMANCES:
-        performances = ShowPerformance.objects.filter(show__venue = venue).order_by('date', 'time')
+        performances = ShowPerformance.objects.filter(show__venue = venue, show__is_cancelled = False).order_by('date', 'time')
     else:
-        performances = ShowPerformance.objects.filter(date = datetime.date.today(), show__venue = venue).order_by('time')
+        performances = ShowPerformance.objects.filter(date = datetime.date.today(), show__venue = venue, show__is_cancelled = False).order_by('time')
     context = {
         'venue': venue,
         'tab': tab,
