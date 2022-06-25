@@ -29,7 +29,7 @@ class Company(TimeStampedModel):
         ordering = ('festival', 'name')
 
     def __str__(self):
-        return self.name
+        return f'{self.festival.name}/{self.name}' if self.festival else self.name
 
     @property
     def can_delete(self):
@@ -53,7 +53,7 @@ class CompanyContact(TimeStampedModel):
         ordering = ('company', 'name')
 
     def __str__(self):
-        return self.name
+        return f"{self.company}/{self.name}"
 
     @property
     def can_delete(self):
@@ -90,7 +90,7 @@ class Venue(TimeStampedModel):
         ordering = ('festival', 'name')
 
     def __str__(self):
-        return self.name
+        return f'{self.festival.name}/{self.name}' if self.festival else self.name
 
     @property
     def can_delete(self):
@@ -137,7 +137,7 @@ class VenueContact(TimeStampedModel):
         ordering = ('venue', 'name')
 
     def __str__(self):
-        return self.name
+        return f'{self.venue}/{self.name}'
 
     @property
     def can_delete(self):
@@ -164,7 +164,7 @@ class VenueSponsor(TimeStampedModel):
         ordering = ('venue', 'name')
 
     def __str__(self):
-        return self.name
+        return f'{self.venue}/{self.name}'
 
     @property
     def can_delete(self):
@@ -181,7 +181,7 @@ class Genre(TimeStampedModel):
         ordering = ('festival', 'name')
 
     def __str__(self):
-        return self.name
+        return f'{self.festival.name}/{self.name}' if self.festival else self.name
 
     @property
     def can_delete(self):
@@ -216,7 +216,7 @@ class Show(TimeStampedModel):
         ordering = ('festival', 'name')
 
     def __str__(self):
-        return self.name
+        return f'{self.festival.name}/{self.name}' if self.festival else self.name
 
     @property
     def can_delete(self):
@@ -257,7 +257,7 @@ class ShowImage(TimeStampedModel):
         ordering = ('show', 'name')
 
     def __str__(self):
-        return self.name
+        return f'{self.show}/{self.name}'
 
     @property
     def can_delete(self):
@@ -277,7 +277,7 @@ class ShowPerformance(TimeStampedModel):
         ordering = ('show', 'date', 'time')
 
     def __str__(self):
-        return f'{self.date} at {self.time}'
+        return f'{self.show}/{self.date} at {self.time}'
 
     @property
     def can_delete(self):
@@ -342,7 +342,7 @@ class ShowReview(TimeStampedModel):
         ordering = ('show', 'source')
 
     def __str__(self):
-        return f'{self.source}'
+        return f'{self.show}/{self.source}'
 
     @property
     def can_delete(self):

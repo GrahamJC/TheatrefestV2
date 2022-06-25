@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import BoxOffice, Basket, FringerType, Fringer, TicketType, Ticket, Sale, Refund, Donation
+from .models import BoxOffice, Basket, FringerType, Fringer, TicketType, Ticket, Sale, Refund, Donation, Checkpoint
 
 admin.site.register(BoxOffice)
 admin.site.register(Basket)
@@ -11,6 +11,7 @@ admin.site.register(Ticket)
 admin.site.register(Sale)
 admin.site.register(Refund)
 admin.site.register(Donation)
+admin.site.register(Checkpoint)
 
 
 @admin.register(Fringer)

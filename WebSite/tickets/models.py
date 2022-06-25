@@ -21,7 +21,7 @@ class BoxOffice(TimeStampedModel):
         ordering = ('festival', 'name')
 
     def __str__(self):
-        return f'{self.name} ({self.festival})'
+        return f'{self.festival.name}/{self.name}'
 
 
 class Sale(TimeStampedModel):
@@ -225,7 +225,7 @@ class Basket(TimeStampedModel):
         return performances
 
     def __str__(self):
-        return self.user.email
+        return f'{self.user}'
 
 
 class FringerType(TimeStampedModel):
@@ -243,7 +243,7 @@ class FringerType(TimeStampedModel):
         ordering = ('festival', 'name')
 
     def __str__(self):
-        return f'{self.name} ({self.festival})'
+        return f'{self.festival.name}/{self.name}'
 
     @property
     def description(self):
@@ -267,7 +267,7 @@ class Fringer(TimeStampedModel):
 
     def __str__(self):
         if self.user:
-            return f"eFringer: {self.user.email} ({self.name})"
+            return f"eFringer: {self.user}/{self.name}"
         if self.sale:
             return f"Paper: {self.sale.customer}"
         else:
@@ -309,7 +309,7 @@ class TicketType(TimeStampedModel):
         ordering = ('festival', 'name')
 
     def __str__(self):
-        return f'{self.name} ({self.festival})'
+        return f'{self.festival.name}/{self.name}'
 
     @property
     def description(self):
@@ -336,7 +336,7 @@ class Ticket(TimeStampedModel):
         ordering = ['performance']
 
     def __str__(self):
-        return "{0} ({1}): {2}".format(self.id, self.description, self.performance)
+        return f'{self.id} ({self.description}): {self.perfmance}'
 
     @property
     def is_confirmed(self):
@@ -359,6 +359,12 @@ class Checkpoint(TimeStampedModel):
     fringers = models.IntegerField()
     notes = models.TextField(blank = True, default = '')
 
+    def __str__(self):
+        if self.boxoffice:
+            return f'{self.boxoffice}/{self.id}/{self.created}'
+        else:
+            return f'{self.venue}/{self.id}/{self.created}'
+
 class Donation(TimeStampedModel):
     
     festival = models.ForeignKey(Festival, on_delete=models.PROTECT, related_name='donations')
@@ -369,4 +375,4 @@ class Donation(TimeStampedModel):
         ordering = ('festival', 'created')
 
     def __str__(self):
-        return f'£{self.amount} {self.email} ({self.festival})'
+        return f'{self.festival}/{self.email}/£{self.amount}'
