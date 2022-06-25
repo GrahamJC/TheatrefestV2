@@ -235,6 +235,7 @@ def boxoffice_summary(request):
         sales_cash = Sale.objects.filter(boxoffice = boxoffice, created__date = date).aggregate(Sum('amount'))['amount__sum'] or 0
         sales_fringers = Fringer.objects.filter(sale__boxoffice = boxoffice, sale__created__date = date).count() or 0
         sales_buttons = Sale.objects.filter(boxoffice = boxoffice, created__date = date).aggregate(Sum('buttons'))['buttons__sum'] or 0
+        refunds_cash = Refund.objects.filter(boxoffice = boxoffice, created__date = date).aggregate(Sum('amount'))['amount__sum'] or 0
         periods.append({
             'title': f"Daily Summary: {first.created.astimezone():%I:%M%p} to {last.created.astimezone():%I:%M%p}",
             'open': first,
@@ -244,8 +245,11 @@ def boxoffice_summary(request):
                 'fringers': sales_fringers,
                 'buttons': sales_buttons,
             },
+            'refunds': {
+                'cash': refunds_cash,
+            },
             'variance': {
-                'cash': last.cash - first.cash - sales_cash,
+                'cash': last.cash - first.cash - sales_cash + refunds_cash,
                 'fringers': last.fringers - first.fringers + sales_fringers,
                 'buttons': last.buttons - first.buttons + sales_buttons,
             },
