@@ -236,7 +236,7 @@ def boxoffice_summary(request):
         sales_fringers = Fringer.objects.filter(sale__boxoffice = boxoffice, sale__created__date = date).count() or 0
         sales_buttons = Sale.objects.filter(boxoffice = boxoffice, created__date = date).aggregate(Sum('buttons'))['buttons__sum'] or 0
         periods.append({
-            'title': f"Daily Summary: {first.created:%I:%M%p} to {last.created:%I:%M%p}",
+            'title': f"Daily Summary: {first.created.astimezone():%I:%M%p} to {last.created.astimezone():%I:%M%p}",
             'open': first,
             'close': last,
             'sales': {
@@ -268,7 +268,7 @@ def boxoffice_summary(request):
             sales_buttons = Sale.objects.filter(boxoffice = boxoffice, created__gt = open.created, created__lt = close.created).aggregate(Sum('buttons'))['buttons__sum'] or 0
             refunds_cash = Refund.objects.filter(boxoffice = boxoffice, created__gt = open.created, created__lt = close.created).aggregate(Sum('amount'))['amount__sum'] or 0
             periods.append({
-                'title': f"{open.created:%I:%M%p} to {close.created:%I:%M%p}",
+                'title': f"{open.created.astimezone():%I:%M%p} to {close.created.astimezone():%I:%M%p}",
                 'open': open,
                 'close': close,
                 'sales': {
@@ -419,7 +419,7 @@ def venue_summary(request):
         sales_fringers = Fringer.objects.filter(sale__venue = venue, sale__created__date = date).count() or 0
         sales_buttons = Sale.objects.filter(venue = venue, created__date = date).aggregate(Sum('buttons'))['buttons__sum'] or 0
         periods.append({
-            'title': f"Daily Summary: {first.created:%I:%M%p} to {last.created:%I:%M%p}",
+            'title': f"Daily Summary: {first.created.astimezone():%I:%M%p} to {last.created.astimezone():%I:%M%p}",
             'open': first,
             'close': last,
             'sales': {
