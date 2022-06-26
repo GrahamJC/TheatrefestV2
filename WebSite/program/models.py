@@ -102,21 +102,21 @@ class Venue(TimeStampedModel):
 
     def get_first_performance(self, date = None):
         if date:
-            return ShowPerformance.objects.filter(date = date, show__venue = self).order_by('time').first()
+            return ShowPerformance.objects.filter(date = date, show__venue = self, show__is_cancelled = False).order_by('time').first()
         else:
-            return ShowPerformance.objects.filter(show__venue = self).order_by('date', 'time').first()
+            return ShowPerformance.objects.filter(show__venue = self, show__is_cancelled = False).order_by('date', 'time').first()
 
     def get_next_performance(self, date = None):
         if date:
-            return ShowPerformance.objects.filter(date = date, show__venue = self, close_checkpoint = None).order_by('time').first()
+            return ShowPerformance.objects.filter(date = date, show__venue = self, show__is_cancelled = False, close_checkpoint = None).order_by('time').first()
         else:
-            return ShowPerformance.objects.filter(show__venue = self, close_checkpoint = None).order_by('date', 'time').first()
+            return ShowPerformance.objects.filter(show__venue = self, show__is_cancelled = False, close_checkpoint = None).order_by('date', 'time').first()
 
     def get_last_performance(self, date = None):
         if date:
-            return ShowPerformance.objects.filter(date = date, show__venue = self).order_by('time').first()
+            return ShowPerformance.objects.filter(date = date, show__venue = self, show__is_cancelled = False).order_by('time').first()
         else:
-            return ShowPerformance.objects.filter(show__venue = self).order_by('date', 'time').first()
+            return ShowPerformance.objects.filter(show__venue = self, show__is_cancelled = False).order_by('date', 'time').first()
 
 
 class VenueContact(TimeStampedModel):
