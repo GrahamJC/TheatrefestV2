@@ -1,0 +1,22 @@
+{% load tf_filters %}
+
+<table class="table table-sm">
+    <tr>
+        <th></th>
+        <th class="text-right">Tickets</th>
+        <th class="text-right">Tokens Issued</th>
+        <th class="text-right">Tokens Collected</th>
+    </tr>
+    {% for show in shows %}
+        <tr><th colspan="4">{{ show.name }}</th></tr>
+        {% for performance in show.performances %}
+            <tr>
+                <th>&nbsp;&nbsp;&nbsp;&nbsp;{{ performance.date | date:'l, F j' }} at {{ performance.time | time:'g:ia' }}</th>
+                <th class="text-right">{{ performance.tickets }}</th>
+                <th class="text-right">{{ performance.tokens_issued }}</th>
+                <th class="text-right">{{ performance.tokens_collected }}</th>
+            </tr>
+        {% endfor %}
+        <tr><th colspan="4">&nbsp;</th></tr>
+    {% endfor %}
+</table>

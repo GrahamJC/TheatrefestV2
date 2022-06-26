@@ -19,6 +19,7 @@ urlpatterns = [
     path('finance/venue_summary', finance.venue_summary, name = 'finance_venue_summary'),
     path('finance/company_payment', finance.company_payment, name = 'finance_company_payment'),
     # Sales reports
+    path('sales/audience', sales.audience, name = 'sales_audience'),
     path('sales/admission_lists', sales.admission_lists, name = 'sales_admission_lists'),
     path('sales/tickets_by_type', sales.tickets_by_type, name = 'sales_tickets_by_type'),
     path('sales/tickets_by_channel', sales.tickets_by_channel, name = 'sales_tickets_by_channel'),

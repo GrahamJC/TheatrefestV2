@@ -19,7 +19,7 @@ from crispy_forms.bootstrap import FormActions, TabHolder, Tab, Div
 
 from program.models import Show, ShowPerformance
 
-from .forms import SelectNullForm, SelectVenueForm, SelectBoxOfficeForm, SelectTicketsForm, SelectAdmissionForm, SelectCompanyForm
+from .forms import SelectNullForm, SelectVenueForm, SelectBoxOfficeForm, SelectTicketsForm, SelectAdmissionForm, SelectCompanyForm, SelectAudienceForm
 
 # Report definitions
 reports = {
@@ -54,6 +54,13 @@ reports = {
         },
     },
     'sales': {
+        'audiences': {
+            'title': 'Audience',
+            'select_form': SelectAudienceForm,
+            'select_fields': ['show'],
+            'select_required': [],
+            'report_url': reverse_lazy('reports:sales_audience'),
+        },
         'admission_lists': {
             'title': 'Admission lists',
             'select_form': SelectAdmissionForm,

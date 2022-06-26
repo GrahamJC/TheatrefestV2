@@ -169,3 +169,25 @@ class SelectCompanyForm(forms.Form):
             for company in Company.objects.filter(id__in = ticketed_company_ids).order_by('name'):
                 choices.append((company.id, company.name))
             self.fields['company'].choices = choices
+
+
+class SelectAudienceForm(forms.Form):
+
+    show = forms.ChoiceField(choices = [], label = 'Show')
+
+    def __init__(self, festival, fields, required, *args, **kwargs):
+
+        # Save festival
+        self.festival = festival
+
+        # Call base
+        super().__init__(*args, **kwargs)
+
+        # Show
+        if 'show' in fields:
+            is_required = 'show' in required
+            self.fields['show'].required = is_required
+            choices = [('', 'Select show' if required else 'All shows')]
+            for show in Show.objects.filter(festival = self.festival, venue__is_ticketed = True).order_by('name'):
+                choices.append((show.id, show.name))
+            self.fields['show'].choices = choices
