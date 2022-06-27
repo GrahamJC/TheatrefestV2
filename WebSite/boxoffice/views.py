@@ -469,7 +469,7 @@ def sale_tickets_add(request, sale_uuid, performance_uuid):
             # Update eFringers
             for efringer in form.efringers:
                 if form.cleaned_data[SaleTicketsForm.efringer_field_name(efringer)]:
-                    new_ticket = Ticket(
+                    ticket = Ticket(
                         sale = sale,
                         user = sale.customer_user,
                         performance = performance,
@@ -478,7 +478,7 @@ def sale_tickets_add(request, sale_uuid, performance_uuid):
                         cost = 0,
                         payment = efringer.payment,
                     )
-                    new_ticket.save()
+                    ticket.save()
                     logger.info(f"eFringer {efringer.name} ticket {ticket.id} for {performance.show.name} on {performance.date} at {performance.time} added to sale {sale.id}")
 
             # If sale is complete then update the total
