@@ -32,7 +32,7 @@ from volunteers.models import Volunteer
 def festival_summary(request):
 
     # General stuff
-    date_list = [datetime.date(2019, 6, 24) + datetime.timedelta(days = d) for d in range(7)]
+    date_list = [request.festival.boxoffice_open + datetime.timedelta(days = d) for d in range(int((request.festival.boxoffice_close - request.festival.boxoffice_open).days) + 1)]
     venue_list = [v for v in Venue.objects.filter(festival = request.festival, is_ticketed = True).order_by('name')]
     boxoffice_list = [bo for bo in BoxOffice.objects.filter(festival = request.festival).order_by('name')]
 
