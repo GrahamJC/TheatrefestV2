@@ -106,7 +106,7 @@ def festival_summary(request):
         types['efringers']['dates'].append(date_amount)
         types['efringers']['total'] += date_amount
         date_total += date_amount
-        date_amount = Ticket.objects.filter(sale__festival = request.festival, sale__created__date = date, sale__completed__isnull = False, refund__isnull = True).aggregate(Sum('cost'))['cost__sum'] or 0
+        date_amount = Ticket.objects.filter(sale__festival = request.festival, sale__created__date = date, sale__completed__isnull = False).aggregate(Sum('cost'))['cost__sum'] or 0
         types['tickets']['dates'].append(date_amount)
         types['tickets']['total'] += date_amount
         date_total += date_amount
