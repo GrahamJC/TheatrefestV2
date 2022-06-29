@@ -16,9 +16,10 @@ from django.http import HttpResponse
 import arrow
 
 from reportlab.pdfgen.canvas import Canvas
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib.pagesizes import A4, portrait
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image, PageBreak
+from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT, TA_JUSTIFY
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.pagesizes import A4, portrait, landscape
 from reportlab.lib.units import cm
 from reportlab.lib import colors
 
@@ -83,8 +84,8 @@ def festival_summary(request):
     types = OrderedDict([
         ('buttons', {'title': 'Badges', 'pre': None, 'dates': [], 'total': 0}),
         ('fringers', {'title': 'Paper fringers', 'pre': None, 'dates': [], 'total': 0}),
-        ('efringers', {'title': 'eFringers', 'pre': efringers_pre, 'dates': [], 'total': 0}),
-        ('tickets', {'title': 'Tickets', 'pre': tickets_pre, 'dates': [], 'total': 0}),
+        ('efringers', {'title': 'eFringers', 'pre': efringers_pre, 'dates': [], 'total': efringers_pre}),
+        ('tickets', {'title': 'Tickets', 'pre': tickets_pre, 'dates': [], 'total': tickets_pre}),
     ])
     totals = {
         'pre': efringers_pre + tickets_pre,
@@ -93,7 +94,7 @@ def festival_summary(request):
     }
     for date in date_list:
         date_total = 0
-        date_amount = Sale.objects.filter(festival = request.festival, created__date = date, completed__isnull = False).aggregate(Sum('buttons'))['buttons__sum'] or 0
+        date_amount = request.festival.button_price * (Sale.objects.filter(festival = request.festival, created__date = date, completed__isnull = False).aggregate(Sum('buttons'))['buttons__sum'] or 0)
         types['buttons']['dates'].append(date_amount)
         types['buttons']['total'] += date_amount
         date_total += date_amount
@@ -168,8 +169,7 @@ def festival_summary(request):
     # Volunteer tickets
     volunteers_earned = 0
     for volunteer in Volunteer.objects.filter(user__festival = request.festival):
-        shifts = volunteer.shifts.count()
-        volunteers_earned += min(shifts, 4)
+        volunteers_earned += volunteer.comps_earned
     volunteer_tickets = Ticket.objects.filter(description = 'Volunteer', sale__festival = request.festival, sale__completed__isnull = False, refund__isnull = True).count() or 0
     volunteers = {
         'earned': volunteers_earned,
@@ -197,7 +197,7 @@ def festival_summary(request):
     response = HttpResponse(content_type = 'application/pdf')
     doc = SimpleDocTemplate(
         response,
-        pagesize = portrait(A4),
+        pagesize = landscape(A4),
         leftMargin = 2.5*cm,
         rightMargin = 2.5*cm,
         topMargin = 2.5*cm,
@@ -206,12 +206,198 @@ def festival_summary(request):
     styles = getSampleStyleSheet()
     story = []
 
-    # Festival banner
+    # Sales by channel
     if request.festival.banner:
         banner = Image(request.festival.banner.get_absolute_path(), width = 16*cm, height = 4*cm)
         banner.hAlign = 'CENTER'
         story.append(banner)
         story.append(Spacer(1, 1*cm))
+    story.append(Paragraph('<b>Sales by Channel</b>'))
+    story.append(Spacer(1, 0.5*cm))
+    table_data = []
+    colWidths = [4*cm, 2*cm]
+    for date in date_list:
+        colWidths.append(2*cm)
+    colWidths.append(2*cm)
+    table_styles = [
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+        ('ALIGN', (1, 0), (-1, 0), 'CENTER'),
+        ('LINEBELOW', (0, 0), (-1, 0), 1, (0,0,0)),
+        ('ALIGN', (1, 1), (-1, -1), 'RIGHT'),
+        ('LINEABOVE', (0, -1), (-1, -1), 1, (0,0,0)),
+    ]
+    row = ['', 'Pre\nSales']
+    for date in date_list:
+        row.append(f'{date:%a\n%d-%b}')
+    row.append('Total')
+    table_data.append(row)
+    row = ['Online', f'£{sales_by_channel["online"]["pre"]:.0f}']
+    for amount in sales_by_channel['online']['dates']:
+        row.append(f'£{amount:.0f}')
+    row.append(f'£{sales_by_channel["online"]["total"]:.0f}')
+    table_data.append(row)
+    for boxoffice in boxoffice_list:
+        row = [boxoffice.name, '']
+        for amount in sales_by_channel['boxoffices'][boxoffice.name]['dates']:
+            row.append(f'£{amount:.0f}')
+        row.append(f'£{sales_by_channel["boxoffices"][boxoffice.name]["total"]:.0f}')
+        table_data.append(row)
+    for venue in venue_list:
+        row = [venue.name, '']
+        for amount in sales_by_channel['venues'][venue.name]['dates']:
+            row.append(f'£{amount:.0f}')
+        row.append(f'£{sales_by_channel["venues"][venue.name]["total"]:.0f}')
+        table_data.append(row)
+    row = ['', f'£{sales_by_channel["totals"]["pre"]:.0f}']
+    for amount in sales_by_channel['totals']['dates']:
+        row.append(f'£{amount:.0f}')
+    row.append(f'£{sales_by_channel["totals"]["total"]:.0f}')
+    table_data.append(row)
+    table = Table(
+        table_data,
+        colWidths = colWidths,
+        style = table_styles,
+    )
+    story.append(table)
+
+    # Sales by type
+    story.append(PageBreak())
+    if request.festival.banner:
+        banner = Image(request.festival.banner.get_absolute_path(), width = 16*cm, height = 4*cm)
+        banner.hAlign = 'CENTER'
+        story.append(banner)
+        story.append(Spacer(1, 1*cm))
+    story.append(Paragraph('<b>Sales by Type</b>'))
+    story.append(Spacer(1, 0.5*cm))
+    table_data = []
+    colWidths = [4*cm, 2*cm]
+    for date in date_list:
+        colWidths.append(2*cm)
+    colWidths.append(2*cm)
+    table_styles = [
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+        ('ALIGN', (1, 0), (-1, 0), 'CENTER'),
+        ('LINEBELOW', (0, 0), (-1, 0), 1, (0,0,0)),
+        ('ALIGN', (1, 1), (-1, -1), 'RIGHT'),
+        ('LINEABOVE', (0, -1), (-1, -1), 1, (0,0,0)),
+    ]
+    row = ['', 'Pre\nSales']
+    for date in date_list:
+        row.append(f'{date:%a\n%d-%b}')
+    row.append('Total')
+    table_data.append(row)
+    row = ['Badges', '']
+    for amount in sales_by_type['types']['buttons']['dates']:
+        row.append(f'£{amount:.0f}')
+    row.append(f'£{sales_by_type["types"]["buttons"]["total"]:.0f}')
+    table_data.append(row)
+    row = ['Paper fringers', '']
+    for amount in sales_by_type['types']['fringers']['dates']:
+        row.append(f'£{amount:.0f}')
+    row.append(f'£{sales_by_type["types"]["fringers"]["total"]:.0f}')
+    table_data.append(row)
+    row = ['eFringers', f'£{sales_by_type["types"]["efringers"]["pre"]:.0f}']
+    for amount in sales_by_type['types']['efringers']['dates']:
+        row.append(f'£{amount:.0f}')
+    row.append(f'£{sales_by_type["types"]["efringers"]["total"]:.0f}')
+    table_data.append(row)
+    row = ['Tickets', f'£{sales_by_type["types"]["tickets"]["pre"]:.0f}']
+    for amount in sales_by_type['types']['tickets']['dates']:
+        row.append(f'£{amount:.0f}')
+    row.append(f'£{sales_by_type["types"]["tickets"]["total"]:.0f}')
+    table_data.append(row)
+    row = ['', f'£{sales_by_type["totals"]["pre"]:.0f}']
+    for amount in sales_by_type['totals']['dates']:
+        row.append(f'£{amount:.0f}')
+    row.append(f'£{sales_by_type["totals"]["total"]:.0f}')
+    table_data.append(row)
+    table = Table(
+        table_data,
+        colWidths = colWidths,
+        style = table_styles,
+    )
+    story.append(table)
+
+    # Tickets by type
+    story.append(PageBreak())
+    if request.festival.banner:
+        banner = Image(request.festival.banner.get_absolute_path(), width = 16*cm, height = 4*cm)
+        banner.hAlign = 'CENTER'
+        story.append(banner)
+        story.append(Spacer(1, 1*cm))
+    story.append(Paragraph('<b>Tickets by Type</b>'))
+    story.append(Spacer(1, 0.5*cm))
+    table_data = [('Type', 'Online', 'Box Office', 'Venue', 'Total')]
+    colWidths = [4*cm, 3*cm, 3*cm, 3*cm, 3*cm]
+    table_styles = [
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+        ('ALIGN', (1, 0), (-1, 0), 'CENTER'),
+        ('LINEBELOW', (0, 0), (-1, 0), 1, (0,0,0)),
+        ('ALIGN', (1, 1), (-1, -1), 'RIGHT'),
+        ('LINEABOVE', (0, -1), (-1, -1), 1, (0,0,0)),
+    ]
+    for type in tickets['types']:
+        table_data.append([
+            type['description'],
+            f'{type["online"]}',
+            f'{type["boxoffice"]}',
+            f'{type["venue"]}',
+            f'{type["total"]}',
+        ])
+    table_data.append([
+        '',
+        f'{tickets["totals"]["online"]}',
+        f'{tickets["totals"]["boxoffice"]}',
+        f'{tickets["totals"]["venue"]}',
+        f'{tickets["totals"]["total"]}',
+    ])
+    table = Table(
+        table_data,
+        colWidths = colWidths,
+        style = table_styles,
+    )
+    story.append(table)
+
+    # Fringer/Volunteer ticket use
+    story.append(Spacer(1, 1*cm))
+    story.append(Paragraph('<b>Fringer/Volunteer Tickets Use</b>'))
+    story.append(Spacer(1, 0.5*cm))
+    table_data = [('', 'Sold/Earned', 'Used', 'Percent')]
+    colWidths = [4*cm, 3*cm, 3*cm, 3*cm]
+    table_styles = [
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+        ('ALIGN', (1, 0), (-1, 0), 'CENTER'),
+        ('LINEBELOW', (0, 0), (-1, 0), 1, (0,0,0)),
+        ('ALIGN', (1, 1), (-1, -1), 'RIGHT'),
+    ]
+    table_data.append([
+        'Paper fringers',
+        f'{fringers["sold"]}',
+        f'{fringers["used"]}',
+        f'{fringers["percent"]:.1f}%',
+    ])
+    table_data.append([
+        'eFringers',
+        f'{efringers["sold"]}',
+        f'{efringers["used"]}',
+        f'{efringers["percent"]:.1f}%',
+    ])
+    table_data.append([
+        'Volunteers',
+        f'{volunteers["earned"]}',
+        f'{volunteers["used"]}',
+        f'{volunteers["percent"]:.1f}%',
+    ])
+    table = Table(
+        table_data,
+        colWidths = colWidths,
+        style = table_styles,
+    )
+    story.append(table)
 
     # Render PDF document and return it
     doc.build(story)
