@@ -790,7 +790,7 @@ def refunds(request):
 
     # Performances with refunded/cancelled tickets
     performances = []
-    for performance in ShowPerformance.objects.filter(Exists(Ticket.objects.filter(performance_id = OuterRef('id'), refund__boxoffice__isnull = False, refund__completed__isnull = False)), show__festival = request.festival, show__venue__is_ticketed = True).order_by('show__name', 'date', 'time'):
+    for performance in ShowPerformance.objects.filter(Exists(Ticket.objects.filter(performance_id = OuterRef('id'), refund__completed__isnull = False)), show__festival = request.festival, show__venue__is_ticketed = True).order_by('show__name', 'date', 'time'):
         performances.append({
             'show': performance.show.name,
             'date': performance.date,
