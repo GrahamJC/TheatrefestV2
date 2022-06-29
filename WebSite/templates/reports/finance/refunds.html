@@ -1,9 +1,9 @@
 {% for refund in refunds %}
     <div class="row">
-        <div class="col-1">{{ refund.id }}</div>
-        <div class="col-3">{{ refund.created }}</div>
-        <div class="col-2">{% if refund.amount %}£{{ refund.ammount | floatformat:'0' }}{% endif %}</div>
-        <div class="col-6">{{ refund.user }}</div>
+        <div class="col-1"><strong>{{ refund.id }}</strong></div>
+        <div class="col-3"><strong>{{ refund.created }}</strong></div>
+        <div class="col-2">{% if refund.amount %}<strong></strong>£{{ refund.ammount | floatformat:'0' }}</strong>{% endif %}</div>
+        <div class="col-6"><strong>{{ refund.user }}</strong></div>
     </div>
     <div class="row">
         <div class="col-12">{{ refund.reason }}</div>
@@ -24,7 +24,7 @@
                 <tr>
                     <td>{{ ticket.id }}</td>
                     <td>{{ ticket.performance.show.name }} on {{ ticket.performance.date }} at {{ ticket.performance.time }}</td>
-                    <td>{{ ticket.description }}</td>
+                    <td>{{ ticket.description }} {% if not ticket.refund.boxoffice %}(cancelled){% endif %}</td>
                     <td>{% if ticket.cost %}£{{ ticket.cost | floatformat:'0' }}{% endif %}</td>
                 </tr>
             {% endfor %}

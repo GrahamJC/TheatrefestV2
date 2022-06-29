@@ -775,9 +775,9 @@ def venue_summary(request):
 @user_passes_test(lambda u: u.is_admin)
 def refunds(request):
 
-    # Get refunds
+    # Cash rRefunds
     refunds = []
-    for refund in Refund.objects.filter(festival = request.festival, boxoffice__isnull = False, completed__isnull = False).order_by('id'):
+    for refund in Refund.objects.filter(festival = request.festival, completed__isnull = False, amount__gt = 0).order_by('id'):
         refunds.append({
             'id': refund.id,
             'created': refund.created,
@@ -785,17 +785,17 @@ def refunds(request):
             'user': refund.user.email,
             'reason': refund.reason,
             'amount': refund.amount,
-            'tickets': [ticket for ticket in Ticket.objects.filter(refund = refund).order_by('id')]
+            'tickets': [ticket for ticket in Ticket.objects.filter(refund = refund, cost__gt = 0).order_by('id')]
         })
 
-    # Get performances with refunded tickets
+    # Performances with refunded/cancelled tickets
     performances = []
     for performance in ShowPerformance.objects.filter(Exists(Ticket.objects.filter(performance_id = OuterRef('id'), refund__boxoffice__isnull = False, refund__completed__isnull = False)), show__festival = request.festival, show__venue__is_ticketed = True).order_by('show__name', 'date', 'time'):
         performances.append({
             'show': performance.show.name,
             'date': performance.date,
             'time': performance.time,
-            'tickets': [ticket for ticket in Ticket.objects.filter(performance = performance, refund_boffice__isnull = False, refund__completed__isnull = False).order_by('id')]
+            'tickets': [ticket for ticket in Ticket.objects.filter(performance = performance, refund__completed__isnull = False).order_by('id')]
         })
 
     # Check for HTML
@@ -804,8 +804,8 @@ def refunds(request):
 
         # Render HTML
         context = {
-            'refunds': refunds,
             'performances': performances,
+            'refunds': refunds,
         }
         return render(request, 'reports/finance/refunds.html', context)
 
