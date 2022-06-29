@@ -45,6 +45,13 @@ reports = {
             'select_required': ['venue', 'date'],
             'report_url': reverse_lazy('reports:finance_venue_summary'),
         },
+        'refunds': {
+            'title': 'Refunds',
+            'select_form': SelectNullForm,
+            'select_fields': [],
+            'select_required': [],
+            'report_url': reverse_lazy('reports:finance_refunds'),
+        },
         'company_payment': {
             'title': 'Company payment',
             'select_form': SelectCompanyForm,

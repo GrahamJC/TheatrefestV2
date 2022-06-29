@@ -17,6 +17,7 @@ urlpatterns = [
     path('finance/festival_summary', finance.festival_summary, name = 'finance_festival_summary'),
     path('finance/boxoffice_summary', finance.boxoffice_summary, name = 'finance_boxoffice_summary'),
     path('finance/venue_summary', finance.venue_summary, name = 'finance_venue_summary'),
+    path('finance/refunds', finance.refunds, name = 'finance_refunds'),
     path('finance/company_payment', finance.company_payment, name = 'finance_company_payment'),
     # Sales reports
     path('sales/audience', sales.audience, name = 'sales_audience'),

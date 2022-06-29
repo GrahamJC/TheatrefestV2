@@ -336,7 +336,7 @@ class Ticket(TimeStampedModel):
         ordering = ['performance']
 
     def __str__(self):
-        return f'{self.id} ({self.description}): {self.perfmance}'
+        return f'{self.id} ({self.description}): {self.performance}'
 
     @property
     def is_confirmed(self):

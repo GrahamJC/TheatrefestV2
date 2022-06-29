@@ -5,6 +5,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db.models import Exists, OuterRef
 from django.db.models.aggregates import Sum
 from django.shortcuts import get_object_or_404, render, redirect
 from django.template import Template, Context
@@ -768,6 +769,70 @@ def venue_summary(request):
     # Render PDF document and return it
     doc.build(story)
     return response
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_admin)
+def refunds(request):
+
+    # Get refunds
+    refunds = []
+    for refund in Refund.objects.filter(festival = request.festival, boxoffice__isnull = False, completed__isnull = False).order_by('id'):
+        refunds.append({
+            'id': refund.id,
+            'created': refund.created,
+            'boxoffice': refund.boxoffice.name,
+            'user': refund.user.email,
+            'reason': refund.reason,
+            'amount': refund.amount,
+            'tickets': [ticket for ticket in Ticket.objects.filter(refund = refund).order_by('id')]
+        })
+
+    # Get performances with refunded tickets
+    performances = []
+    for performance in ShowPerformance.objects.filter(Exists(Ticket.objects.filter(performance_id = OuterRef('id'), refund__boxoffice__isnull = False, refund__completed__isnull = False)), show__festival = request.festival, show__venue__is_ticketed = True).order_by('show__name', 'date', 'time'):
+        performances.append({
+            'show': performance.show.name,
+            'date': performance.date,
+            'time': performance.time,
+            'tickets': [ticket for ticket in Ticket.objects.filter(performance = performance, refund_boffice__isnull = False, refund__completed__isnull = False).order_by('id')]
+        })
+
+    # Check for HTML
+    format = request.GET['format']
+    if format == 'HTML':
+
+        # Render HTML
+        context = {
+            'refunds': refunds,
+            'performances': performances,
+        }
+        return render(request, 'reports/finance/refunds.html', context)
+
+    # Render PDF
+    response = HttpResponse(content_type = 'application/pdf')
+    doc = SimpleDocTemplate(
+        response,
+        pagesize = portrait(A4),
+        leftMargin = 2.5*cm,
+        rightMargin = 2.5*cm,
+        topMargin = 2.5*cm,
+        bottomMargin = 2.5*cm,
+    )
+    styles = getSampleStyleSheet()
+    story = []
+
+    # Festival banner
+    if venue.festival.banner:
+        banner = Image(venue.festival.banner.get_absolute_path(), width = 16*cm, height = 4*cm)
+        banner.hAlign = 'CENTER'
+        story.append(banner)
+        story.append(Spacer(1, 1*cm))
+
+    # Render PDF document and return it
+    doc.build(story)
+    return response
+
 
 def _get_performance_tickets_by_type(performance, ticket_types):
 

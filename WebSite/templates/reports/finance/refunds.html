@@ -1,0 +1,65 @@
+{% for refund in refunds %}
+    <div class="row">
+        <div class="col-1">{{ refund.id }}</div>
+        <div class="col-3">{{ refund.created }}</div>
+        <div class="col-2">{% if refund.amount %}£{{ refund.ammount | floatformat:'0' }}{% endif %}</div>
+        <div class="col-6">{{ refund.user }}</div>
+    </div>
+    <div class="row">
+        <div class="col-12">{{ refund.reason }}</div>
+    </div>
+    <table class="table table-sm ml-2 w-100">
+        <col class="width: 10%" />
+        <col class="width: 60%" />
+        <col class="width: 20%" />
+        <col class="width: 10%" />
+        <thead>
+            <tr>
+                <th>Ticket</th>
+                <th>Show</th>
+                <th>Type</th>
+                <th>Amount</th>
+            </tr>
+            {% for ticket in refund.tickets %}
+                <tr>
+                    <td>{{ ticket.id }}</td>
+                    <td>{{ ticket.performance.show.name }} on {{ ticket.performance.date }} at {{ ticket.performance.time }}</td>
+                    <td>{{ ticket.description }}</td>
+                    <td>{% if ticket.cost %}£{{ ticket.cost | floatformat:'0' }}{% endif %}</td>
+                </tr>
+            {% endfor %}
+        </thead>
+    </table>
+{% endfor %}
+
+{% for performance in performances %}
+
+    <h5>{{ performance.show }}</h5>
+    <h6>{{ performance.date | date:'l, j F' }} at {{ performance.time | time:'h:ia' }}</h6>
+
+    <table class="table table-sm">
+        <col class="width: 10%" />
+        <col class="width: 50%" />
+        <col class="width: 25%" />
+        <col class="width: 15%" />
+        <thead>
+            <tr>
+                <th>Number</th>
+                <th>Customer</th>
+                <th>Type</th>
+                <th>Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ticket in performance.tickets %}
+            <tr>
+                <td>{{ ticket.id }}</td>
+                <td>{% if ticket.user %} {{ ticket.user.username }} {%else%} {{ ticket.sale.customer }} {% endif %}</td>
+                <td>{{ ticket.description }}</td>
+                <td>{% if ticket.cost %}&#163;{{ ticket.cost }}{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+{% endfor %}
