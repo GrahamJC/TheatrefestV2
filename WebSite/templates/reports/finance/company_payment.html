@@ -3,24 +3,31 @@
 <table class="table table-sm">
     {% for company in companies %}
         <tr>
-            <th>{{ company.name }}</th>
+            <td colspan="{{ ticket_types | length | add:1 }}"><strong>{{ company.name }}</strong></td>
+            <td class="text-right"><strong>£{{ company.payment | floatformat:2 }}</strong></td>
+        </tr>
+        <tr>
+            <td></td>
             {% for ticket_type in ticket_types %}
-                <th class="text-right">{{ ticket_type.name }}</th>
+                <td class="text-right"><strong>{{ ticket_type.name }}</strong></td>
             {% endfor %}
-            <th class="text-right"><strong>Payment</strong></th>
+            <td></td>
         </tr>
         {% for show in company.shows %}
-            <tr><th class="pl-2" colspan="{{ ticket_types | length | add:2 }}">{{ show.name }}</th></tr>
+            <tr>
+                <td class="pl-2" colspan="{{ ticket_types | length | add:1 }}"><strong>{{ show.name }}</td><strong></td>
+                <td class="text-right"><strong>£{{ show.payment | floatformat:2 }}</strong></td>
+            </tr>
             {% for performance in show.performances %}
                 <tr>
                     <td class="pl-4">{{ performance.date | date:'l, F j' }} at {{ performance.time | time:'g:ia' }}</td>
                     {% for ticket_type in ticket_types %}
                         <td class="text-right">{{ performance.tickets | lookup:ticket_type.name }}</td>
                     {% endfor %}
-                    <td class="text-right"><strong>{{ performance.payment | floatformat:2 }}</strong></td>
+                    <td class="text-right">£{{ performance.payment | floatformat:2 }}</td>
                 </tr>
             {% endfor %}
-            <tr><th colspan="{{ ticket_types | length | add:2 }}">&nbsp;</th></tr>
+            <tr><td colspan="{{ ticket_types | length | add:2 }}">&nbsp;</td></tr>
         {% endfor %}
     {% endfor %}
 </table>

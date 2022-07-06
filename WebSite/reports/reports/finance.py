@@ -940,11 +940,6 @@ def company_payment(request):
                 row.append(ticket_type['name'])
             row.append('Payment')
             table_data.append(row)
-            #row = ['']
-            #for ticket_type in ticket_types:
-            #    row.append(f"£{ticket_type['payment']}")
-            #row.append('')
-            #table_data.append(row)
 
             # Performances
             for performance in show['performances']:
