@@ -880,11 +880,11 @@ def company_payment(request):
 
     # Fetch data
     ticket_types = [{'name': tt.name, 'payment': tt.payment} for tt in TicketType.objects.filter(festival = request.festival).order_by('name')]
-    ticket_types.append({'name': 'eFringer', 'payment': Decimal('3.00')})
+    ticket_types.append({'name': 'eFringer', 'payment': Decimal('4.00')})
     ticket_types.append({'name': 'Volunteer', 'payment': Decimal('0.00')})
     companies = []
     if selected_company:
-        shows.append(_get_company_tickets_by_type(selected_company, ticket_types))
+        companies.append(_get_company_tickets_by_type(selected_company, ticket_types))
     else:
         ticketed_company_ids = Show.objects.filter(festival = request.festival, venue__is_ticketed = True).values('company_id').distinct()
         for company in Company.objects.filter(id__in = ticketed_company_ids).order_by('name'):
