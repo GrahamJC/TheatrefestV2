@@ -11,7 +11,7 @@ charset-normalizer==2.0.12
 colorama==0.4.4
 confusable-homoglyphs==3.2.0
 dill==0.3.5.1
-Django==4.0.5
+Django==4.0.7
 django-appconf==1.0.5
 django-autocomplete-light==3.9.4
 django-bootstrap-datepicker-plus==4.0.0
