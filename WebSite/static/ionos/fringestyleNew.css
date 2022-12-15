@@ -1,0 +1,529 @@
+* {margin: 0; padding: 0;}
+html { font-size: 16px; overflow-y: scroll; -webkit-text-size-adjust: 16px; }
+body {background: #fff; color:#233; scrollbar-base-color: #ddd; font-size: 62.5%;}
+h1 {font-size: 18px; font-family: verdana, sans-serif; font-weight: bold; color: #cc0d87; text-align: left; letter-spacing: .1em; padding-bottom: 8px}
+h2 {font-family: verdana, sans-serif; font-size: 14px; font-weight: bold; font-style: normal; color: #cc0d87; letter-spacing: .02em; padding-bottom: 30px}
+h3 {font-family: verdana, sans-serif; font-size: 11px; font-weight: bold; line-height: 1.3; margin-top: 0px; color: #ff339a; padding-bottom: 8px}
+h4 {color: #cc0d87; font-family: verdana, sans-serif; font-size: 24px; padding: 0px}
+h5 {font-family: arial, sans-serif; font-size: 16px; font-weight: bold; color: #ff339a; padding-bottom: 8px}
+h6 {font-family: arial, sans-serif; font-size: 14px; font-weight: bold; color: #3da1ed; padding-bottom: 8px}
+
+img {border: 0}
+p{font-family: verdana, sans-serif; font-size: 13px; line-height: 1.5; font-weight: normal; margin-top: 0px; padding-bottom: 8px;}
+span {font-family: verdana, sans-serif; font-weight: normal; font-size: 14px; }
+
+#header {width: 800px; position: absolute; left: 50%; margin-left: -400px; margin-top: 5px; z-index: 0}
+#holder {width: 800px; position: absolute; left: 50%; margin-left: -400px; margin-top: 5px; z-index: 2}
+#footer {
+	position: absolute;
+	left: 167px;
+	top: 499px
+}
+a:link {font-family: verdana, sans-serif; font-weight: normal; font-size: 13px; color:#cc0d87; text-decoration: underline;}
+a:visited {font-family: verdana, sans-serif; font-weight: normal; font-size: 13px; color:#cc0d87; text-decoration: underline}
+a:hover {font-family: verdana, sans-serif; font-weight: normal; font-size: 13px; color:#1590ca; text-decoration:underline;}
+a:active {font-family: verdana, sans-serif; font-weight: normal; font-size: 13px; color:#cc0d87; text-decoration:none;}
+
+.page2 a:link {font-family: verdana, sans-serif; font-weight: bold; font-size: 10px; color:#1590ca; text-decoration: none;}
+.page2 a:visited {font-family: verdana, sans-serif; font-weight: bold; font-size: 10px; color:#1590ca; text-decoration: none}
+.page2 a:hover {font-family: verdana, sans-serif; font-weight: bold; font-size: 10px; color:#cc0d87; text-decoration: none;}
+.page2 a:active {font-family: verdana, sans-serif; font-weight: bold; font-size: 10px; color:#1590ca; text-decoration: none;}
+
+#ownreview a:link {font-family: verdana, sans-serif; font-weight: bold; font-size: 14px; color:#1590ca; text-decoration: underline;}
+#ownreview a:visited {font-family: verdana, sans-serif; font-weight: bold; font-size: 14px; color:#1590ca; text-decoration: underline}
+#ownreview a:hover {font-family: verdana, sans-serif; font-weight: bold; font-size: 14px; color:#cc0d87; text-decoration:underline;}
+#ownreview a:active {font-family: verdana, sans-serif; font-weight: bold; font-size: 14px; color:#1590ca; text-decoration:none;}
+
+#schedule {position: absolute; left: 31%; top: 200px; width: 40%; border-bottom: solid 20px #000066;}
+#schedule a:link {font-family: verdana, sans-serif; font-weight: bold; font-size: 9px; color:#000066; text-decoration:none;}
+#schedule a:visited {font-family: verdana, sans-serif; font-weight: bold; font-size: 9px; color:#000066; text-decoration:none}
+#schedule a:hover {font-family: verdana, sans-serif; font-weight: bold; font-size: 9px; color:#cc0d87; text-decoration:none;}
+#schedule a:active {font-family: verdana, sans-serif; font-weight: bold; font-size: 9px; color:#ffffff; text-decoration:none;}
+
+#companysched a:link {font-family: verdana, sans-serif; font-weight: normal; font-size: 12px; color:#cc0d87; text-decoration:none;}
+#companysched a:visited {font-family: verdana, sans-serif; font-weight: normal; font-size: 12px; color:#cc0d87; text-decoration:none}
+#companysched a:hover {font-family: verdana, sans-serif; font-weight: normal; font-size: 12px; color:#336ff8; text-decoration:none;}
+#companysched a:active {font-family: verdana, sans-serif; font-weight: normal; font-size: 12px; color:#cc0d87; text-decoration:none;}
+
+#scheduledates {
+	position: absolute;
+	left: 30px;
+	top: 139px
+}
+#scheduledates h1 {color: #336ff8}
+
+#form {
+	position: absolute;
+	z-index: 2;
+	left: 217px;
+	top: 138px
+}
+#contactform {
+	position: absolute;
+	z-index: 2;
+	left: 217px;
+	top: 216px
+}
+
+#punters {
+	position: absolute;
+	right: 0px;
+	top: 160px;
+	width: 200px;
+	z-index: 3;
+}
+#punters p {font-size: 11px; color:#1590ca}
+
+#punters a:link {font-family: verdana, sans-serif; font-weight: normal; font-size: 11px; color:#cc0d87; text-decoration: underline;}
+#punters a:visited {font-family: verdana, sans-serif; font-weight: normal; font-size: 11px; color:#cc0d87; text-decoration: underline}
+#punters a:hover {font-family: verdana, sans-serif; font-weight: normal; font-size: 11px; color:#11aadd; text-decoration:underline;}
+#punters a:active {font-family: verdana, sans-serif; font-weight: normal; font-size: 11px; color:#cc0d87; text-decoration:none;}
+
+.thumb {background-color: #ffffdd; cursor: pointer}
+
+.pic {position: absolute; left: 143px; top: 200px;}
+.pic {z-index: 4; background-color: #ffffcc; padding: 18px; visibility: hidden}
+.pic p {font-weight: bold; text-align: center}
+#text {
+	position: absolute;
+	left: 21px;
+	top: 182px;
+	width: 500px;
+	z-index: 2;
+	
+}
+#comingshortlytext {
+	position: absolute;
+	left: 120px;
+	top: 150px;
+	width: 500px;
+	z-index: 2;
+	
+}
+#comingshortlytext p {font-weight: bold;}
+#performrubric {position: absolute; left: 0px; top: 170px; width: 400px;}
+#showrubric {width: 100%; padding-right: 30px;}
+#showrubric p {color: #1075a7}
+#entryrubric {
+	position: absolute;
+	left: 5px;
+	top: 203px;
+	width: 180px
+}
+#entryrubric p {font-size: 12px;}
+
+#play {
+	position: absolute;
+	left: 0px;
+	top: 170px;
+	width: 800px;
+}
+#play h1 {font-style: normal;}
+#play h2 {text-align: center}
+#playlist {
+	position: absolute;
+	left: 170px;
+	top: 160px;
+	width: 561px;
+}
+#playlist ul {list-style-type: none; margin: 0; padding: 0px; line-height: 1.4}
+#playlist ul a{font-weight: bold}
+
+#title {font-family: Verdana, Helvetica, sans-serif; font-size: 12px; font-weight: bold; padding-left: 12px}
+#ideas {font-family: Verdana, Helvetica, sans-serif; font-size: 16px; font-style: italic; font-weight:bold;}
+.headbox {font-family: Verdana, Helvetica, sans-serif; font-size: 12px; color: #FFFF00; text-align: center;}
+.hidbox {font-family: Verdana, Helvetica, sans-serif; font-size: 12px; font-weight: 700; color: #FFFF99; text-align: center;}
+#header {border-style: solid; border-width: 1px; border-bottom-color: #006699; border-left-color: #CCFFFF; border-top-color: #CCFFFF; border-right-color: #006699;}
+.indexlink {font-weight: bold; font-style: italic;}
+.linklist a{display: block;}
+ul {font-family: verdana, sans-serif; font-size: 12px; line-height: 1.3; margin-top: 0px;}
+ol {font-family: verdana, sans-serif; font-size: 11px; line-height: 1.3; margin-top: 0px; margin-left: 20px}
+
+#fringelogo {
+	position: absolute;
+	left: -10px;
+	top: -4px;
+	z-index: 6
+}
+#ndtlogo {
+	position: absolute;
+	right: -10%;
+	top: 3em;
+	width: 25%;
+	z-index: 8;
+}
+#BpleFringeFest {
+	position: absolute;
+	left: 8%;
+	width: 99%;
+	top: 9.7em;
+	z-index: 9;
+}
+@media (min-width: 610px) and (max-width: 910px) {#BpleFringeFest {position: absolute; left: 2.45em; top: 11.1em; font-size: 1.1em; z-index: 5}} 
+@media (min-width: 910px) {#BpleFringeFest {position: absolute; left: 4.15em; top: 11.5em; font-size: 1.3em; z-index: 3}}
+#movie {position: absolute; left: 0%; top: 0%; z-index: -1}
+#ndflogo {
+	position: absolute;
+	right: 122px;
+	top: 0px;
+	width: 140px;
+	z-index: 3;
+}
+#menubar {position: absolute; top: 133px; left: 0px; z-index: 2}
+#topmenu {
+	position: absolute;
+	top: 130px;
+	left: 0px;
+	z-index: 5;
+	padding: 5px 0px;
+	width: 800px;
+	height: 25px;
+}
+
+#schedulemenu {
+	position: absolute;
+	top: 160px;
+	left: 0px;
+	z-index: 5;
+	padding: 5px 0px;
+	width: 800px;
+	height: 25px;
+}
+ul#menu {line-height: 1.7; list-style-type: none;  text-align: right; padding-left: 0px; margin-left: 0;}
+
+ul#menu li a:link {font-family: verdana, sans-serif; font-weight: bold; font-size: 12px; color:#fff; text-decoration:none;}
+ul#menu li a:visited {font-family: verdana, sans-serif; font-weight: bold; font-size: 12px; color:#fff; text-decoration:none;}
+ul#menu li a:hover {font-family: verdana, sans-serif; font-weight: bold; font-size: 12px; color:#b0dff6; text-decoration:none;}
+ul#menu li a:active {font-family: verdana, sans-serif; font-weight: bold; font-size: 12px; color:#fff; text-decoration:none;}
+
+ul#menu li {display: inline; float: left; padding: 0px 40px 0px 18px}
+
+ul#menuarchive {line-height: 1.7; list-style-type: none;  text-align: right; padding-left: 0px; margin-left: 0;}
+
+ul#menuarchive li a:link {font-family: verdana, sans-serif; font-weight: bold; font-size: 12px; color:#fff; text-decoration:none;}
+ul#menuarchive li a:visited {font-family: verdana, sans-serif; font-weight: bold; font-size: 12px; color:#fff; text-decoration:none;}
+ul#menuarchive li a:hover {font-family: verdana, sans-serif; font-weight: bold; font-size: 12px; color:#b0dff6; text-decoration:none;}
+ul#menuarchive li a:active {font-family: verdana, sans-serif; font-weight: bold; font-size: 12px; color:#fff; text-decoration:none;}
+
+ul#menuarchive li {display: inline; float: left; padding: 0px 20px 0px 15px}
+
+ul#schedmenu li a:link {font-family: verdana, sans-serif; font-weight: bold; font-size: 12px; color:#1590ca; text-decoration:none;}
+ul#schedmenu li a:visited {font-family: verdana, sans-serif; font-weight: bold; font-size: 12px; color:#1590ca; text-decoration:none;}
+ul#schedmenu li a:hover {font-family: verdana, sans-serif; font-weight: bold; font-size: 12px; color:#cc0d87; text-decoration:none;}
+ul#schedmenu li a:active {font-family: verdana, sans-serif; font-weight: bold; font-size: 12px; color:#1590ca; text-decoration:none;}
+
+ul#schedmenu li {display: inline; float: left; padding: 0px 22px 0px 18px}
+#strapline {
+	position: absolute;
+	left:49px;
+	top: 193px;
+	width: 29%;
+	height: 30px;
+	z-index: 3
+}
+#address {
+	position: absolute;
+	left: 10px;
+	top: 215px;
+	width: 268px
+}
+#addressindent {position: absolute;
+	left: 20px;
+	top: 35px;
+	
+	}
+#addressbgd {position: absolute; left: 46%; top: 190px; width: 220px; height: 180px; padding: 10px 8px 20px 8px;}
+#feedback {position: absolute; left: 25%; top: 200px; text-align: center; z-index: 7}
+#comments {
+	position: absolute;
+	left: 0px;
+	top: 164px;
+	width: 270px;
+	overflow: auto;
+}
+#comments p {font-family: verdana, arial; font-size: 13px; font-weight: bold; color: #0000CC}
+#comments a {font-size: 12px; font-family: verdana, arial; font-weight: bold}
+#here {font-family: verdana, sans-serif; font-weight: normal; font-size: 11px; color: #ffffff}
+#entryform {
+	position: absolute;
+	left: 227px;
+	top: 165px;
+	text-align: left;
+	z-index: 7;
+	width: 480px;
+}
+#publicityform {
+	position: absolute;
+	left: 200px;
+	top: 150px;
+	text-align: left;
+	z-index: 7;
+	width: 434px;
+}
+
+#noscript {position: absolute; left: 4.5%; top: 24px;}
+.leftpic {float: left; padding-right: 20px; padding-bottom: 6px; padding-top: 3px}
+.rightpic {float: right; padding-left: 10px; padding-bottom: 6px; padding-top: 3px}
+#genre {padding-left: 5px}
+
+#venuepics {position: absolute; left: 25px; width: 150px}
+#venuetext {
+	position: absolute;
+	left: 20px;
+	width: 406px;
+	padding-left: 12px
+}
+#venuetext img {padding-right: 40px}
+#VenueMap {position: absolute; left: 210px}
+#VenueMap h2 {color: #d455b2; text-align: left; line-height: 1.4}
+#results {
+	position: absolute;
+	left: 15px;
+	top: 180px;
+	z-index: 6;
+	width: 600px;
+}
+#productionsdate {
+	position: absolute;
+	left: 175px;
+	top: 157px;
+	z-index: 6;
+	width: 314px;
+}
+.page {position: absolute; left: 170px; top: 190px; width: 620px; font-size: 11px; z-index: 6}
+
+.applications {position: absolute; left: 0px; top: 207px; width: 800px; font-size: 11px; z-index: 6}
+#choices {position: absolute; left: 30px; top: 40px; width: 740px; font-size: 11px; z-index: 9}
+#choicequestion {position: absolute; left: 40px; top: 176px; width: 200px}
+.productions {position: absolute; left: 30px; top: 210px; width: 740px; font-size: 11px; z-index: 6}
+.page2 {position: absolute; left: 18px; top: 235px; width: 770px; font-size: 9px; z-index: 6}
+.cell1 {border-top: solid 2px #edd; border-right: solid 3px #edd; border-left: solid 3px #edd; background-color: #ffffff; padding: 3px; height: 20px}
+.cell2 {border: solid 3px #edd; border-top: solid 2px #edd; background-color: #ffffff; padding: 3px; height: 20px;}
+.cell3 {border: solid 3px #edd; background-color: #ffffff; padding: 3px; height: 20px; border-bottom: 0px}
+.comp {
+	position: absolute;
+	left: 10px;
+	width: 42%;
+	color: #000000;
+	font-weight: normal
+}
+.prod {position: absolute; left: 33%; width: 50%; color: #000000; font-weight: bold}
+.loc {position: absolute; left: 85%; width: 15%; color: #000000; font-weight: normal}
+
+
+.cell1b {border-top: solid 1px #058bca; background-color: #fff; padding: 3px; padding-top: 10px; height: 25px}
+.cell2b {border-top: solid 1px #058bca; background-color: #fff; border-bottom: solid 3px #058bca; padding: 3px; height: 25px;}
+.cell3b {background-color: #fff; padding: 3px; height: 25px;}
+.cell4b {border-bottom: solid 1px #058bca; background-color: #fff; padding: 3px; padding-top: 0px; height: 25px}
+.cell6b {border-top: solid 1px #058bca; background-color: #fff; border-bottom: solid 1px #058bca; padding: 3px; height: 40px;}
+.cell1c {border-top: solid 1px #058bca; background-color: #eee; padding: 3px; padding-top: 10px; height: 25px}
+
+#schedulelist {
+	position: absolute;
+	left: 211px;
+	top: 200px;
+	width: 396px;
+	z-index: 6
+}
+#schedulelist ul li {display: inline; float: left; padding: 0px 0px 0px 0px}
+#schedulelist ul {list-style-type: none; margin: 0; padding: 0px; font-weight: bold}
+
+#PDF a:link {font-family: verdana, sans-serif; font-weight: bold; font-size: 13px; color:#1590ca; text-decoration:underline;}
+#PDF a:visited {font-family: verdana, sans-serif; font-weight: bold; font-size: 13px; color:#1590ca; text-decoration:underline;}
+#PDF a:hover {font-family: verdana, sans-serif; font-weight: bold; font-size: 13px; color:#cc0d87; text-decoration:underline;}
+#PDF a:active {font-family: verdana, sans-serif; font-weight: bold; font-size: 13px; color:#1590ca; text-decoration:underline;}
+#PDF{border-top: solid 1px #058bca; background-color: #fff; padding: 3px; padding-top: 10px; height: 25px}
+
+.comp1 {position: absolute; left: 0px; width: 198px; color: #666666; font-weight: normal}
+.prod1 {position: absolute; left: 200px; width: 198px; color: #666666; font-weight: normal}
+.loc1 {position: absolute; left: 400px; width: 198px; color: #666666; font-weight: normal}
+.loc5 {position: absolute; left: 400px; width: 300px; color: #666666; font-weight: normal}
+
+.btp1 {position: absolute; left: 600px; width: 198px; color: #666666; font-weight: normal}
+
+.comp2 {position: absolute; left: 0px; width: 298px; color: #333333; font-weight: bold; font-size: 13px}
+
+.comp6 {position: absolute; left: 8px; width: 50%; color: #333333; font-weight: bold; font-size: 13px}
+
+.prod2 {
+	position: absolute;
+	left: 200px;
+	width: 198px;
+	color: #333333;
+	font-weight: bold;
+	font-size: 13px;
+	}
+.loc2 {
+	position: absolute;
+	left: 400px;
+	width: 198px;
+	color: #333333;
+	font-weight: bold;
+	font-size: 13px
+}
+.loc2a {
+	position: absolute;
+	left: 150px;
+	width: 198px;
+	color: #333333;
+	font-weight: bold;
+	font-size: 13px
+}
+.btp2 {
+	position: absolute;
+	left: 600px;
+	width: 198px;
+	color: #333333;
+	font-weight: bold;
+	font-size: 13px
+}
+
+.prod3 {position: absolute; left: 200px; width: 350px; color: #666666; font-weight: normal}
+.loc3 {position: absolute; left: 500px; width: 198px; color: #666666; font-weight: normal}
+
+#companysched ul li{list-style-type: none; font-size: 1em;}
+.schedleft {text-align: right}
+
+#daylist {
+	position: absolute;
+	left: 636px;
+	top: 129px;
+	width: 120px;
+}
+#daylist ul {list-style-type: none}
+#daylist p {padding-bottom: 0px; font-size: 13px}
+#daylist a {font-size: 13px}
+#indeximage {
+	position: absolute;
+	left: 499px;
+	top: 140px;
+	width:87px;
+	height: 120px
+}
+#reviewlist {
+	position: absolute;
+	left: 50px;
+	top: 265px;
+	width: 250px
+}
+
+#reviewlist2 {
+	position: absolute;
+	left: 350px;
+	top: 265px;
+	width: 250px
+}
+
+.reviewul ul{line-height: 1.8; list-style-type: none; text-align: left; padding-left: 0; margin-left: 0;}
+#addreview {
+	position: absolute;
+	left: 50px;
+	top: 670px;
+	width: 300px
+}
+#addreview a:link {font-family: verdana, sans-serif; font-weight: normal; font-size: 14px; color:#336FF8; text-decoration:none;}
+#addreview a:visited {font-family: verdana, sans-serif; font-weight: normal; font-size: 14px; color:#336FF8; text-decoration:none}
+#addreview a:hover {font-family: verdana, sans-serif; font-weight: normal; font-size: 14px; color:#ff339a; text-decoration:none;}
+#addreview a:active {font-family: verdana, sans-serif; font-weight: normal; font-size: 14px; color:#ff339a; text-decoration:none;}
+#reviewpage {position: absolute; left: 180px; top: 180px; width: 440px; background-color: #ffffff; padding: 8px; border: solid 1px #1590ca}
+#backtoproduction {
+	position: absolute;
+	left: 75px;
+	top: 170px;
+}
+#backtoproduction a:link {color: #ff339a}
+#backtoproduction a:visited {color: #ff339a}
+#backtoproduction a:hover {color:#000099}
+#backtoproduction a:active {color:#000099}
+
+.comp1 a:hover {font-family: verdana, sans-serif; font-weight: bold; font-size: 10px; color:#cc0d87; text-decoration:none;}
+.prod1 a:hover {font-family: verdana, sans-serif; font-weight: bold; font-size: 10px; color:#cc0d87; text-decoration:none;}
+.loc1 a:hover {font-family: verdana, sans-serif; font-weight: bold; font-size: 10px; color:#cc0d87; text-decoration:none;}
+.loc5 a:hover {font-family: verdana, sans-serif; font-weight: bold; font-size: 10px; color:#cc0d87; text-decoration:none;}
+
+.btp1 a:hover {font-family: verdana, sans-serif; font-weight: bold; font-size: 10px; color:#cc0d87; text-decoration:none;}
+
+.cell1a {border-top: solid 1px #222; padding: 3px; height: 62px;}
+.cell1a p {font-size: 9px}
+.cell2a {border-top: solid 1px #222; border-bottom: solid 1px #222; padding: 3px; height: 62px;}
+.cell2a p {font-size: 9px}
+.compa {position: absolute; left: 8px; width: 42%; color: #000000; font-weight: normal}
+.proda {position: absolute; left: 70px; width: 240px; color: #000000; font-weight: bold}
+.loca {
+	position: absolute;
+	left: 650px;
+	width: 100px;
+	color: #000;
+	font-weight: normal;
+	
+}
+.prodblurb {position: absolute;
+	left: 315px;
+	width: 315px;
+		color: #058bca;
+		font-size: 11px;
+	font-weight: normal}
+#page3 a:link {font-size: 10px; font-weight: bold}
+#page3 a:visited {font-size: 10px; font-weight: bold}
+#page3 a:hover {font-size: 10px; font-weight: bold}
+#page3 a:active {font-size: 10px; font-weight: bold}
+
+#centralimages {position: absolute; left: 300px; top: 75px}
+#centralimages11 {position: absolute; left: 370px; top: 75px}
+#centralimages12 {position: absolute; left: 420px; top: 75px}
+#centralimages4 {position: absolute; left: 520px; top: 425px}
+#centralimages5 {position: absolute; left: 220px; top: 425px}
+#centralimages6 {position: absolute; left: 270px; top: 425px}
+#centralimages7 {position: absolute; left: 320px; top: 425px}
+#centralimages20 {position: absolute; left: 370px; top: 425px}
+#centralimages9 {position: absolute; left: 420px; top: 425px}
+#centralimages2 {position: absolute; left: 470px; top: 425px}
+#centralimages10 {position: absolute; left: 170px; top: 425px}
+#centralimages3 {position: absolute; left: 120px; top: 490px}
+#centralimages13 {position: absolute; left: 220px; top: 490px}
+#centralimages14 {position: absolute; left: 270px; top: 490px}
+#centralimages15 {position: absolute; left: 320px; top: 490px}
+#centralimages16 {position: absolute; left: 370px; top: 490px}
+#centralimages19 {position: absolute; left: 420px; top: 490px}
+#centralimages18 {position: absolute; left: 170px; top: 490px}
+#centralimages22 {position: absolute; left: 470px; top: 490px}
+#centralimages8 {position: absolute; left: 470px; top: 75px}
+#centralimages21 {position: absolute; left: 570px; top: 75px}
+#centralimages17 {position: absolute; left: 520px; top: 75px}
+
+#thumbholder {position: absolute; left: 30px; top: 225px; width: 350px}
+.picthumbs {padding: 3px}
+.picbig {position: absolute; left: 415px; top: 170px; visibility: hidden}
+#galleryinstructions {position: absolute; left: 450px; top: 220px; width: 230px}
+#galleryhere {font-family: verdana, sans-serif; font-weight: bold; font-size: 11px; color: #1590ca}
+
+#picsnav {position: absolute; left: 150px; top: 175px; width: 70%}
+#picsnav ul {list-style-type: none; margin: 0; padding: 0px}
+#picsnav ul li {display: inline; float: left; padding: 0px 5px 0px 0px}
+
+#picsnav li a:link {font-family: verdana, sans-serif; font-weight: bold; font-size: 11px; color:#cc0d87; text-decoration:none;}
+#picsnav li a:visited {font-family: verdana, sans-serif; font-weight: bold; font-size: 11px; color:#cc0d87; text-decoration:none;}
+#picsnav li a:hover {font-family: verdana, sans-serif; font-weight: bold; font-size: 11px; color:#ffffff; text-decoration:none; background-color: #cc0d87}
+#picsnav li a:active {font-family: verdana, sans-serif; font-weight: bold; font-size: 11px; color:#cc0d87; text-decoration:none;}
+#TopBorder {position: absolute; left: 0px; top: 0px; width: 100%; height: 135px; background-color:#5cd; z-index: 1}
+#dates {
+	position: absolute;
+	left: 387px;
+	top: 72px;
+}
+#BpleFringeFest {
+	position: absolute;
+	left: 106px;
+	top: 112px;
+}
+#ValueArts {position: absolute; right: 5px}
+#twitter {position: absolute; right: 0px}
+#artsents {position: absolute; right: 0px}
+#WorldFestivals {position: absolute; right: 0px}
+.footerimages {padding-right: 3px}
+td {padding: 3px; border-color: #aaccff}
+#bridge {position: absolute; right: 0px; top: 50px; z-index: 0}
+#flipvid {position: absolute; right: 0px; top: 250px}
+#reviewform {position: absolute; left: 30px; top: 180px; width: 520px}
+#movingpictures {position: relative; width:300px; float: right; padding-left: 10px; padding-bottom: 6px; padding-top: 3px}
+#movingpictures img { position:absolute; top: 0px; width:300px; }

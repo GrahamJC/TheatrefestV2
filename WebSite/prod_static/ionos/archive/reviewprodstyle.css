@@ -1,0 +1,25 @@
+* {margin: 0; padding:0}
+#reviewlist {
+	position: absolute;
+	left: 654px;
+	top: 146px;
+	width: 148px
+}
+#reviewimage {position: absolute; left: 160px; top: 110px}
+span {float: right; font-weight: normal; font-style: italic; font-size: 0.9em}
+.page { display: none; 
+	position: absolute; 
+	left: 180px; 
+	top: 130px; 
+	width: 440px; 
+	background: #eeeeee; 
+	color: #222222; 
+	border: solid 12px #dddddd;
+	padding: 10px; 
+	z-index: 6}
+.page img {float: left; padding-right: 10px; padding-bottom: 8px}
+.review a:link {font-family: arial, sans-serif; font-weight: bold; font-size: 12px; color:#ffff99; text-decoration:none}
+.review a:visited {font-family: arial, sans-serif; font-weight: bold; font-size: 12px; color:#ffff99; text-decoration:none}
+.review a:hover {font-family: arial, sans-serif; font-weight: bold; font-size: 12px; color:#FFFF00; text-decoration:none}
+.review a:active {font-family: arial, sans-serif; font-weight: bold; font-size: 12px; color:#FFFF00; text-decoration:none}
+.review a {display: block; line-height: 2;}

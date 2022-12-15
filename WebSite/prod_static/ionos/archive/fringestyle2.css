@@ -1,0 +1,202 @@
+* {margin: 0; padding: 0;}
+body {background: #ffffdd; color:#000099; scrollbar-base-color: #ffe0d7; font-size: 62.5%;}
+h1 {font-size: 23px; font-family: arial, sans-serif; font-weight: bold; color: #ff339a; text-align: left; padding-bottom: 10px}
+h2 {font-family: arial, sans-serif; font-size: 14px; font-weight: bold; font-style: italic; color: #ff339a; padding-bottom: 8px}
+h3 {font-family: verdana, sans-serif; font-size: 11px; font-weight: bold; line-height: 1.3; margin-top: 0px; color: #ff339a; padding-bottom: 8px}
+h4 {color: #3366f8; font-family: verdana, sans-serif; font-size: 14px; padding: 0px}
+h5 {font-family: arial, sans-serif; font-size: 16px; font-weight: bold; color: #ff339a; padding-bottom: 8px}
+img {border: 0}
+p{font-family: verdana, sans-serif; font-size: 11px; line-height: 1.5; margin-top: 0px; padding-bottom: 8px}
+span {font-family: arial, sans-serif; font-style: normal; font-size: 9px;}
+
+#holder {width: 800px; position: absolute; left: 50%; margin-left: -400px; margin-top: 30px; z-index: 1}
+#bgd {position: absolute; left: 50%; margin-left: -400px; margin-top: 30px; z-index: 0;}
+
+a:link {font-family: verdana, sans-serif; font-weight: normal; font-size: 11px; color:#336FF8; text-decoration:none;}
+a:visited {font-family: verdana, sans-serif; font-weight: normal; font-size: 11px; color:#336FF8; text-decoration:none}
+a:hover {font-family: verdana, sans-serif; font-weight: normal; font-size: 11px; color:#ff339a; text-decoration:none;}
+a:active {font-family: verdana, sans-serif; font-weight: normal; font-size: 11px; color:#ff339a; text-decoration:none;}
+
+#schedule {position: absolute; left: 31%; top: 200px; width: 40%; border-bottom: solid 3px #eeeecc}
+#schedule a:link {font-family: verdana, sans-serif; font-weight: bold; font-size: 9px; color:#000066; text-decoration:none;}
+#schedule a:visited {font-family: verdana, sans-serif; font-weight: bold; font-size: 9px; color:#000066; text-decoration:none}
+#schedule a:hover {font-family: verdana, sans-serif; font-weight: bold; font-size: 9px; color:#df3977; text-decoration:none;}
+#schedule a:active {font-family: verdana, sans-serif; font-weight: bold; font-size: 9px; color:#ffffff; text-decoration:none;}
+
+#scheduledates {
+	position: absolute;
+	left: 77px;
+	top: 137px
+}
+#scheduledates h1 {color: #336ff8}
+#venuethumb {position: absolute; right: 3%; top: 200px}
+#cafethumb {position: absolute; right: 3%; top: 310px}
+#surmothumb {position: absolute; right: 3%; top: 420px}
+#entanglementthumb {position: absolute; right: 3%; top: 540px}
+
+#form {position: absolute; z-index: 2; left: 180px; top: 150px}
+#punters {
+	position: absolute;
+	right: 2px;
+	top: 199px;
+	width: 140px
+}
+#punters p {font-size: 10px; color: #FF0099}
+.thumb {background-color: #ffffdd; cursor: pointer}
+
+.pic {position: absolute; left: 143px; top: 200px;}
+.pic {z-index: 4; background-color: #ffffcc; padding: 18px; visibility: hidden}
+.pic p {font-weight: bold; text-align: center}
+#text {
+	position: absolute;
+	left: 156px;
+	top: 135px;
+	width: 475px;
+	z-index: 2
+}
+#performrubric {position: absolute; left: 180px; top: 150px; width: 400px;}
+#showrubric {width: 580px; padding-right: 30px;}
+#showrubric p {color: #2011aa}
+#play {position: absolute; left: 170px; top: 150px;}
+#play h1 {font-style: normal; color: #2011aa}
+#title {font-family: Verdana, Helvetica, sans-serif; font-size: 12px; font-weight: bold; padding-left: 12px}
+#ideas {font-family: Verdana, Helvetica, sans-serif; font-size: 16px; font-style: italic; font-weight:bold;}
+.headbox {font-family: Verdana, Helvetica, sans-serif; font-size: 12px; color: #FFFF00; text-align: center;}
+.hidbox {font-family: Verdana, Helvetica, sans-serif; font-size: 12px; font-weight: 700; color: #FFFF99; text-align: center;}
+#header {border-style: solid; border-width: 1px; border-bottom-color: #006699; border-left-color: #CCFFFF; border-top-color: #CCFFFF; border-right-color: #006699;}
+.indexlink {font-weight: bold; font-style: italic;}
+.linklist a{display: block;}
+ul {font-family: verdana, sans-serif; font-size: 12px; line-height: 1.3; margin-top: 0px;}
+ol {font-family: verdana, sans-serif; font-size: 11px; line-height: 1.3; margin-top: 0px; margin-left: 20px}
+
+#fringelogo {
+	position: absolute;
+	left: 242px;
+	top: 12px;
+}
+
+#movie {position: absolute; left: 0%; top: 0%; z-index: -1}
+#ndflogo {position: absolute; right: 2%; top: 15px; filter: progid:DXImageTransform.Microsoft.BasicImage(opacity=0.7); -moz-opacity: 0.7}
+#ndflogo08 {
+	position: absolute;
+	right: -7px;
+	top: 28px;
+	width: 186px;
+filter: progid:DXImageTransform.Microsoft.BasicImage(opacity=0.9); -moz-opacity: 0.9
+}
+
+#topmenu {position: absolute; top: 178px; left: 17px; width: 110px; z-index: 5; padding: 5px 0px}
+ul#menu {line-height: 1.8em; list-style-type: none; text-align: right; padding-left: 0; margin-left: 0;}
+ul#menu li a:link {font-family: verdana, sans-serif; font-weight: bold; font-size: 10px; color:#336FF8; text-decoration:none;}
+ul#menu li a:visited {font-family: verdana, sans-serif; font-weight: bold; font-size: 10px; color:#336FF8; text-decoration:none;}
+ul#menu li a:hover {font-family: verdana, sans-serif; font-weight: bold; font-size: 10px; color:#ffffff; text-decoration:none; background-color: #ff339a}
+ul#menu li a:active {font-family: verdana, sans-serif; font-weight: bold; font-size: 10px; color:#ff339a; text-decoration:none;}
+ul#menu li a:link, ul#menu li a:visited {display: block; width: 88%; padding: 0 6%}
+#borderbar {position: absolute; right: 2%; top: 195px; width: 118px; height: 200px; background-color: #4033cc; z-index: 0; 
+filter: progid:DXImageTransform.Microsoft.BasicImage(opacity=0.7); -moz-opacity: 0.7}
+#strapline {position: absolute; left:20%; top: 170px; width: 29%; height: 30px; z-index: 3}
+#address {position: absolute; left: 48%; top: 240px; width: 200px}
+#addressbgd {position: absolute; left: 46%; top: 190px; width: 220px; height: 180px; padding: 10px 8px 20px 8px;}
+#feedback {position: absolute; left: 25%; top: 200px; text-align: center; z-index: 7}
+#comments {position: absolute; left: 51%; top: 440px; width: 250px;}
+#comments p {font-family: verdana, arial; font-size: 13px; font-weight: bold; color: #0000CC}
+#comments a {font-size: 12px; font-family: verdana, arial; font-weight: bold}
+#here {font-family: verdana, sans-serif; font-weight: normal; font-size: 11px; color: #ffffff}
+#entryform {position: absolute; left: 30%; top: 160px; text-align: right; z-index: 7}
+#noscript {position: absolute; left: 4.5%; top: 24px;}
+.leftpic {float: left; padding-right: 10px; padding-bottom: 8px; padding-top: 3px}
+.rightpic {float: right; padding-left: 10px; padding-bottom: 8px; padding-top: 3px}
+
+#venuepics {position: absolute; width: 150px}
+#venuetext {position: absolute; left: 150px; width: 450px; padding-left: 12px}
+#results {
+	position: absolute;
+	left: 174px;
+	top: 147px;
+	z-index: 6
+}
+.page {position: absolute; left: 170px; top: 190px; width: 620px; font-size: 11px; z-index: 6}
+#page1 a:link {font-size: 11px; font-weight: bold}
+#page1 a:visited {font-size: 11px; font-weight: bold}
+#page1 a:hover {font-size: 11px; font-weight: bold}
+#page1 a:active {font-size: 11px; font-weight: bold}
+
+.page2 {position: absolute; left: 75px; top: 215px; width: 680px; font-size: 9px; z-index: 6}
+.cell1 {border-top: solid 3px #eeeecc; border-right: solid 5px #eeeecc; border-left: solid 5px #eeeecc; background-color: #ffffff; padding: 3px; height: 20px}
+.cell2 {border: solid 5px #eeeecc; border-top: solid 3px #eeeecc; background-color: #ffffff; padding: 3px; height: 20px;}
+.cell3 {border: solid 5px #eeeecc; background-color: #ffffff; padding: 3px; height: 20px; border-bottom: 0px}
+.comp {position: absolute; left: 8px; width: 30%; color: #000000; font-weight: normal}
+.prod {position: absolute; left: 37%; width: 50%; color: #000000; font-weight: bold}
+.loc {position: absolute; left: 85%; width: 15%; color: #000000; font-weight: normal}
+
+.comp1 a:hover {font-family: verdana, sans-serif; font-weight: bold; font-size: 11px; color:#ffffff; text-decoration:none; background-color: #ff339a}
+.prod1 a:hover {font-family: verdana, sans-serif; font-weight: bold; font-size: 11px; color:#ffffff; text-decoration:none; background-color: #ff339a}
+.loc1 a:hover {font-family: verdana, sans-serif; font-weight: bold; font-size: 11px; color:#ffffff; text-decoration:none; background-color: #ff339a}
+
+#schedulelist {
+	position: absolute;
+	left: 211px;
+	top: 173px;
+	width: 396px;
+	z-index: 6
+}
+#schedulelist ul li {display: inline; float: left; padding: 0px 0px 0px 0px}
+#schedulelist ul {list-style-type: none; margin: 0; padding: 0px; font-weight: bold}
+
+#PDF a:link {font-family: verdana, sans-serif; font-weight: bold; font-size: 13px; color:#000099; text-decoration:none; background-color: #ff66bb}
+#PDF a:visited {font-family: verdana, sans-serif; font-weight: bold; font-size: 13px; color:#000099; text-decoration:none; background-color: #ff66bb}
+#PDF a:hover {font-family: verdana, sans-serif; font-weight: bold; font-size: 13px; color:#ff339a; text-decoration:none; background-color: #336ff8}
+#PDF a:active {font-family: verdana, sans-serif; font-weight: bold; font-size: 13px; color:#ff339a; text-decoration:none; background-color: #336ff8}
+
+.comp1 {position: absolute; left: 8px; width: 30%; color: #666666; font-weight: normal}
+.prod1 {position: absolute; left: 37%; width: 30%; color: #666666; font-weight: normal}
+.loc1 {position: absolute; left: 72%; width: 30%; color: #666666; font-weight: normal}
+.comp2 {position: absolute; left: 8px; width: 30%; color: #333333; font-weight: bold; font-size: 14px}
+.prod2 {position: absolute; left: 37%; width: 50%; color: #333333; font-weight: bold; font-size: 14px}
+.loc2 {position: absolute; left: 72%; width: 15%; color: #333333; font-weight: bold; font-size: 14px}
+
+#companysched ul li{list-style-type: none; font-size: 1em; color: #ff339a}
+.schedleft {text-align: right}
+
+#daylist {
+	position: absolute;
+	left: 636px;
+	top: 129px;
+	width: 120px;
+}
+#daylist ul {list-style-type: none}
+#daylist p {padding-bottom: 0px; font-size: 13px}
+#daylist a {font-size: 13px}
+#indeximage {
+	position: absolute;
+	left: 499px;
+	top: 140px;
+	width:87px;
+	height: 120px
+}
+#reviewlist {
+	position: absolute;
+	left: 200px;
+	top: 215px;
+	width: 250px
+}
+
+#reviewlist2 {
+	position: absolute;
+	left: 460px;
+	top: 215px;
+	width: 250px
+}
+
+.reviewul ul{line-height: 1.8; list-style-type: none; text-align: left; padding-left: 0; margin-left: 0;}
+#addreview {
+	position: absolute;
+	left: 200px;
+	top: 490px;
+	width: 300px
+}
+#addreview a:link {font-family: verdana, sans-serif; font-weight: normal; font-size: 14px; color:#ff339a; text-decoration:none;}
+#addreview a:visited {font-family: verdana, sans-serif; font-weight: normal; font-size: 14px; color:#ff339a; text-decoration:none}
+#addreview a:hover {font-family: verdana, sans-serif; font-weight: normal; font-size: 14px; color:#336FF8; text-decoration:none;}
+#addreview a:active {font-family: verdana, sans-serif; font-weight: normal; font-size: 14px; color:#336FF8; text-decoration:none;}
+#reviewpage {position: absolute; left: 200px; top: 215px; width: 400px; background-color: #ffffff; padding: 8px; border: solid 6px #eecccc}

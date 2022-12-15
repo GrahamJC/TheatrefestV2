@@ -1,0 +1,56 @@
+body {background: #ffffdd; color: #111111; scrollbar-base-color: #222288; font-size: 62.5%;}
+h1 {font-size: 2.3em; font-family: arial, sans-serif; font-weight: bold; color: #ff339a; text-align: center;}
+h2 {font-family: arial, sans-serif; font-size: 1.4em; font-style: italic; font-weight: bold; color: #ff339a}
+h3 {font-family: verdana, sans-serif; font-size: 1.4em; font-weight: bold; line-height: 1.3; margin-top: 0px; color: #f6eecf}
+img {border: 0}
+p{font-family: verdana, sans-serif; font-size: 1.2em; line-height: 1.3; margin-top: 0px;}
+span {font-family: arial, sans-serif; font-size: 0.9em;}
+a:link {font-family: verdana, sans-serif; font-weight: normal; font-size: 1.1em; color:#0000cc; text-decoration:none;}
+a:visited {font-family: verdana, sans-serif; font-weight: normal; font-size: 1.1em; color:#0000cc; text-decoration:none}
+a:hover {font-family: verdana, sans-serif; font-weight: normal; font-size: 1.1em; color:#ffffff; text-decoration:none; background-color: #ff339a}
+a:active {font-family: verdana, sans-serif; font-weight: normal; font-size: 1.1em; color:#ff339a; text-decoration:none;}
+
+#schedule {position: absolute; left: 31%; top: 200px; width: 40%; border-bottom: solid 20px #000066;}
+#schedule a:link {font-family: verdana, sans-serif; font-weight: bold; font-size: 0.9em; color:#000066; text-decoration:none;}
+#schedule a:visited {font-family: verdana, sans-serif; font-weight: bold; font-size: 0.9em; color:#000066; text-decoration:none}
+#schedule a:hover {font-family: verdana, sans-serif; font-weight: bold; font-size: 0.9em; color:#df3977; text-decoration:none;}
+#schedule a:active {font-family: verdana, sans-serif; font-weight: bold; font-size: 0.9em; color:#ffffff; text-decoration:none;}
+
+#text {position: absolute; left: 20%; top: 160px; width: 500px; z-index: 2}
+#performrubric {position: absolute; left: 31%; top: 200px; width: 40%; border-bottom: solid 20px #000066;}
+#title {font-family: "Verdana", "Helvetica", sans-serif; font-size: 12px; font-weight: bold; padding-left: 12px}
+#ideas {font-family: "Verdana", "Helvetica", sans-serif; font-size: 16px; font-style: italic; font-weight:bold;}
+.headbox {font-family: "Verdana", "Helvetica", sans-serif; font-size: 12px; color: #FFFF00; text-align: center;}
+.hidbox {font-family: "Verdana", "Helvetica", sans-serif; font-size: 12px; font-weight: 700; color: #FFFF99; text-align: center;}
+#header {border-style: solid; border-width: 1px; border-bottom-color: #006699; border-left-color: #CCFFFF; border-top-color: #CCFFFF; border-right-color: #006699;}
+.indexlink {font-weight: bold; font-style: italic;}
+.linklist a{display: block;}
+ul {font-family: verdana, sans-serif; font-size: 1.2em; line-height: 1.3; margin-top: 0px;}
+ol {font-family: verdana, sans-serif; font-size: 1.2em; line-height: 1.3; margin-top: 0px;}
+#fringelogo {position: absolute; left: 4.7%; top: 27px;}
+#fringelogo a {background-color: #ffffdd}
+#movie {position: absolute; left: 0%; top: 0%; z-index: -1}
+#ndflogo {position: absolute; right: 2%; top: 15px; filter: progid:DXImageTransform.Microsoft.BasicImage(opacity=0.7); -moz-opacity: 0.7}
+#topmenu {position: absolute; top: 195px; left: 2%; width: 120px; z-index: 5; padding: 5px 0px}
+ul#menu {line-height: 1.8; list-style-type: none; text-align: right; padding-left: 0; margin-left: 0;}
+ul#menu li a:link {font-family: verdana, sans-serif; font-weight: normal; font-size: 12px; color:#0000cc; text-decoration:none;}
+ul#menu li a:visited {font-family: verdana, sans-serif; font-weight: normal; font-size: 12px; color:#0000cc; text-decoration:none;}
+ul#menu li a:hover {font-family: verdana, sans-serif; font-weight: normal; font-size: 12px; color:#ffffff; text-decoration:none; background-color: #ff339a}
+ul#menu li a:active {font-family: verdana, sans-serif; font-weight: normal; font-size: 12px; color:#ff339a; text-decoration:none;}
+ul#menu li a:link, ul#menu li a:visited {display: block; width: 88%; padding: 0 6%}
+#borderbar {position: absolute; right: 2%; top: 195px; width: 118px; height: 200px; background-color: #4033cc; z-index: 0; 
+filter: progid:DXImageTransform.Microsoft.BasicImage(opacity=0.7); -moz-opacity: 0.7}
+#strapline {position: absolute; left:20%; top: 199px; width: 29%; height: 30px; z-index: 3}
+#address {position: absolute; left: 51%; top: 210px; width: 200px}
+#addressbgd {position: absolute; left: 46%; top: 190px; width: 220px; height: 180px; padding: 10px 8px 20px 8px;}
+#feedback {position: absolute; left: 25%; top: 200px; text-align: center; z-index: 7}
+#comments {position: absolute; left: 43%; top: 440px; width: 250px;}
+#comments p {font-family: verdana, arial; font-size: 1.3em; font-weight: bold; color: #0000CC}
+#comments a {font-size: 1em; font-family: verdana, arial; font-weight: bold}
+#here {font-family: verdana, sans-serif; font-weight: normal; font-size: 1.1em; color: #ffffff}
+#entryform {position: absolute; left: 30%; top: 200px; text-align: right; z-index: 7}
+#noscript {position: absolute; left: 4.5%; top: 24px;}
+.cell1 {border-top: solid 5px #498CFC; border-right: solid 5px #498CFC; border-left: solid 5px #498CFC; background-color: #6FB2F5; padding: 3px; height: 20px}
+.cell2 {border: solid 5px #498CFC; background-color: #6FB2F5; padding: 3px; height: 20px}
+.prod {position: absolute; left: 3%; width: 75%; color: #000066; font-size: 1.2em; font-weight: bold;}
+.time {position: absolute; right: 3%; width: 25%; font-size: 1.2em; font-weight: bold}

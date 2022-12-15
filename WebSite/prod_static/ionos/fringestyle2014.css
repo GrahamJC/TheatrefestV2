@@ -1,0 +1,849 @@
+* {margin: 0; padding: 0;}
+html { font-size: 16px; overflow-y: scroll; -webkit-text-size-adjust: 16px; }
+body {background: #fff; color:#233; scrollbar-base-color: #ddd; font-size: 62.5%;}
+h1 {font-size: 1.6em; font-family: verdana, sans-serif; font-weight: bold; color: #3da1ed; text-align: left; letter-spacing: .1em; padding-bottom: .3em}
+h2 {font-family: verdana, sans-serif; font-size: 1.4em; font-weight: bold; font-style: normal; color: #3da1ed; letter-spacing: .02em; padding-bottom: .2em}
+h3 {font-family: verdana, sans-serif; font-size: 1.3em; font-weight: bold; line-height: 1.3; margin-top: 0px; color: #cc0d87; padding-bottom: .5em}
+h4 {color: #cc0d87; font-family: verdana, sans-serif; font-size: 24px; padding: 0px}
+h5 {font-family: arial, sans-serif; font-size: 16px; font-weight: bold; color: #ff339a; padding-bottom: 8px}
+h6 {font-family: arial, sans-serif; font-size: 1.6em; font-weight: bold; color: #3da1ed; padding-bottom: .8em}
+
+img {border: 0}
+p{font-family: verdana, sans-serif; font-size: 1.3em; line-height: 1.5; font-weight: normal; margin-top: 0px; padding-bottom: 8px;}
+span {font-family: verdana, sans-serif; font-weight: normal; font-size: 1em; }
+#holder {width: 320px;  position: absolute; left: 50%; margin-left: -160px; margin-top: 5px; z-index: 1}
+@media (min-width: 610px) and (max-width: 910px) {#holder {width: 600px;  position: absolute; left: 50%; margin-left: -300px; margin-top: 5px; z-index: 1}} 
+@media (min-width: 910px) {#holder {width: 900px; position: absolute; left: 50%; margin-left: -450px; margin-top: 5px; z-index: 1}}
+a:link {font-family: verdana, sans-serif; font-weight: bold; font-size: 1em; color:#cc0d87; text-decoration: underline;}
+a:visited {font-family: verdana, sans-serif; font-weight: bold; font-size: 1em; color:#cc0d87; text-decoration: underline}
+a:hover {font-family: verdana, sans-serif; font-weight: bold; font-size: 1em; color:#1590ca; text-decoration:underline;}
+a:active {font-family: verdana, sans-serif; font-weight: bold; font-size: 1em; color:#cc0d87; text-decoration:none;}
+@media (min-width: 610px) and (max-width: 910px) {a:link, a:visited, a:hover {text-decoration: none}} 
+@media (min-width: 910px) {a:link, a:visited, a:hover {text-decoration: none}}
+
+.thumb {background-color: #ffffdd; cursor: pointer}
+
+.pic {position: absolute; left: 143px; top: 200px;}
+.pic {z-index: 4; background-color: #ffffcc; padding: 18px; visibility: hidden}
+.pic p {font-weight: bold; text-align: center}
+#text {
+	position: absolute;
+	left: 4%;
+	top: 18.6em;
+	width: 92%;
+	z-index: 2;	
+	font-size: 1.1em;
+}
+@media (min-width: 610px) and (max-width: 910px) {#text {top: 23em; left: 7%; font-size: 1em; width: 50%}} 
+@media (min-width: 910px) {#text {top: 26em; left: 15%; font-size: 1em; width: 40%}}
+
+#perftext {
+	position: absolute;
+	left: 4%;
+	top: 18em;
+	width: 92%;
+	z-index: 2;	
+	font-size: 1.1em;
+}
+@media (min-width: 610px) and (max-width: 910px) {#perftext {top: 23em; left: 7%; font-size: 1em; width: 59%}} 
+@media (min-width: 910px) {#perftext {top: 24em; left: 10%; font-size: 1em; width: 60%}}
+
+#indextext {
+	position: absolute;
+	left: 4%;
+	top: 18.3em;
+	width: 92%;
+	z-index: 2;	
+	font-size: 1.1em;
+}
+@media (min-width: 610px) and (max-width: 910px) {#indextext {top: 23em; left: 7%; font-size: 1em; width: 54%}} 
+@media (min-width: 910px) {#indextext {top: 26em; left: 10%; font-size: 1em; width: 53%}}
+
+#indexpics {position: relative; left: -4%}
+@media (min-width: 610px) and (max-width: 910px) {#indexpics {position: relative; left: -3%}} 
+@media (min-width: 910px) {#indexpics {position: relative; left: -3%}}
+
+#punters {
+	position: absolute;
+	left: 4%;
+	top: 98em;
+	width: 92%;
+	z-index: 3;
+}
+@media (min-width: 610px) and (max-width: 910px) {#punters {top: 85em; left: 67%; font-size: 1em; width: 30%}} 
+@media (min-width: 910px) {#punters {top: 85em; left: 67%; font-size: 1em; width: 30%}}
+
+#punters p {font-size: 1.2em; color: #3da1ed}
+
+#indexpunters {
+	position: absolute;
+	left: 4%;
+	top: 285em;
+	width: 92%;
+	z-index: 3;
+	color: #3da1ed;
+}
+@media (min-width: 610px) and (max-width: 910px) {#indexpunters {top: 85em; left: 67%; font-size: 1em; width: 30%}} 
+@media (min-width: 910px) {#indexpunters {top: 85em; left: 67%; font-size: 1em; width: 30%}}
+
+#guidepunters {
+	position: absolute;
+	left: 4%;
+	top: 98em;
+	width: 92%;
+	z-index: 3;
+	visibility: hidden;
+}
+@media (min-width: 610px) and (max-width: 910px) {#guidepunters {top: 23em; left: 67%; font-size: 1em; width: 30%; visibility: visible}} 
+@media (min-width: 910px) {#guidepunters {top: 26em; left: 70%; font-size: 1em; width: 26%; visibility: visible}}
+
+#guidepunters p {font-size: 1.2em; color: #3da1ed}
+
+#perfpunters {
+	position: absolute;
+	left: 2%;
+	top: 702em;
+	width: 96%;
+	z-index: 3;
+}
+@media (min-width: 610px) and (max-width: 910px) {#perfpunters {top: 23em; left: 73%; font-size: .98em; width: 23%}} 
+@media (min-width: 910px) {#perfpunters {top: 26em; left: 78%; font-size: 1em; width: 18%}}
+#perfpunters p {font-size: 1.2em; color: #3da1ed }
+
+#perfpunters img {width: 100%}
+#volpunters {
+	position: absolute;
+	left: 2%;
+	top: 275em;
+	width: 96%;
+	z-index: 3;
+}
+@media (min-width: 610px) and (max-width: 910px) {#volpunters {top: 21em; left: 70%; font-size: .98em; width: 27%}} 
+@media (min-width: 910px) {#volpunters {top: 25em; left: 72%; font-size: 1em; width: 25%}}
+#volpunters p {font-size: 1.2em; color: #3da1ed }
+
+#reviewpunters {
+	position: absolute;
+	left: 2%;
+	top: 129em;
+	width: 96%;
+	z-index: 3;
+}
+@media (min-width: 610px) and (max-width: 910px) {#reviewpunters {top: 22.5em; left: 70%; font-size: .98em; width: 27%}} 
+@media (min-width: 910px) {#reviewpunters {top: 25em; left: 72%; font-size: 1em; width: 25%}}
+#reviewpunters p {font-size: 1.2em; color: #3da1ed }
+#reviewpunters img {width: 30%}
+@media (min-width: 610px) and (max-width: 910px) {#reviewpunters img {width: 35%}} 
+@media (min-width: 910px) {#reviewpunters img {width: 35%}}
+
+#contactpunters {
+	position: absolute;
+	left: 2%;
+	top: 80em;
+	width: 96%;
+	z-index: 3;
+	display: none
+	 }
+@media (min-width: 610px) and (max-width: 910px) {#contactpunters {top: 21.5em; left: 70%; font-size: .98em; width: 27%; display: block}} 
+@media (min-width: 910px) {#contactpunters {top: 25em; left: 80%; font-size: 1em; width: 16%; display: block}}
+#contactpunters p {font-size: 1.2em; color: #3da1ed}
+
+@media (min-width: 610px) and (max-width: 910px) {#contactpunters img {width: 100%}} 
+
+#punters a:link {font-family: verdana, sans-serif; font-weight: normal; font-size: 11px; color:#cc0d87; text-decoration: underline;}
+#punters a:visited {font-family: verdana, sans-serif; font-weight: normal; font-size: 11px; color:#cc0d87; text-decoration: underline}
+#punters a:hover {font-family: verdana, sans-serif; font-weight: normal; font-size: 11px; color:#11aadd; text-decoration:underline;}
+#punters a:active {font-family: verdana, sans-serif; font-weight: normal; font-size: 11px; color:#cc0d87; text-decoration:none;}
+
+
+#fringelogo {
+	position: absolute;
+	left: -.4em;
+	top: -.2em;
+	width: 95%;
+	z-index: 9;
+}
+@media (min-width: 610px) and (max-width: 910px) {#fringelogo {position: absolute;width: 60%;  left: -0.8em; z-index: 1}} 
+@media (min-width: 910px) {#fringelogo {position: absolute; width: 49%; left: -1em; z-index: 1}}
+
+#onthestreets {
+	position: absolute;
+	right: -2em;
+	top: 3.4em;
+	width: 61%;
+	z-index: 9;	
+}
+@media (min-width: 610px) and (max-width: 910px) {#onthestreets {position: absolute; width: 38%;  right: -1.5em; top:8.3em;z-index: 1}} 
+@media (min-width: 910px) {#onthestreets {position: absolute; width:38%; right: 1.2em; top: 5.5em; z-index: 1}}
+
+#onthestreets p{
+	font-style: italic;
+	color: #cc0d87;
+	font-size: 2.6em;
+}
+@media (min-width: 610px) and (max-width: 910px) {#onthestreets p {font-size: 2.8em}} 
+@media (min-width: 910px) {#onthestreets p{font-size: 4em}}
+
+#onthestreets img{
+	width: 90%;
+	height: auto;
+}
+@media (min-width: 610px) and (max-width: 910px) {#onthestreets img {width:90%}} 
+@media (min-width: 910px) {#onthestreets img{width:100%}}
+
+#fringelogo img {width: 100%; height: auto}
+#ndflogo {
+	position: absolute;
+	right: 20%;
+	top: 0em;
+	width: 22%;
+	z-index: 9;
+}
+@media (min-width: 610px) and (max-width: 910px) {#ndflogo {position: absolute; width: 16%; top: 0.5em; right: 14%; z-index: 3}} 
+@media (min-width: 910px) {#ndflogo {position: absolute; right: 12%; width: 13%; z-index: 3}}
+
+#ndflogo img {width: 100%; height: auto}
+
+#ndtlogo {
+	position: absolute;
+	right: 1%;
+	top: 3em;
+	width: 21%;
+	z-index: 8;
+}
+@media (min-width: 610px) and (max-width: 910px) {#ndtlogo {position: absolute; width: 15%;  top: 5em; right: 1%; z-index: 1}} 
+@media (min-width: 910px) {#ndtlogo {position: absolute; right: 1%; top: 5em; width: 12%; z-index: 1}}
+
+#ndtlogo img {width: 100%; height: auto}
+
+#BpleFringeFest {
+	position: absolute;
+	left: 8%;
+	width: 99%;
+	top: 9.7em;
+	z-index: 9;
+}
+@media (min-width: 610px) and (max-width: 910px) {#BpleFringeFest {position: absolute; left: 2.45em; top: 11.1em; font-size: 1.1em; z-index: 5}} 
+@media (min-width: 910px) {#BpleFringeFest {position: absolute; left: 4.3em; top: 11.5em; font-size: 1.3em; z-index: 3}}
+
+#bridge {position: absolute; right: 2%; top: 7em; width: 100%; z-index: 0; visibility: hidden}
+@media (min-width: 610px) and (max-width: 910px) {#bridge {visibility: visible; width: 50%; top: 9.5em;}} 
+@media (min-width: 910px) {#bridge {width: 57%; z-index: 0; visibility: visible}}
+
+#bridge img {width: 100%; height: auto}
+
+#menubar {
+	position: absolute;
+	top: 13.5em;
+	left: 2%;
+	z-index: 9;
+	background-color: #3da1ed; 
+	height: 5.4em;
+	width: 96%;
+	box-shadow: -3px 6px 8px #cfcfcf
+	}
+@media (min-width: 610px) and (max-width: 910px) {#menubar {position: absolute; top: 17.6em; z-index: 9; height: 2.7em;}} 
+@media (min-width: 910px) {#menubar {position: absolute; top: 20.8em; z-index: 9; height: 2.7em;}}
+
+#topmenu {
+	position: absolute;
+	top: 17.6em;
+	left: 27px;
+	z-index: 10;
+	padding-top: .5em;
+	border-radius: .5em;
+	margin-right: .2em;
+	margin-left: .2em;
+	width: 96%;
+		}
+@media (min-width: 910px) {#topmenu {top: 20.8em; }}
+
+#topmenu {visibility: hidden}
+	
+#topminimenu {
+	position: absolute;
+	top: 13.5em;
+	left: 1%;
+	z-index: 9;
+	padding-top: .5em;
+	line-height: 2em;
+	border-radius: .3em;
+	margin-right: .3em;
+	margin-left: 1em;
+	width: 98%
+	}
+@media (min-width: 610px) and (max-width: 910px) {#topminimenu {visibility: hidden}} 
+@media (min-width: 610px) and (max-width: 910px) {#topmenu {visibility: visible}}
+@media (min-width: 910px) {#topminimenu {visibility: hidden}}
+@media (min-width: 910px) {#topmenu {visibility: visible}}
+
+ul#minimenu li a:link {font-family: verdana, sans-serif; font-size: 1.1em; color:#fff; font-weight: bold; text-decoration:none;}
+ul#minimenu li a:visited {font-family: verdana, sans-serif; font-size: 1.1em; color:#fff; font-weight: bold; text-decoration:none;}
+ul#minimenu li a:hover {font-family: verdana, sans-serif; font-size: 1.1em; color:#075bb1; font-weight: bold; text-decoration:none;}
+ul#minimenu li a:active {font-family: verdana, sans-serif; font-size: 1.1em; color:#fff; font-weight: bold; text-decoration:none;}
+ul#minimenu li a:link, ul#minimenu li a:visited {display: inline; padding: .5em 1.2em .5em 0.7em;}
+ul#minimenu li {display:inline; }
+
+ul#menu li a:link {font-family: verdana, sans-serif; font-size: 1.1em; color:#fff; font-weight: bold; text-decoration:none;}
+ul#menu li a:visited {font-family: verdana, sans-serif; font-size: 1.1em; color:#fff; font-weight: bold; text-decoration:none;}
+ul#menu li a:hover {font-family: verdana, sans-serif; font-size: 1.1em; color:#075bb1; font-weight: bold; text-decoration:none;}
+ul#menu li a:active {font-family: verdana, sans-serif; font-size: 1.1em; color:#fff; font-weight: bold; text-decoration:none;}
+ul#menu li a:link, ul#menu li a:visited {display: inline; padding: .1em 1.7em .1em 0em;}
+@media (min-width: 910px) {ul#menu li a:link, ul#menu li a:visited {display: inline; padding: .0em 4em .0em 1em;}}
+
+ul#menu li {display:inline;}
+
+
+#strapline {
+	position: absolute;
+	left:7%;
+	top: 18em;
+	height: 30px;
+	z-index: 3
+}
+@media (min-width: 610px) and (max-width: 910px) {#strapline {left: 5%; top: 21.5em; z-index: 1}} 
+@media (min-width: 910px) {#strapline {left: 7%; top: 25em; z-index: 1}}
+
+.leftpic {float: left; padding-right: 3%; padding-bottom: 6px; padding-top: 3px}
+.rightpic {float: right; padding-left: 10px; padding-bottom: 6px; padding-top: 3px}
+
+#choicequestion {position: absolute; left: 23%; top: 17.5em; width: 200px}
+@media (min-width: 610px) and (max-width: 910px) {#choicequestion {left: 34%; top: 22.7em; z-index: 1}} 
+@media (min-width: 910px) {#choicequestion {left: 40%; top: 25em; z-index: 1}}
+
+#select {position: absolute; top: 17em; left: 14%; width: 24em; height: auto; border: 1px solid #666; background-color: #fff; line-height: 1.6; z-index: 9;}
+@media (min-width: 610px) and (max-width: 910px) {#select {top: 22.5em; left: 31%; z-index: 6}} 
+@media (min-width: 910px) {#select {top: 25em; left: 38%;}}
+#select p {font-size: 1.1em}
+#select button {width: 15em; }
+#select ul {display: block; list-style-type: none;}
+#select li {text-align: center;  padding-top: .6em}
+#select a:link {font-family: verdana, sans-serif; font-weight: bold; font-size: 1.4em; color:#cc0d87; text-decoration: none;}
+#select a:visited {font-family: verdana, sans-serif; font-weight: bold; font-size: 1.4em; color:#cc0d87; text-decoration: none}
+#select a:hover {font-family: verdana, sans-serif; font-weight: bold; font-size: 1.4em; color:#3da1ed; text-decoration:none;}
+#select a:active {font-family: verdana, sans-serif; font-weight: bold; font-size: 1.4em; color:#cc0d87; text-decoration:none;}
+
+#select2 {position: absolute; top: 17em; left: 14%; width: 24em; height: auto; border: 1px solid #666; background-color: #fff; line-height: 1.6;}
+@media (min-width: 610px) and (max-width: 910px) {#select2 {top: 22.5em; left: 31%; z-index: 2}} 
+@media (min-width: 910px) {#select2 {top: 25em; left: 38%;}}
+#select2 p {font-size: 1.1em}
+#select2 a:link {font-family: verdana, sans-serif; font-weight: bold; font-size: 1.4em; color:#cc0d87; text-decoration: none;}
+#select2 a:visited {font-family: verdana, sans-serif; font-weight: bold; font-size: 1.4em; color:#cc0d87; text-decoration: none}
+#select2 a:hover {font-family: verdana, sans-serif; font-weight: bold; font-size: 1.4em; color:#1590ca; text-decoration:none;}
+#select2 a:active {font-family: verdana, sans-serif; font-weight: bold; font-size: 1.4em; color:#cc0d87; text-decoration:none;}
+
+#select2 button {width: 15em;}
+
+.productions {position: absolute; left: 2%; top: 19em; width: 96%; font-size: 1.3em; z-index: 4}
+@media (min-width: 610px) and (max-width: 910px) {.productions {left: 2%; top: 25em; z-index: 4}} 
+@media (min-width: 910px) {.productions {left: 10%; top: 24em; width: 80%; z-index: 4}}
+
+.comp {
+	position: absolute;
+	left: 0em;
+	width: 100%;
+	color: #000000;
+	font-weight: normal
+}
+
+#indeximage {
+	position: absolute;
+	left: 499px;
+	top: 140px;
+	width:87px;
+	height: 120px
+}
+
+
+.cell1a {border-top: solid 1px #222; padding: .3em; height: auto;}
+.cell1a img {width: 25% }
+@media (min-width: 610px) and (max-width: 910px) {.cell1a img {width: 12%; height:auto; z-index: 1}} 
+@media (min-width: 910px) {.cell1a img {width: 10%; height:auto; z-index: 1}}
+
+.cell1a p {font-size: 1.1em}
+
+.cell1a a:link {text-decoration: underline;}
+.proda {position: absolute; left: 17%; width: 84%; color: #000000; font-weight: bold; font-size: 1em}
+.cotitle {font-weight: bold; color: #3da1ed; }
+.age {color:#cc0d87; font-weight: bold}
+.loca {
+	position: absolute;
+	left: 650px;
+	width: 100px;
+	color: #000;
+	font-weight: normal;
+	
+}
+.prodblurb {position: relative;
+	left: 16%;
+	width: 86%;
+		color: #058bca;
+		font-size: 11px;
+	font-weight: normal}
+
+#schedulemenu {
+	position: absolute;
+	top: 17em;
+	left: 0px;
+	z-index: 5;
+	padding: .5em .6em;
+	width: 94%;
+	height: 25px;
+}
+@media (min-width: 610px) and (max-width: 910px) {#schedulemenu {top: 18em; font-size: 1.2em}} 
+@media (min-width: 910px) {#schedulemenu {left: 20%; top: 22em; font-size: 1.1em}}
+
+ul#schedmenu li a:link {font-family: verdana, sans-serif; font-weight: bold; font-size: 1em; color:#3da1ed; text-decoration:none;}
+ul#schedmenu li a:visited {font-family: verdana, sans-serif; font-weight: bold; font-size: 1em; color:#3da1ed; text-decoration:none;}
+ul#schedmenu li a:hover {font-family: verdana, sans-serif; font-weight: bold; font-size: 1em; color:#cc0d87; text-decoration:none;}
+ul#schedmenu li a:active {font-family: verdana, sans-serif; font-weight: bold; font-size: 1em; color:#3da1ed; text-decoration:none;}
+
+ul#schedmenu li {display: inline; float: left; padding: 0em 1.2em 0em 1.6em}
+@media (min-width: 610px) and (max-width: 910px) {ul#schedmenu li {padding: 0em 5.4em 0em 1.7em}} 
+@media (min-width: 910px) {ul#schedmenu li {padding: 0em 6.4em 0em 1.6em}}
+
+#schedulelist {
+	position: absolute;
+	left: 0em;
+	top: 20.5em;
+	width: 100%;
+	z-index: 6;
+}
+#schedulelist h1 {text-align: center;}
+@media (min-width: 610px) and (max-width: 910px) {#schedulelist {top: 26em;}} 
+@media (min-width: 910px) {#schedulelist {top: 28em;}}
+
+#schedulelist ul li {display: inline; float: left; padding: 0px 0px 0px 0px}
+#schedulelist ul {list-style-type: none; margin: 0; padding: 0px; font-weight: bold}
+.page2 {z-index: 6}
+@media (min-width: 610px) and (max-width: 910px) {.page2 {font-size: 0.9em;}} 
+@media (min-width: 910px) {.page2 {font-size: 0.85em;}}
+@media (min-width: 910px) {.page2 p{padding-bottom: 1.5em;}}
+
+#studio {position: absolute; left: 12%; top: 24em; background-color: #f7d8d2; padding: .8em; width: 24em}
+@media (min-width: 610px) and (max-width: 910px) {#studio {left: 5%; top: 34em; width: 26em}} 
+@media (min-width: 910px) {#studio {left: 7%; top: 37em; width: 25em}}
+
+#gallery {position: absolute; left: 12%; top: 42em; background-color: #fef1d6; padding: .8em; width: 24em}
+@media (min-width: 610px) and (max-width: 910px) {#gallery {left: 55%; top: 34em; width: 26em}} 
+@media (min-width: 910px) {#gallery {left: 37.5%; top: 37em; width: 25em}}
+
+#Baptist {position: absolute; left: 12%; top: 60em; background-color: #e3e8f6; padding: .8em; width: 24em}
+@media (min-width: 610px) and (max-width: 910px) {#Baptist {left: 5%; top: 52em; width: 26em}} 
+@media (min-width: 910px) {#Baptist {left: 68%; top: 37em; width: 25em}}
+
+#Annes {position: absolute; left: 12%; top: 78em; background-color: #efdeee; padding: .8em; width: 24em}
+@media (min-width: 610px) and (max-width: 910px) {#Annes {left: 55%; top: 52em; width: 26em}} 
+@media (min-width: 910px) {#Annes {left: 7%; top: 63em; width: 25em}}
+
+#RATT {position: absolute; left: 12%; top: 96em; background-color: #fff1fc; padding: .8em; width: 24em}
+@media (min-width: 610px) and (max-width: 910px) {#RATT {left: 5%; top: 70em; width: 26em}} 
+@media (min-width: 910px) {#RATT {left: 37.5%; top: 63em; width: 25em}}
+
+#Library {position: absolute; left: 12%; top: 114em; background-color: #e9f1d9; padding: .8em; width: 24em}
+@media (min-width: 610px) and (max-width: 910px) {#Library {left: 55%; top: 70em; width: 26em}} 
+@media (min-width: 910px) {#Library {left: 68%; top: 63em; width: 25em}}
+
+#Museum {position: absolute; left: 12%; top: 138em}
+@media (min-width: 610px) and (max-width: 910px) {#Museum {left: 55%; top: 85em}} 
+@media (min-width: 910px) {#Museum {left: 66%; top: 70em}}
+
+.comp1 {color: #666; font-weight: normal; font-size: 1em}
+.comp2 {color: #333333; font-weight: bold; font-size: 1.3em}
+.page2 a:link {font-family: verdana, sans-serif; font-weight: normal; font-size: 1.1em; color:#3da1ed; text-decoration: underline;}
+.page2 a:visited {font-family: verdana, sans-serif; font-weight: normal; font-size: 1.1em; color:#3da1ed; text-decoration: underline}
+.page2 a:hover {font-family: verdana, sans-serif; font-weight: normal; font-size: 1.1em; color:#cc0d87; text-decoration:underline;}
+.page2 a:active {font-family: verdana, sans-serif; font-weight: normal; font-size: 1.1em; color:#3da1ed; text-decoration:none;}
+
+#PDF a:link {font-family: verdana, sans-serif; font-weight: bold; font-size: 13px; color:#cc0d87; text-decoration:underline;}
+#PDF a:visited {font-family: verdana, sans-serif; font-weight: bold; font-size: 13px; color:#cc0d87; text-decoration:underline;}
+#PDF a:hover {font-family: verdana, sans-serif; font-weight: bold; font-size: 13px; color:#3da1ed; text-decoration:underline;}
+#PDF a:active {font-family: verdana, sans-serif; font-weight: bold; font-size: 13px; color:#cc0d87; text-decoration:underline;}
+#PDF{background-color: #fff; padding: 3px; padding-top: 10px; height: 25px; text-align: center}
+@media (min-width: 610px) and (max-width: 910px) {.page2 a:link, a:visited, a:hover {text-decoration: none}} 
+@media (min-width: 910px) {.page2 a:link, a:visited, a:hover {text-decoration: none}}
+
+#play {
+	position: absolute;
+	left: 2%;
+	width: 96%;
+	top: 18em;
+	
+}
+@media (min-width: 610px) and (max-width: 910px) {#play {top: 22em; left: 40%; width: 60%}} 
+@media (min-width: 910px) {#play {top: 25.5em; left: 37%; width: 61%}}
+
+#play h1 {font-style: normal; text-align: center}
+#play h2 {text-align: center}
+@media (min-width: 610px) and (max-width: 910px) {#play h1, #play h2 {text-align: left}}
+@media (min-width: 910px) {#play h1, #play h2 {text-align: left}}
+
+#booking {
+	position: absolute;
+	left: 2%;
+	width: 96%;
+	top: 17em;
+	
+}
+@media (min-width: 610px) and (max-width: 910px) {#booking {top: 22em}} 
+@media (min-width: 910px) {#booking {top: 25.5em; left: 5%; width: 90%}}
+
+#venueblurb {
+	position: absolute;
+	left: 2%;
+	width: 96%;
+	top: 18em;
+	
+}
+@media (min-width: 610px) and (max-width: 910px) {#venueblurb {top: 22em; left: 5%; width: 86%}} 
+@media (min-width: 910px) {#venueblurb {top: 25.5em; left: 10%; width: 65%}}
+
+#blurb {position: absolute; left: 4%; width: 92%; top: 56em; font-size: 1.1em}
+@media (min-width: 610px) and (max-width: 910px) {#blurb {top: 27.5em; left: 40%; font-size: 1em; width: 58%}} 
+@media (min-width: 910px) {#blurb {top: 31.5em; left: 37%; font-size: 1em; width: 60%}}
+#blurb b {color: #233}
+#blurb05 {position: absolute; left: 4%; width: 92%; top: 58em; font-size: 1.1em}
+@media (min-width: 610px) and (max-width: 910px) {#blurb05 {top: 27.5em; left: 40%; font-size: 1em; width: 58%}} 
+@media (min-width: 910px) {#blurb05 {top: 31.5em; left: 37%; font-size: 1em; width: 60%}}
+#blurb05 b {color: #233}
+#blurb1 {position: absolute; left: 4%; width: 92%; top: 59em; font-size: 1.1em}
+@media (min-width: 610px) and (max-width: 910px) {#blurb1 {top: 27.5em; left: 40%; font-size: 1em; width: 58%}} 
+@media (min-width: 910px) {#blurb1 {top: 31.5em; left: 37%; font-size: 1em; width: 60%}}
+#blurb1 b {color: #233}
+#blurb15 {position: absolute; left: 4%; width: 92%; top: 61em; font-size: 1.1em}
+@media (min-width: 610px) and (max-width: 910px) {#blurb15 {top: 27.5em; left: 40%; font-size: 1em; width: 58%}} 
+@media (min-width: 910px) {#blurb15 {top: 31.5em; left: 37%; font-size: 1em; width: 60%}}
+#blurb15 b {color: #233}
+#blurb2 {position: absolute; left: 4%; width: 92%; top: 65em; font-size: 1.1em}
+@media (min-width: 610px) and (max-width: 910px) {#blurb2 {top: 27.5em; left: 40%; font-size: 1em; width: 58%}} 
+@media (min-width: 910px) {#blurb2 {top: 31.5em; left: 37%; font-size: 1em; width: 60%}}
+#blurb2 b {color: #233}
+#blurb225 {position: absolute; left: 4%; width: 92%; top: 67em; font-size: 1.1em}
+@media (min-width: 610px) and (max-width: 910px) {#blurb225 {top: 27.5em; left: 40%; font-size: 1em; width: 58%}} 
+@media (min-width: 910px) {#blurb225 {top: 31.5em; left: 37%; font-size: 1em; width: 60%}}
+#blurb225 b {color: #233}
+
+#blurb25 {position: absolute; left: 4%; width: 92%; top: 69em; font-size: 1.1em}
+@media (min-width: 610px) and (max-width: 910px) {#blurb25 {top: 27.5em; left: 40%; font-size: 1em; width: 58%}} 
+@media (min-width: 910px) {#blurb25 {top: 31.5em; left: 37%; font-size: 1em; width: 60%}}
+#blurb25 b {color: #233}
+#blurb257 {position: absolute; left: 4%; width: 92%; top: 61em; font-size: 1.1em}
+@media (min-width: 610px) and (max-width: 910px) {#blurb257 {top: 27.5em; left: 40%; font-size: 1em; width: 58%}} 
+@media (min-width: 910px) {#blurb257 {top: 31.5em; left: 37%; font-size: 1em; width: 60%}}
+#blurb257 b {color: #233}
+
+#blurb3 {position: absolute; left: 4%; width: 92%; top: 72em; font-size: 1.1em}
+@media (min-width: 610px) and (max-width: 910px) {#blurb3 {top: 27.5em; left: 40%; font-size: 1em; width: 58%}} 
+@media (min-width: 910px) {#blurb3 {top: 31.5em; left: 37%; font-size: 1em; width: 60%}}
+#blurb3 b {color: #233}
+#blurb35 {position: absolute; left: 4%; width: 92%; top: 74em; font-size: 1.1em}
+@media (min-width: 610px) and (max-width: 910px) {#blurb35 {top: 27.5em; left: 40%; font-size: 1em; width: 58%}} 
+@media (min-width: 910px) {#blurb35 {top: 31.5em; left: 37%; font-size: 1em; width: 60%}}
+#blurb35 b {color: #233}
+#blurb4 {position: absolute; left: 4%; width: 92%; top: 75em; font-size: 1.1em}
+@media (min-width: 610px) and (max-width: 910px) {#blurb4 {top: 27.5em; left: 40%; font-size: 1em; width: 58%}} 
+@media (min-width: 910px) {#blurb4 {top: 31.5em; left: 37%; font-size: 1em; width: 60%}}
+#blurb4 b {color: #233}
+#blurb45 {position: absolute; left: 4%; width: 92%; top: 77em; font-size: 1.1em}
+@media (min-width: 610px) and (max-width: 910px) {#blurb45 {top: 27.5em; left: 40%; font-size: 1em; width: 58%}} 
+@media (min-width: 910px) {#blurb45 {top: 31.5em; left: 37%; font-size: 1em; width: 60%}}
+#blurb45 b {color: #233}
+#blurb475 {position: absolute; left: 4%; width: 92%; top: 79em; font-size: 1.1em}
+@media (min-width: 610px) and (max-width: 910px) {#blurb475 {top: 27.5em; left: 40%; font-size: 1em; width: 58%}} 
+@media (min-width: 910px) {#blurb475 {top: 31.5em; left: 37%; font-size: 1em; width: 60%}}
+#blurb475 b {color: #233}
+
+#blurb5 {position: absolute; left: 4%; width: 92%; top: 82em; font-size: 1.1em}
+@media (min-width: 610px) and (max-width: 910px) {#blurb5 {top: 27.5em; left: 40%; font-size: 1em; width: 58%}} 
+@media (min-width: 910px) {#blurb5 {top: 31.5em; left: 37%; font-size: 1em; width: 60%}}
+#blurb5 b {color: #233}
+
+#blurb525 {position: absolute; left: 4%; width: 92%; top: 84em; font-size: 1.1em}
+@media (min-width: 610px) and (max-width: 910px) {#blurb525 {top: 27.5em; left: 40%; font-size: 1em; width: 58%}} 
+@media (min-width: 910px) {#blurb525 {top: 31.5em; left: 37%; font-size: 1em; width: 60%}}
+#blurb525 b {color: #233}
+
+#blurb53 {position: absolute; left: 4%; width: 92%; top: 86em; font-size: 1.1em}
+@media (min-width: 610px) and (max-width: 910px) {#blurb53 {top: 27.5em; left: 40%; font-size: 1em; width: 58%}} 
+@media (min-width: 910px) {#blurb53 {top: 31.5em; left: 37%; font-size: 1em; width: 60%}}
+#blurb53b {color: #233}
+
+#blurb55 {position: absolute; left: 4%; width: 92%; top: 102em; font-size: 1.1em}
+@media (min-width: 610px) and (max-width: 910px) {#blurb55 {top: 27.5em; left: 40%; font-size: 1em; width: 58%}} 
+@media (min-width: 910px) {#blurb55 {top: 31.5em; left: 37%; font-size: 1em; width: 60%}}
+#blurb55 b {color: #233}
+
+#companysched ul li{list-style-type: none; font-size: 1.2em; line-height: 1.6}
+#companysched a:link {font-family: verdana, sans-serif; font-weight: normal; font-size: 1.2em; color:#cc0d87; text-decoration:underline;}
+#companysched a:visited {font-family: verdana, sans-serif; font-weight: normal; font-size: 1.2em; color:#cc0d87; text-decoration:underline;}
+#companysched a:hover {font-family: verdana, sans-serif; font-weight: normal; font-size: 1.2em; color:#336ff8; text-decoration:underline;}
+#companysched a:active {font-family: verdana, sans-serif; font-weight: normal; font-size: 1.2em; color:#cc0d87; text-decoration:none;}
+@media (min-width: 610px) and (max-width: 910px) {#companysched a:link, a:visited, a:hover {text-decoration: none}} 
+@media (min-width: 910px) {#companysched a:link, a:visited, a:hover {text-decoration: none}}
+
+#showrubric {position: absolute; left: 4%; width: 92%; top: 24em}
+@media (min-width: 610px) and (max-width: 910px) {#showrubric {position: absolute; left: 2%; top: 22em; width: 30%}} 
+@media (min-width: 910px) {#showrubric {position: absolute; left: 5%; top: 25.5em; width: 25%}}
+
+#showrubric img {padding-bottom: .6em; width: 100%}
+@media (min-width: 610px) and (max-width: 910px) {#showrubric img {padding-bottom: .6em; width: 100%}} 
+@media (min-width: 910px) {#showrubric img {padding-bottom: .8em; width: 100%}}
+
+#titlepic {width: 30%}
+#titlepic img {width: 100%}
+
+#movingpictures {position: relative; width:28em; height: 17em; padding-left: .5em; padding-bottom: .6em; padding-top: .3em}
+#movingpictures img { position:absolute; top: 0px; width:28em; height: 17em }
+
+.footerimages {position: relative; left: 5%; padding-right: .3em; width: 12%}
+@media (min-width: 610px) and (max-width: 910px) {.footerimages {left: 3%; padding-bottom: .6em; width: 9%}} 
+@media (min-width: 910px) {.footerimages {left: 3%;  padding-bottom: .6em; width: 9%}}
+
+.footerimages img {width: 100%}
+.footerimages2 {position: relative; left: 5%; padding-right: .3em; width: 12%; display: none}
+@media (min-width: 610px) and (max-width: 910px) {.footerimages2 {left: 3%; padding-bottom: .6em; width: 9%; display: inline}} 
+@media (min-width: 910px) {.footerimages2 {left: 3%;  padding-bottom: .6em; width: 9%; display: inline}}
+@media (min-width: 610px) and (max-width: 910px) {.footerimages2 img {width: 100%}} 
+@media (min-width: 910px) {.footerimages2 img {width: 100%}}
+
+.footerimages3 {position: relative; left: 5%; padding-right: .3em; width: 18%; display: inline}
+@media (min-width: 610px) and (max-width: 910px) {.footerimages3 {left: 3%; padding-bottom: .6em; width: 19%; display: inline}} 
+@media (min-width: 910px) {.footerimages3 {left: 3%;  padding-bottom: .6em; width: 19%; display: inline}}
+
+.footerimages3 img {width: 100%}
+
+.footerimages4 {position: relative; left: 5%; padding-right: .3em; width: 18%; display: none}
+@media (min-width: 610px) and (max-width: 910px) {.footerimages4 {left: 0%; padding-bottom: .6em; width: 19%; display: inline}} 
+@media (min-width: 910px) {.footerimages4 {left: 0%;  padding-bottom: .6em; width: 19%; display: inline}}
+
+.footerimages4 img {width: 100%}
+#artsents {position: absolute; right: 0px}
+#WorldFestivals {position: absolute; right: 0px}
+#biglottery {position: absolute; left: 2%}
+#facebook {position: relative; left: 2%; }
+@media (min-width: 910px) {#facebook {left: 8%}}
+
+#facebook img {width: 30%; }
+@media (min-width: 610px) and (max-width: 910px) {#facebook img {width: 40%}} 
+@media (min-width: 910px) {#facebook img {width: 35%}}
+
+#facebook {top: 15em}
+@media (min-width: 610px) and (max-width: 910px) {#facebook {top: 0em; left: 8%}} 
+@media (min-width: 910px) {#facebook {top: 0%; left: 14%}}
+
+#fringereview {position: absolute; top: 15em; left: 40%}
+@media (min-width: 610px) and (max-width: 910px) {#fringereview {left: 60%; top: 0em}} 
+@media (min-width: 910px) {#fringereview {left: 70%; top: 0em}}
+@media (min-width: 610px) and (max-width: 910px) {#fringereview img {width: 100%}} 
+@media (min-width: 910px) {#fringereview img {width: 100%}}
+#thevoice {position: absolute; top: 15em; right: 2%}
+@media (min-width: 610px) and (max-width: 910px) {#thevoice {left: 60%; top: 8em; width: 150px}} 
+@media (min-width: 910px) {#thevoice {left: 60%; top: 10em; width: 150px}}
+
+#artsents {position: absolute; top: 25em; left: 40%}
+@media (min-width: 610px) and (max-width: 910px) {#artsents {left: 70%; top: 20em;}} 
+@media (min-width: 910px) {#artsents {left: 71%; top: 22em;}}
+
+#theatredevon {position: absolute; top: 11em; right: 2%}
+@media (min-width: 610px) and (max-width: 910px) {#theatredevon {left: 0%; top: 20em; width: 150px}} 
+@media (min-width: 910px) {#theatredevon {left: 7%; top: 24em; width: 150px}}
+
+#worldfest {position: absolute; top: 30em; left: 40%}
+@media (min-width: 610px) and (max-width: 910px) {#worldfest {left: 52%; top: 15em; width: 150px}} 
+@media (min-width: 910px) {#worldfest {left: 70%; top: 16em; width: 150px}}
+
+#biglottery {position: absolute; top: 34em; left: 0%}
+@media (min-width: 610px) and (max-width: 910px) {#biglottery {left: 2%; top: 18em; }} 
+@media (min-width: 910px) {#biglottery {left: 14%; top: 22em; width: 100px}}
+
+#twitter {position: absolute; right: 2px; top: 238em; width: 320px}
+@media (min-width: 610px) and (max-width: 910px) {#twitter {position: absolute; right: 8%; top: 20.8em; width: 150px}} 
+@media (min-width: 910px) {#twitter {position: absolute; right: 3%; top: 24em; width: 250px}}
+
+.twitter-timeline {width: 100%}
+
+#links {}
+@media (min-width: 910px) {#venuetext {position: relative; left: 25%; width: 75%}}
+
+#venuetext img {width: 100px; padding-top: 1.7em}
+@media (min-width: 910px) {#venuetext img {width: 150px; display: none}}
+#venueimages {position: absolute; left:5%; top: 31.4em; display: none}
+@media (min-width: 910px) {#venueimages {display:block}}
+#venues img {width: 30%}
+@media (min-width: 610px) and (max-width: 910px) {#venues img {width: 20%}} 
+@media (min-width: 910px) {#venues img {width: 15%}}
+
+#venuemap img {width: 100%}
+@media (min-width: 610px) and (max-width: 910px) {#venuemap img {width: 85%}} 
+@media (min-width: 910px) {#venuemap img {width: 75%}}
+
+#publicityform {
+	position: absolute;
+	left: 0%;
+	top: 37em;
+	text-align: left;
+	z-index: 7;
+	width: 300px;
+}
+@media (min-width: 610px) and (max-width: 910px) {#publicityform {left: 5%; width: 85%}} 
+@media (min-width: 910px) {#publicityform {top: 22em; left: 40em}}
+
+#entryrubric {
+	position: absolute;
+	left: 5%;
+	top: 15em;
+	text-align: left;
+	z-index: 7;
+	width: 300px;
+}
+@media (min-width: 610px) and (max-width: 910px) {#entryrubric {top: 22em; width: 85%}} 
+@media (min-width: 910px) {#entryrubric {top: 25em; left: 5em}}
+
+.companyrightpic {float: right; padding-left: 10px; padding-bottom: 6px; padding-top: 3px; width: 100%}
+@media (min-width: 610px) and (max-width: 910px) {.companyrightpic {float: right; padding-left: 10px; padding-bottom: 6px; padding-top: 3px; width: 60%}} 
+@media (min-width: 910px) {.companyrightpic {float: right; padding-left: 10px; padding-bottom: 6px; padding-top: 3px; width: 55%}}
+
+#reviewlist {
+	position: absolute;
+	left: 8%;	top: 21em;	width: 84%
+}
+@media (min-width: 610px) and (max-width: 910px) {#reviewlist {left: 5%;	top: 26.5em;	width: 60%}} 
+@media (min-width: 910px) {#reviewlist {left: 7%;	top: 29em;	width: 60%}}
+
+#reviewlist2 {
+	position: absolute;
+	left: 8%; top: 59.2em; width: 84%
+}
+@media (min-width: 610px) and (max-width: 910px) {#reviewlist2 {left: 5%; top: 62.5em; width: 50%}} 
+@media (min-width: 910px) {#reviewlist2 {left: 39%; top:29em; width: 35%}}
+
+.reviewul ul{line-height: 1.8; list-style-type: none; text-align: left; padding-left: 0; margin-left: 0; font-size: 1.4em}
+@media (min-width: 610px) and (max-width: 910px) {.reviewul ul{line-height: 1.8; list-style-type: none; text-align: left; padding-left: 0; margin-left: 0;}} 
+@media (min-width: 910px) {.reviewul ul{line-height: 1.8; list-style-type: none; text-align: left; padding-left: 0; margin-left: 0;}}
+
+
+#address {
+	position: absolute;
+	left: 12%; top: 21em; width: 96%; z-index: 4;
+}
+@media (min-width: 610px) and (max-width: 910px) {#address {left: 9%; top: 21.5em; width: 50%}} 
+@media (min-width: 910px) {#address {left: 7%; top: 26.6em; width: 50%}}
+
+#address p {font-size: 1.4em; font-weight: bold; line-height: 1.3}
+@media (min-width: 610px) and (max-width: 910px) {#address p {font-size: 1.3em; line-height: 1.4}} 
+@media (min-width: 910px) {#address p {font-size: 1.3em; line-height: 1.3}}
+
+#contactform {
+	position: absolute;
+	z-index: 8;
+	left: 2%;
+	top: 36em;
+}
+@media (min-width: 610px) and (max-width: 910px) {#contactform {top: 39em; width: 60% }} 
+@media (min-width: 910px) {#contactform {top: 23.5em; left: 33%}}
+
+#reviewform {position: absolute; left: 3%; top: 18em; z-index: 8}
+@media (min-width: 610px) and (max-width: 910px) {#reviewform {top: 19.5em; left: 5%;}} 
+@media (min-width: 910px) {#reviewform {top: 23em; left: 21%;}}
+
+#guidelines {position: absolute; left: 7%; top: 134em; width: 86%}
+@media (min-width: 610px) and (max-width: 910px) {#guidelines {top: 28.2em; left: 65%; width: 31% }} 
+@media (min-width: 910px) {#guidelines {top: 31.6em; left: 68%; width: 27%}}
+
+#volunteerform {
+	position: absolute;
+	left: -26%;
+	top: 17em;
+	text-align: left;
+	width: 480px;
+	z-index: 4;	
+}
+@media (min-width: 610px) and (max-width: 910px) {#volunteerform {left: 5%; top: 19em}} 
+@media (min-width: 910px) {#volunteerform {top: 23em; left: 16%}}
+
+#response {position: absolute; left: 10%; top: 22em;  width: 80%}
+@media (min-width: 610px) and (max-width: 910px) {#response {left: 25%; top: 20em}} 
+@media (min-width: 910px) {#response {top: 26em; left: 30%}}
+
+#schedulelist h1 {color: #cc0d87}
+#play h1 {color: #cc0d87}
+#genre b {color: #233}
+#reviewpage {
+	position: absolute;
+	left: 4%;
+	top: 15.3em;
+	width: 92%;
+	z-index: 2;	
+	font-size: 1.1em;
+}
+@media (min-width: 610px) and (max-width: 910px) {#reviewpage {top: 23em; left: 7%; font-size: 1em; width: 54%}} 
+@media (min-width: 910px) {#reviewpage {top: 26em; left: 10%; font-size: 1em; width: 53%}}
+
+#results {
+	position: absolute;
+	left: 2%;
+	top: 15.3em;
+	width: 100%;
+	z-index: 2;	
+	font-size: 1.1em;
+}
+@media (min-width: 610px) and (max-width: 910px) {#results {top: 23em; left: 2%; font-size: 1em; width: 54%}} 
+@media (min-width: 910px) {#results {top: 25em; left: 2%; font-size: 1em; width: 53%}}
+
+.applications {
+	position: absolute;
+	left: 2%;
+	top: 18em;
+	width: 96%;
+	z-index: 2;	
+	font-size: 1.1em;
+}
+@media (min-width: 610px) and (max-width: 910px) {.applications {top: 26em; left: 2%; font-size: 1em; width: 96%}} 
+@media (min-width: 910px) {.applications {top: 28em; left: 2%; font-size: 1em; width: 96%}}
+
+#page1 .cell1 {border-top: solid 2px #edd; border-right: solid 3px #edd; border-left: solid 3px #edd; background-color: #ffffff; padding: 3px; height: 40px; font-size: 10px}
+@media (min-width: 610px) and (max-width: 910px){#page1 .cell1 {border-top: solid 2px #edd; border-right: solid 3px #edd; border-left: solid 3px #edd; background-color: #ffffff; padding: 3px; height: 20px; }}
+@media (min-width: 910px){#page1 .cell1 {border-top: solid 2px #edd; border-right: solid 3px #edd; border-left: solid 3px #edd; background-color: #ffffff; padding: 3px; height: 20px}}
+
+
+#page1 .cell2 {border: solid 3px #edd; border-top: solid 2px #edd; background-color: #ffffff; padding: 3px; height: 20px;}
+@media (min-width: 610px) and (max-width: 910px){#page1 .cell2 {border: solid 3px #edd; border-top: solid 2px #edd; background-color: #ffffff; padding: 3px; height: 20px;}}
+@media (min-width: 910px){#page1 .cell2 {border: solid 3px #edd; border-top: solid 2px #edd; background-color: #ffffff; padding: 3px; height: 20px;}}
+
+
+#page1 .cell3 {border: solid 3px #edd; background-color: #ffffff; padding: 3px; height: 20px; border-bottom: 0px; }
+@media (min-width: 610px) and (max-width: 910px){#page1 .cell3 {border: solid 3px #edd; background-color: #ffffff; padding: 3px; height: 20px; border-bottom: 0px}}
+@media (min-width: 910px){#page1 .cell3 {border: solid 3px #edd; background-color: #ffffff; padding: 3px; height: 20px; border-bottom: 0px}}
+
+#page1 .cell3 p {font-size: 11px}
+@media (min-width: 610px) and (max-width: 910px){#page1 .cell3 p {font-size: 12px}}
+@media (min-width: 910px){#page1 .cell3 p {font-size: 12px}}
+
+#page1 .comp {
+	position: absolute;
+	left: 10px;
+	width: 30%;
+	color: #000000;
+	font-weight: normal; font-size: 10px;
+}
+@media (min-width: 610px) and (max-width: 910px){#page1 .comp {position: absolute;
+	left: 10px;
+	width: 42%;
+	color: #000000;
+	font-weight: normal; font-size: 10px;}}
+@media (min-width: 910px){#page1  .comp {position: absolute;
+	left: 10px;
+	width: 42%;
+	color: #000000;
+	font-weight: normal; font-size: 1em;
+}}
+
+#page1 .prod {position: absolute; left: 38%; width: 60%; color: #000000; font-weight: bold; font-size: 10px;}
+@media (min-width: 610px) and (max-width: 910px){#page1 .prod {position: absolute; left: 34%; width: 52%; color: #000000; font-weight: bold; font-size: 10px;}}
+@media (min-width: 910px){#page1 .prod {position: absolute; left: 36%; width: 52%; color: #000000; font-weight: bold; font-size: 1em;}}
+
+
+
+#page1 .loc {position: absolute; left: 85%; width: 15%; color: #000000; font-weight: normal; display: none}
+@media (min-width: 610px) and (max-width: 910px){#page1 .loc {position: absolute; left: 85%; width: 15%; color: #000000; font-weight: normal; font-size: 10px; display: inline}}
+@media (min-width: 910px){#page1 .loc {position: absolute; left: 88%; width: 15%; color: #000000; font-weight: normal; display: inline}}

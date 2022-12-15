@@ -39,7 +39,8 @@ def archive_index(request):
         pass
 
     # Redirect to archive
-    return redirect('https://archive.theatrefest.co.uk/archive/index.htm')
+    #return redirect('https://archive.theatrefest.co.uk/archive/index.htm')
+    return redirect('/static/ionos/archive/index.htm')
 
 
 def archive_home(request):
