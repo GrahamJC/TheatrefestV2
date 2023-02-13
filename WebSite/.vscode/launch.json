@@ -41,7 +41,8 @@
                 "runserver",
                 "--noreload",
             ],
-            "django": true
+            "django": true,
+            "justMyCode": false
         },
         {
             "name": "Python: Flask",

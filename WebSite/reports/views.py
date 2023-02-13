@@ -30,6 +30,7 @@ reports = {
             'select_fields': [],
             'select_required': [],
             'report_url': reverse_lazy('reports:finance_festival_summary'),
+            'formats': ['HTML', 'PDF'],
         },
         'boxoffice_summary': {
             'title': 'Box Office summary',
@@ -37,6 +38,7 @@ reports = {
             'select_fields': ['boxoffice', 'date'],
             'select_required': ['boxoffice', 'date'],
             'report_url': reverse_lazy('reports:finance_boxoffice_summary'),
+            'formats': ['HTML', 'PDF'],
         },
         'venue_summary': {
             'title': 'Venue summary',
@@ -44,6 +46,7 @@ reports = {
             'select_fields': ['venue', 'date'],
             'select_required': ['venue', 'date'],
             'report_url': reverse_lazy('reports:finance_venue_summary'),
+            'formats': ['HTML', 'PDF'],
         },
         'refunds': {
             'title': 'Refunds',
@@ -51,6 +54,7 @@ reports = {
             'select_fields': [],
             'select_required': [],
             'report_url': reverse_lazy('reports:finance_refunds'),
+            'formats': ['HTML', 'PDF'],
         },
         'company_payment': {
             'title': 'Company payment',
@@ -58,6 +62,7 @@ reports = {
             'select_fields': ['company'],
             'select_required': [],
             'report_url': reverse_lazy('reports:finance_company_payment'),
+            'formats': ['HTML', 'PDF', 'XLSX'],
         },
     },
     'sales': {
@@ -67,6 +72,7 @@ reports = {
             'select_fields': ['show'],
             'select_required': [],
             'report_url': reverse_lazy('reports:sales_audience'),
+            'formats': ['HTML', 'PDF'],
         },
         'admission_lists': {
             'title': 'Admission lists',
@@ -74,6 +80,7 @@ reports = {
             'select_fields': ['date', 'venue', 'performance'],
             'select_required': ['date'],
             'report_url': reverse_lazy('reports:sales_admission_lists'),
+            'formats': ['HTML', 'PDF'],
         },
         'tickets_by_type': {
             'title': 'Ticket sales by ticket type',
@@ -81,6 +88,7 @@ reports = {
             'select_fields': ['show'],
             'select_required': [],
             'report_url': reverse_lazy('reports:sales_tickets_by_type'),
+            'formats': ['HTML', 'PDF'],
         },
         'tickets_by_channel': {
             'title': 'Ticket sales by channel (online, box office or venue)',
@@ -88,6 +96,7 @@ reports = {
             'select_fields': ['show'],
             'select_required': [],
             'report_url': reverse_lazy('reports:sales_tickets_by_channel'),
+            'formats': ['HTML', 'PDF'],
         },
     },
 }
@@ -133,6 +142,7 @@ def select(request, category, report_name = None):
     report_title = ''
     report_html_url = ''
     report_pdf_url = ''
+    report_xlsx_url = ''
 
     # Report selection
     if request.method == 'GET':
@@ -157,8 +167,12 @@ def select(request, category, report_name = None):
                 for field in report['select_fields']:
                     report_url += seperator + field + '=' + select_form.cleaned_data[field]
                     seperator = '&'
-            report_html_url = report_url + seperator + 'format=HTML'
-            report_pdf_url = report_url + seperator + 'format=PDF'
+            if 'HTML' in report['formats']:
+                report_html_url = report_url + seperator + 'format=HTML'
+            if 'PDF' in report['formats']:
+                report_pdf_url = report_url + seperator + 'format=PDF'
+            if 'XLSX' in report['formats']:
+                report_xlsx_url = report_url + seperator + 'format=XLSX'
 
     # Render selection page
     context = {
@@ -174,6 +188,7 @@ def select(request, category, report_name = None):
         'report_title': report_title,
         'report_html_url': report_html_url,
         'report_pdf_url': report_pdf_url,
+        'report_xlsx_url': report_xlsx_url,
     }
     return render(request, 'reports/main.html', context)
 

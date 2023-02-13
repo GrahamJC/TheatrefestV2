@@ -37,7 +37,10 @@
 
             <div class="card-header">
                 {% if report_pdf_url %}
-                    <a class="btn btn-primary float-right" href="{{ report_pdf_url | safe }}" target="_blank">Print</a>
+                    <a class="btn btn-primary ml-2 float-right" href="{{ report_pdf_url | safe }}" target="_blank">PDF</a>
+                {% endif %}
+                {% if report_xlsx_url %}
+                    <a class="btn btn-primary ml-2 float-right" href="{{ report_xlsx_url | safe }}" target="_blank">Excel</a>
                 {% endif %}
                 <h4>{{ report_title }}</h4>
             </div>

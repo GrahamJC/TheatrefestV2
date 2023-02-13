@@ -125,7 +125,7 @@ class User(TimeStampedModel, AbstractBaseUser, PermissionsMixin):
     is_volunteer = models.BooleanField(default=False)
 
     class Meta:
-        ordering = ('site', 'festival', 'email')
+        #ordering = ('site', 'festival', 'email')
         unique_together = ('site', 'festival', 'email')
 
     USERNAME_FIELD = 'email'

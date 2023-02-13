@@ -276,8 +276,8 @@ class ShowPerformance(TimeStampedModel):
         unique_together = ('show', 'date', 'time')
         ordering = ('show', 'date', 'time')
 
-    def __str__(self):
-        return f'{self.show}/{self.date} at {self.time}'
+    #def __str__(self):
+    #    return f'{self.show}/{self.date} at {self.time}'
 
     @property
     def can_delete(self):

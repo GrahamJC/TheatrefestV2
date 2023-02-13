@@ -1,4 +1,5 @@
 import os
+import io
 import datetime
 from collections import OrderedDict
 from decimal import Decimal
@@ -12,7 +13,7 @@ from django.template import Template, Context
 from django.views import View
 from django.views.decorators.http import require_http_methods, require_GET
 from django.urls import reverse, reverse_lazy
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseNotFound
 
 import arrow
 
@@ -23,6 +24,8 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import A4, portrait, landscape
 from reportlab.lib.units import cm
 from reportlab.lib import colors
+
+import xlsxwriter as xlsx
 
 from program.models import Company, Venue, Show, ShowPerformance
 from tickets.models import BoxOffice, Sale, Refund, Fringer, TicketType, Ticket, Checkpoint
@@ -39,7 +42,7 @@ def festival_summary(request):
     boxoffice_list = [bo for bo in BoxOffice.objects.filter(festival = request.festival).order_by('name')]
 
     # Sales by channel
-    online_pre = Sale.objects.filter(festival = request.festival, created__lt = date_list[0], completed__isnull = False, boxoffice__isnull = True, venue__isnull = True).aggregate(Sum('amount'))['amount__sum'] or 0
+    online_pre = Sale.objects.filter(festival = request.festival, created__lt = date_list[0], completed__isnull = False, refund__isnull = True, boxoffice__isnull = True, venue__isnull = True).aggregate(Sum('amount'))['amount__sum'] or 0
     online = {
         'pre': online_pre,
         'dates': [],
@@ -868,38 +871,8 @@ def _get_company_tickets_by_type(company, ticket_types):
         'payment': sum([s['payment'] for s in shows]),
     }
 
-@require_GET
-@login_required
-@user_passes_test(lambda u: u.is_admin)
-def company_payment(request):
 
-    # Get selection criteria
-    selected_company = None
-    if request.GET['company']:
-        selected_company = Company.objects.get(id = int(request.GET['company']))
-
-    # Fetch data
-    ticket_types = [{'name': tt.name, 'payment': tt.payment} for tt in TicketType.objects.filter(festival = request.festival).order_by('name')]
-    ticket_types.append({'name': 'eFringer', 'payment': Decimal('4.00')})
-    ticket_types.append({'name': 'Volunteer', 'payment': Decimal('0.00')})
-    companies = []
-    if selected_company:
-        companies.append(_get_company_tickets_by_type(selected_company, ticket_types))
-    else:
-        ticketed_company_ids = Show.objects.filter(festival = request.festival, venue__is_ticketed = True).values('company_id').distinct()
-        for company in Company.objects.filter(id__in = ticketed_company_ids).order_by('name'):
-            companies.append(_get_company_tickets_by_type(company, ticket_types))
-
-    # Check for HTML
-    format = request.GET['format']
-    if format.lower() == 'html':
-
-        # Render tickets
-        context = {
-            'ticket_types': ticket_types,
-            'companies': companies,
-        }
-        return render(request, "reports/finance/company_payment.html", context)
+def company_payment_pdf(request, companies, ticket_types):
 
     # Render as PDF
     response = HttpResponse(content_type = 'application/pdf')
@@ -966,6 +939,109 @@ def company_payment(request):
     # Render PDF document and return it
     doc.build(story)
     return response
+
+def get_ticket_payment(company, ticket_types, name):
+
+    ticket_type = next(filter(lambda tt: tt['name'] == name, ticket_types), None)
+    tickets = 0
+    for show in company['shows']:
+        for performance in show['performances']:
+            tickets += performance['tickets'][ticket_type['name']] 
+    return tickets * ticket_type['payment']
+
+def company_payment_xlsx(request, companies, ticket_types):
+
+        # Create an in-memory output file for the new workbook.
+        output = io.BytesIO()
+
+        # Even though the final file will be in memory the module uses temp
+        # files during assembly for efficiency. To avoid this on servers that
+        # don't allow temp files, for example the Google APP Engine, set the
+        # 'in_memory' Workbook() constructor option as shown in the docs.
+        workbook = xlsx.Workbook(output)
+        worksheet = workbook.add_worksheet()
+
+        # Column headers
+        worksheet.write(0, 0, 'Company')
+        worksheet.write(0, 1, 'Deposit')
+        worksheet.write(0, 2, 'Full')
+        worksheet.write(0, 3, 'Concession')
+        worksheet.write(0, 4, 'Fringers')
+        worksheet.write(0, 5, 'eFringers')
+        worksheet.write(0, 6, 'Adjustment')
+        worksheet.write(0, 7, 'Total')
+        worksheet.write(0, 8, 'Notes')
+
+        # Company data
+        row = 1
+        for company in companies:
+            worksheet.write(row, 0, company['name'])
+            worksheet.write(row, 2, get_ticket_payment(company, ticket_types, 'Full'))
+            worksheet.write(row, 3, get_ticket_payment(company, ticket_types, 'Concession'))
+            worksheet.write(row, 4, get_ticket_payment(company, ticket_types, 'Fringer'))
+            worksheet.write(row, 5, get_ticket_payment(company, ticket_types, 'eFringer'))
+            worksheet.write(row, 6, 0)
+            worksheet.write_formula(row, 7, f'=SUM({xlsx.utility.xl_range(row, 1, row, 6)})')
+            row += 1
+
+        # Close the workbook before sending the data.
+        workbook.close()
+
+        # Rewind the buffer.
+        output.seek(0)
+
+        # Set up the Http response.
+        filename = 'company_payment.xlsx'
+        response = HttpResponse(
+            output,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename=%s' % filename
+        return response
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_admin)
+def company_payment(request):
+
+    # Get selection criteria
+    selected_company = None
+    if request.GET['company']:
+        selected_company = Company.objects.get(id = int(request.GET['company']))
+
+    # Fetch data
+    ticket_types = [{'name': tt.name, 'payment': tt.payment} for tt in TicketType.objects.filter(festival = request.festival).order_by('name')]
+    ticket_types.append({'name': 'eFringer', 'payment': Decimal('4.00')})
+    ticket_types.append({'name': 'Volunteer', 'payment': Decimal('0.00')})
+    companies = []
+    if selected_company:
+        companies.append(_get_company_tickets_by_type(selected_company, ticket_types))
+    else:
+        ticketed_company_ids = Show.objects.filter(festival = request.festival, venue__is_ticketed = True).values('company_id').distinct()
+        for company in Company.objects.filter(id__in = ticketed_company_ids).order_by('name'):
+            companies.append(_get_company_tickets_by_type(company, ticket_types))
+
+    # Check for HTML
+    format = request.GET['format']
+    if format.lower() == 'html':
+
+        # Render tickets
+        context = {
+            'ticket_types': ticket_types,
+            'companies': companies,
+        }
+        return render(request, "reports/finance/company_payment.html", context)
+
+    # PDF
+    elif format.lower() == 'pdf':
+        return company_payment_pdf(request, companies, ticket_types)
+
+    # Excel
+    elif format.lower() == 'xlsx':
+        return company_payment_xlsx(request, companies, ticket_types)
+
+    # Unsupported format
+    return HttpResponseNotFound()
 
 
 @login_required

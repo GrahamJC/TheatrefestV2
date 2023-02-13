@@ -262,14 +262,14 @@ class Fringer(TimeStampedModel):
     payment = models.DecimalField(max_digits = 4, decimal_places = 2, blank = True, default = 0)
 
     class Meta:
-        ordering = ['user', 'name']
+        #ordering = ['user', 'name']
         unique_together = ('user', 'name')
 
     def __str__(self):
         if self.user:
-            return f"eFringer: {self.user}/{self.name}"
-        if self.sale:
-            return f"Paper: {self.sale.customer}"
+            return f"eFringer ({self.id}, {self.user.email}/{self.name})"
+        elif self.sale:
+            return f"Paper ({self.id}, {self.sale.customer})"
         else:
             return f"Fringer({self.id})"
 
@@ -332,11 +332,11 @@ class Ticket(TimeStampedModel):
     payment = models.DecimalField(max_digits = 4, decimal_places = 2, blank = True, default = 0)
     token_issued = models.BooleanField(default = False)
 
-    class Meta:
-        ordering = ['performance']
+    #class Meta:
+    #    ordering = ['performance']
 
-    def __str__(self):
-        return f'{self.id} ({self.description}): {self.performance}'
+    #def __str__(self):
+    #    return f'{self.id} ({self.description}): {self.performance}'
 
     @property
     def is_confirmed(self):
