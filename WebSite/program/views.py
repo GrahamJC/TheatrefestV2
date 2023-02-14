@@ -10,7 +10,7 @@ from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render, redirect
-from django.template import Template, Context
+from django.template import engines, Template, Context
 from django.urls import reverse, reverse_lazy
 from django.views import View
 from django.views.generic import ListView, CreateView, UpdateView
@@ -28,7 +28,7 @@ from reportlab.lib.units import cm
 from reportlab.lib import colors
 
 from core.models import Festival
-from content.models import Image
+from content.models import Image, Resource
 from .models import (
     Genre,
     Venue, VenueContact, VenueSponsor,
@@ -102,12 +102,18 @@ def show(request, show_uuid):
         template = Template(show.detail)
         html = template.render(Context(body_context))
 
-    # Render show details
-    page_context ={
+    # Get show template and render page
+    festival_template = Resource.objects.filter(festival=request.festival, name='ShowTemplate').first()
+    engine = engines['django']
+    if festival_template:
+        show_template = engine.from_string(festival_template.body)
+    else:
+        show_template = engine.get_template('program/show.html')
+    context ={
         'show': show,
         'html': html,
     }
-    return render(request, 'program/show.html', page_context)
+    return HttpResponse(show_template.render(context, request))
 
 
 def _add_non_scheduled_performances(festival, day):

@@ -159,9 +159,11 @@ class Document(TimeStampedModel):
 class Resource(TimeStampedModel):
 
     CSS = 'text/css'
+    HTML = 'text/html'
     JAVASCRIPT = 'application/javascript'
     TYPE_CHOICES = (
         (CSS, 'CSS stylesheet'),
+        (HTML, 'HTML template'),
         (JAVASCRIPT, 'Javascript'),
     )
     festival = models.ForeignKey(Festival, on_delete=models.CASCADE, related_name='resources')
