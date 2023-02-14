@@ -188,7 +188,7 @@ class AdminShowForm(forms.ModelForm):
             'name', 'company', 'venue',
             'image', 'listing', 'listing_short', 'detail',
             'website', 'twitter', 'facebook', 'instagram',
-            'genres', 'genre_text', 'has_warnings',
+            'genres', 'genre_text', 'has_warnings', 'warnings',
             'age_range', 'duration',
             'is_suspended', 'is_cancelled', 'replaced_by',
         ]

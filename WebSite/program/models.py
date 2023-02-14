@@ -210,6 +210,7 @@ class Show(TimeStampedModel):
     is_suspended = models.BooleanField(blank = True, default = False)
     is_cancelled = models.BooleanField(blank = True, default = False)
     replaced_by = models.OneToOneField('self', on_delete = models.SET_NULL, related_name = 'replacement_for', blank = True, null = True)
+    warnings = models.CharField(max_length = 64, blank = True, default = '')
 
     class Meta:
         unique_together = ('festival', 'name')
@@ -244,7 +245,6 @@ class Show(TimeStampedModel):
         dates = list(set(dates))
         dates.sort()
         return dates
-
 
 class ShowImage(TimeStampedModel):
 
