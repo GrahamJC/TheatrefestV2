@@ -9,6 +9,11 @@ from .models import Venue, VenueContact, VenueSponsor, Company, CompanyContact, 
 
 class SearchForm(forms.Form):
 
+    class GenreChoiceField(forms.ModelMultipleChoiceField):
+
+        def label_from_instance(self, obj):
+            return obj.name
+
     def __init__(self, *args, **kwargs):
 
         # Save festival
@@ -26,7 +31,8 @@ class SearchForm(forms.Form):
         self.fields['venues'] = forms.MultipleChoiceField(choices = venue_list, required = False, widget = forms.CheckboxSelectMultiple)
 
         # Search by genre
-        self.fields['genres'] = forms.ModelMultipleChoiceField(Genre.objects.filter(festival=self.festival), to_field_name = "id", required = False, widget = forms.CheckboxSelectMultiple())
+        #self.fields['genres'] = forms.ModelMultipleChoiceField(Genre.objects.filter(festival=self.festival), to_field_name = "id", required = False, widget = forms.CheckboxSelectMultiple())
+        self.fields['genres'] = SearchForm.GenreChoiceField(Genre.objects.filter(festival=self.festival), to_field_name = "id", required = False, widget = forms.CheckboxSelectMultiple())
 
 
 class AdminGenreForm(forms.ModelForm):
