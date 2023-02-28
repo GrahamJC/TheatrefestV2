@@ -117,6 +117,7 @@ class Image(TimeStampedModel):
     festival = models.ForeignKey(Festival, on_delete=models.CASCADE, related_name='images')
     name = models.CharField(max_length=32)
     image = models.ImageField(upload_to = get_image_filename, blank = True, default = '')
+    map = models.TextField(blank = True, default = '')
 
     class Meta:
         ordering = ('festival', 'name')

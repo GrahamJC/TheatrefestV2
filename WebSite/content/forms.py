@@ -86,6 +86,7 @@ class AdminImageForm(forms.ModelForm):
         fields = [
             'name',
             'image',
+            'map',
         ]
 
     def __init__(self, festival, *args, **kwargs):

@@ -477,6 +477,7 @@ class AdminImageCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         form.helper.layout = Layout(
             'name',
             'image',
+            'map',
             FormActions(
                 Submit('save', 'Save'),
                 Button('cancel', 'Cancel'),
@@ -506,6 +507,7 @@ class AdminImageUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
         form.helper.layout = Layout(
             'name',
             'image',
+            'map',
             FormActions(
                 Submit('save', 'Save'),
                 Button('delete', 'Delete'),

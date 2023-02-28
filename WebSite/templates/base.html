@@ -22,6 +22,7 @@
         <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js" ></script>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.1.3/dist/js/bootstrap.min.js" ></script>
         <script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment.min.js" ></script>
+        <script src="{%static 'jQuery.rwdImageMaps.min.js' %}" ></script>
     {% endblock %}
     <title>{% block title %}{{ request.festival.title }}{% endblock %}</title>
 </head>
@@ -39,12 +40,22 @@
                         <div id="tf-banner" class="mb-1">
                             <a href="{% if request.festival.is_archived %}#{% else %}{% url 'home' %}{% endif %}">
                                 {% if request.festival.banner_mobile %}
-                                    <img class="d-none d-sm-block w-100" src="{{ request.festival.banner.get_absolute_url }}" />
-                                    <img class="d-block d-sm-none w-100" src="{{ request.festival.banner_mobile.get_absolute_url }}" />
+                                    <img class="d-none d-sm-block img-fluid" src="{{ request.festival.banner.get_absolute_url }}" {% if request.festival.banner.map %}usemap="#banner-map"{% endif %} width="{{ request.festival.banner.image.width }}" height="{{ request.festival.banner.image.height }}" />
+                                    <img class="d-block d-sm-none img-fluid" src="{{ request.festival.banner_mobile.get_absolute_url }}" {% if request.festival.banner_mobile.map %}usemap="#banner-mobile-map"{% endif %} width="{{ request.festival.banner_mobile.image.width }}" height="{{ request.festival.banner_mobile.image.height }}"/>
                                 {% else %}
-                                    <img class="w-100" src="{{ request.festival.banner.get_absolute_url }}" />
+                                    <img class="img-fluid" src="{{ request.festival.banner.get_absolute_url }}" {% if request.festival.banner.map %}usemap="#banner-map"{% endif %} width="{{ request.festival.banner.image.width }}" height="{{ request.festival.banner.image.height }}"/>
                                 {% endif %}
                             </a>
+                            {% if request.festival.banner.map %}
+                                <map name="banner-map">
+                                    {{ request.festival.banner.map | safe }}
+                                </map>
+                            {% endif %}
+                            {% if request.festival.banner_mobile.map %}
+                                <map name="banner-mobile-map">
+                                    {{ request.festival.banner_mobile.map | safe }}
+                                </map>
+                            {% endif %}
                         </div>
                     {% endif %}
                 {% endblock %}
@@ -179,6 +190,11 @@
     </div>  
 
     {% block body-script %}
+        <script lang="JavaScript">
+            $(document).ready(function(e) {
+                 $('img[usemap]').rwdImageMaps();
+            });
+        </script>
     {% endblock %}
 
 </body>
