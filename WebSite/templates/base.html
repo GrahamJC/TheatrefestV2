@@ -22,7 +22,7 @@
         <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js" ></script>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.1.3/dist/js/bootstrap.min.js" ></script>
         <script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment.min.js" ></script>
-        <script src="{%static 'jQuery.rwdImageMaps.min.js' %}" ></script>
+        <script src="{%static 'jquery.rwdImageMaps.min.js' %}" ></script>
     {% endblock %}
     <title>{% block title %}{{ request.festival.title }}{% endblock %}</title>
 </head>
@@ -189,12 +189,13 @@
         </div>
     </div>  
 
+    <script lang="JavaScript">
+        $(document).ready(function(e) {
+             $('img[usemap]').rwdImageMaps();
+        });
+    </script>
+
     {% block body-script %}
-        <script lang="JavaScript">
-            $(document).ready(function(e) {
-                 $('img[usemap]').rwdImageMaps();
-            });
-        </script>
     {% endblock %}
 
 </body>
