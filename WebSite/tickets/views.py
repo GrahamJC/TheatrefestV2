@@ -626,15 +626,17 @@ def checkout_stripe(request):
             customer_email = basket.user.email,
             payment_method_types = ['card'],
             mode = 'payment',
-            line_items = [
-                {
-                    'name': 'Theatrefest',
-                    'description': 'Tickets and eFringers',
-                    'amount': int(sale.stripe_charge * 100),
+            line_items = [{
+                'price_data': {
                     'currency': 'GBP',
-                    'quantity': 1,
+                    'unit_amount': int(sale.stripe_charge * 100),
+                    'product_data': {
+                        'name': 'Theatrefest',
+                        'description': 'Tickets and eFringers',
+                    },
                 },
-            ],
+                'quantity': 1,
+            }],
             success_url = request.build_absolute_uri(reverse('tickets:checkout_success', args=[sale.uuid])),
             cancel_url = request.build_absolute_uri(reverse('tickets:checkout_cancel', args=[sale.uuid])),
         )
