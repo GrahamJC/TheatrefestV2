@@ -629,7 +629,7 @@ def checkout_stripe(request):
             line_items = [{
                 'price_data': {
                     'currency': 'GBP',
-                    'unit_amount': int(sale.stripe_charge * 100),
+                    'unit_amount': int(sale.total_cost * 100),
                     'product_data': {
                         'name': 'Theatrefest',
                         'description': 'Tickets and eFringers',
@@ -656,7 +656,7 @@ def checkout_success(request, sale_uuid):
     sale.completed = timezone.now()
     sale.save()
     logger.info(f"Stripe payment for sale {sale.id} succeeded")
-    logger.info(f"Credit card charged £{sale.stripe_charge:2f}")
+    logger.info(f"Credit card charged £{sale.total_cost:2f}")
     logger.info(f"Sale {sale.id} completed")
 
     # Send e-mail to confirm tickets
