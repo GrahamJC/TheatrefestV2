@@ -1,16 +1,23 @@
+import dateutil
+
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model, login
 from django.contrib.auth.views import PasswordResetView as AuthPasswordResetView
 from django.http import HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
+from django.views.generic.edit import FormView
 
 from django_registration import signals
 from django_registration.exceptions import ActivationError
 import django_registration.backends.one_step.views as OneStepViews
 import django_registration.backends.activation.views as TwoStepViews
 
-from .forms import RegistrationForm, PasswordResetForm
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Layout, Field, HTML, Submit, Button, Row, Column
+from crispy_forms.bootstrap import FormActions, TabHolder, Tab
+
+from .forms import RegistrationForm, PasswordResetForm, DebugForm
 
 User = get_user_model()
 
@@ -96,4 +103,45 @@ class ResendActivationView(TwoStepViews.RegistrationView):
         user = get_object_or_404(User, uuid = user_uuid)
         self.send_activation_email(user)
         return redirect(reverse('django_registration_complete'))
+
+
+class DebugFormView(FormView):
+
+    template_name = 'core/debug.html'
+    form_class= DebugForm
+    success_url = '/core/debug'
+
+    def get_initial(self):
+        initial = {}
+        if 'date' in self.request.session:
+            initial['date'] = dateutil.parser.parse(self.request.session['date']).date()
+        if 'time' in self.request.session:
+            initial['time'] = dateutil.parser.parse(self.request.session['time']).time()
+        return initial
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Row(
+                Column('date', css_class='form-group col-md-6 mb-0'),
+                Column('time', css_class='form-group col-md-6 mb-0'),
+                css_class = 'form-row',
+            ),
+            FormActions(
+                Submit('update', 'Update'),
+            ),
+        )
+        return form
+
+    def form_valid(self, form):
+        if form.cleaned_data['date']:
+            self.request.session['date'] = str(form.cleaned_data['date'])
+        elif 'date' in self.request.session:
+            del self.request.session['date']
+        if form.cleaned_data['time']:
+            self.request.session['time'] = str(form.cleaned_data['time'])
+        elif 'time' in self.request.session:
+            del self.request.session['time']
+        return super().form_valid(form)
 

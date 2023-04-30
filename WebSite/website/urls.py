@@ -15,6 +15,7 @@ from content.views import home
 urlpatterns = [
     path('', home),
     path('home', home, name='home'),
+    path('core/', include('core.urls')),
     path('content/', include('content.urls')),
     path('festival/', include('festival.urls')),
     path('program/', include('program.urls')),

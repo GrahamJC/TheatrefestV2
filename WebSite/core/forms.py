@@ -12,6 +12,8 @@ from operator import add
 
 from django_registration.forms import RegistrationForm as BaseRegistrationForm
 
+from bootstrap_datepicker_plus.widgets import DatePickerInput, TimePickerInput
+
 from core.models import User
 
 
@@ -241,3 +243,10 @@ class MultiModelForm(MultiForm):
             self.save_m2m = save_m2m
 
         return objects
+
+
+class DebugForm(forms.Form):
+
+    date = forms.DateField(required=False, widget=DatePickerInput)
+    time = forms.TimeField(required=False, widget=TimePickerInput)
+
