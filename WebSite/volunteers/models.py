@@ -51,14 +51,13 @@ class Volunteer(TimeStampedModel):
     @property
     def comps_earned(self):
 
-        # Calculate comps earned
+        # Calculate comps earned (rounded down) and limit to a maximum of 4
         comps = 0
         for shift in self.shifts.all():
             comps += shift.role.comps_per_shift
-        
-        # Round down and limit to a maximum of 4
+        comps = int(comps)
         max_comps = self.user.festival.volunteer_comps
-        return int(comps) if max_comps == 0 else max(int(comps), max_comps)
+        return comps if max_comps == 0 else min(comps, max_comps)
 
     @property
     def comps_used(self):

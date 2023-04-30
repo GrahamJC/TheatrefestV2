@@ -12,6 +12,7 @@ urlpatterns = [
     path('buy/confirm/tickets/<uuid:performance_uuid>', views.BuyConfirmTicketsView.as_view(), name = 'buy_confirm_tickets'),
     path('buy/confirm/fringer_tickets/<uuid:performance_uuid>', views.BuyConfirmFringerTicketsView.as_view(), name = 'buy_confirm_fringer_tickets'),
     path('buy/confirm/fringers/<uuid:performance_uuid>', views.BuyConfirmFringersView.as_view(), name = 'buy_confirm_fringers'),
+    path('buy/confirm/volunteer_ticket/<uuid:performance_uuid>', views.BuyConfirmVolunteerTicketView.as_view(), name = 'buy_confirm_volunteer_ticket'),
     path('checkout', views.CheckoutView.as_view(), name = 'checkout'),
     path('checkout/remove/performance/<uuid:performance_uuid>', views.CheckoutRemovePerformanceView.as_view(), name = 'checkout_remove_performance'),
     path('checkout/remove/ticket/<uuid:ticket_uuid>', views.CheckoutRemoveTicketView.as_view(), name = 'checkout_remove_ticket'),

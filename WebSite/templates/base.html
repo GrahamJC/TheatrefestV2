@@ -108,6 +108,9 @@
                                                     {% endif %}
                                                 {% endif %}
                                                 <div class="dropdown-divider"></div>
+                                                {% if user.is_superuser %}
+                                                    <a class="dropdown-item" href="{% url 'core:debug' %}">debug</a>
+                                                {% endif %}
                                                 <a class="dropdown-item" href="{% url 'password_change' %}">change password</a>
                                                 <a class="dropdown-item" href="{% url 'logout' %}">logout</a>
                                             </div>

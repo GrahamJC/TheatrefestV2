@@ -109,9 +109,14 @@ def show(request, show_uuid):
         show_template = engine.from_string(festival_template.body)
     else:
         show_template = engine.get_template('program/show.html')
+    sales_closed = request.festival.online_sales_close and (request.now.date() > request.festival.online_sales_close)
+    sales_open = request.festival.online_sales_open and (request.now.date() >= request.festival.online_sales_open) and not sales_closed
     context ={
         'show': show,
         'html': html,
+        'sales_open_date': request.festival.online_sales_open, 
+        'sales_open': sales_open, 
+        'sales_closed': sales_closed,
     }
     return HttpResponse(show_template.render(context, request))
 

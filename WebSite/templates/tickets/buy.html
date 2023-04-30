@@ -25,6 +25,9 @@
             <div class="nav nav-tabs nav-justified mb-3">
                 <a class="nav-item nav-link {% if tab == 'tickets' %}active{% endif %}" href="#tf-credit-card-tab" data-toggle="tab">Credit Card</a>
                 <a class="nav-item nav-link {% if tab == 'fringers' %}active{% endif %}" href="#tf-fringers-tab" data-toggle="tab">eFringers</a>
+                {% if user.is_volunteer %}
+                    <a class="nav-item nav-link {% if tab == 'volunteers' %}active{% endif %}" href="#tf-volunteers-tab" data-toggle="tab">Volunteers</a>
+                {% endif %}
                 <a class="nav-item nav-link {% if tab == 'faqs' %}active{% endif %}" href="#tf-faqs-tab" data-toggle="tab">FAQs</a>
             </div>
 
@@ -36,26 +39,22 @@
                             <div class="card">
                                 <h6 class="card-header">Buy Tickets</h6>
                                 <div class="card-body">
-                                    {% if sales_open %}
-                                        <form class="form-inline" method="post">
-                                            {% csrf_token %}
-                                            {{ ticket_formset.management_form }}
-                                            <table class="table table-striped">
-                                                {% for form in ticket_formset.forms %}
-                                                    <tr>
-                                                        <td>{{ form.id }} {{form.name}} <p class="form-control-plaintext">{{ form.name.value }}</p></td>
-                                                        <td><p class="form-control-plaintext">&#163;{{ form.price.value|floatformat }}</p></td>
-                                                        <td>{{ form.quantity | add_class:'form-control' }}</td>
-                                                    </tr>
-                                                {% endfor %}
-                                            </table>
-                                            <div class="tf-actions">
-                                                <button type="submit" class="btn btn-primary" name="action" value="AddTickets">Add to Basket</button>
-                                            </div>
-                                        </form>
-                                    {% else %}
-                                        Tickets will be on sale from Friday, June 1st.
-                                    {% endif %}
+                                    <form class="form-inline" method="post">
+                                        {% csrf_token %}
+                                        {{ ticket_formset.management_form }}
+                                        <table class="table table-striped">
+                                            {% for form in ticket_formset.forms %}
+                                                <tr>
+                                                    <td>{{ form.id }} {{form.name}} <p class="form-control-plaintext">{{ form.name.value }}</p></td>
+                                                    <td><p class="form-control-plaintext">&#163;{{ form.price.value|floatformat }}</p></td>
+                                                    <td>{{ form.quantity | add_class:'form-control' }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </table>
+                                        <div class="tf-actions">
+                                            <button type="submit" class="btn btn-primary" name="action" value="AddTickets">Add to Basket</button>
+                                        </div>
+                                    </form>
                                 </div>
                             </div>
                         </div>
@@ -63,7 +62,6 @@
                             <div class="alert alert-info">
                                 <ul>
                                     <li>Tickets are added to your basket but are not confirmed until they have been paid for at the checkout.</li>
-                                    <li>A booking fee of 1.4% plus 20p will be added to your total when you checkout.</li>
                                     <li>You can add tickets for multiple performances and pay for them all together to minimise the total booking fee.</li>
                                 </ul>
                             </div>
@@ -102,17 +100,13 @@
                             <div class="card mb-2">
                                 <h6 class="card-header">Buy eFringer Vouchers</h6>
                                 <div class="card-body">
-                                    {% if sales_open %}
-                                        <form method="POST">
-                                            {% csrf_token %}
-                                            {% include 'bs4_form.html' with form=buy_fringer_form %}
-                                            <div class="form-group">
-                                                <button type="submit" class="btn btn-primary" name="action" value="AddFringers">Add to Basket</button>
-                                            </div>
-                                        </form>
-                                    {% else %}
-                                        eFringers Vouchers will be on sale from Friday, June 1st.
-                                    {% endif %}
+                                    <form method="POST">
+                                        {% csrf_token %}
+                                        {% include 'bs4_form.html' with form=buy_fringer_form %}
+                                        <div class="form-group">
+                                            <button type="submit" class="btn btn-primary" name="action" value="AddFringers">Add to Basket</button>
+                                        </div>
+                                    </form>
                                 </div>
                             </div>
                             <div class="alert alert-info mb-2">
@@ -121,6 +115,42 @@
                                     <li>Each eFringer Voucher can only be used to purchase one ticket per performance.</li>
                                     <li>An eFringer Voucher cannot be used to buy tickets until it has been paid for at the checkout.</li>
                                     <li>If you have more than one eFringer Voucher you can give each one a name to make them easier to keep track of.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tf-volunteers-tab" class="tab-pane {% if tab == 'volunteers' %}active{% endif %}">
+                    <div class="row">
+                        <div class="col-12 col-sm-6">
+                            <div class="card mb-2">
+                                <h6 class="card-header">Use Volunteer Ticket</h6>
+                                <div class="card-body">
+                                    {% if volunteer_used %}
+                                        <p>You have already used a volunteer ticket for this performance.</p>
+                                    {% elif volunteer_available == 0 %}
+                                        <p>You do not have any volunteer tickets available</p>
+                                    {% elif not performance.has_open_checkpoint %}
+                                        <p>Volunteer tickets cannot be used until venue sales are open for this performance.</p>
+                                    {% elif performance.has_close_checkpoint %}
+                                        <p>Ticket sales for this performance are now closed.</p>
+                                    {% else %}
+                                        <p>You have {{ volunteer_available }} voluteer tickets available.</p>
+                                        <p>To use a volunteer ticket for this performance click the button below.</p>
+                                        <form method="post">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-primary" name="action" value="UseVolunteer">Use Volunteer Ticket</button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <div class="alert alert-info mb-2">
+                                <ul>
+                                    <li>Only one volunteer ticket can be used per performance.</li>
+                                    <li>Volunteer tickets can only be used when venue sales are open.</li>
                                 </ul>
                             </div>
                         </div>

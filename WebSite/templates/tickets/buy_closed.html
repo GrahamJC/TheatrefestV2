@@ -8,15 +8,8 @@
 
         <h5 class="tf-show-name"><a href="{% url 'program:show' performance.show.uuid %}">{{ performance.show.name }}</a></h5>
         <h6>{{ performance.date|date:'D, j M' }} at {{ performance.time|time:'P' }}</p>
-        <p>Tickets available: {{ performance.tickets_available }}</p>
 
-        {% if last_30mins %}
-            <p><strong>Online ticket sales for this performance are now closed.</strong></p>
-            <p>Tickets can still be purchased at the venue.</p>
-        {% else %}
-            <p><strong>Ticket sales for this performance are now closed.</strong></p>
-        {% endif %}
-
+        <p><strong>Ticket sales for this performance are now closed.</strong></p>
 
     </div>
 

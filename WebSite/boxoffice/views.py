@@ -279,9 +279,9 @@ def render_sale(request, boxoffice, sale = None, show = None, performance = None
         all_sales_closed = False
         if performance:
             # Ok to use naive datetimes to calculate differenc since both are local
-            delta = datetime.datetime.combine(performance.date, performance.time) - datetime.datetime.now()
+            delta = datetime.datetime.combine(performance.date, performance.time) - request.now
             boxoffice_sales_closed = delta.days < 0 or delta.total_seconds() <= (30 * 60)
-            all_sales_closed = delta.days < 0 or delta.total_seconds() <= 0
+            all_sales_closed = performance.has_close_checkpoint
         context = {
             'boxoffice': boxoffice,
             'sale': sale,
