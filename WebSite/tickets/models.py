@@ -23,8 +23,16 @@ class BoxOffice(TimeStampedModel):
     def __str__(self):
         return f'{self.festival.name}/{self.name}'
 
-
 class Sale(TimeStampedModel):
+
+    TRANSACTION_TYPE_CASH = 1
+    TRANSACTION_TYPE_STRIPE = 2
+    TRANSACTION_TYPE_SQUAREUP = 3
+    TRANSACTION_TYPE_CHOICES = (
+        (TRANSACTION_TYPE_CASH, 'Cash'),
+        (TRANSACTION_TYPE_STRIPE, 'Stripe'),
+        (TRANSACTION_TYPE_SQUAREUP, 'SquareUp'),
+    )
 
     festival = models.ForeignKey(Festival, on_delete=models.PROTECT, related_name='sales')
     boxoffice = models.ForeignKey(BoxOffice, null = True, blank = True, on_delete = models.PROTECT, related_name = 'sales')
@@ -33,10 +41,11 @@ class Sale(TimeStampedModel):
     customer = models.CharField(max_length = 64, blank = True, default = '')
     buttons = models.IntegerField(blank = True, default = 0)
     amount = models.DecimalField(blank = True, default = 0, max_digits = 5, decimal_places = 2)
-    stripe_fee = models.DecimalField(blank = True, default = 0, max_digits = 4, decimal_places = 2)
     completed = models.DateTimeField(null = True, blank = True)
     cancelled = models.DateTimeField(null = True, blank = True)
     stripe_pi = models.CharField(max_length = 64, null = True, blank = True)
+    transaction_type = models.PositiveIntegerField(null = True, blank = True, choices = TRANSACTION_TYPE_CHOICES)
+    transaction_fee = models.DecimalField(blank = True, default = 0, max_digits = 4, decimal_places = 2)
 
     @property
     def customer_user(self):
@@ -76,10 +85,6 @@ class Sale(TimeStampedModel):
         return self.button_cost + self.fringer_cost + self.ticket_cost
 
     @property
-    def stripe_charge(self):
-        return self.total_cost + self.stripe_fee
-
-    @property
     def performances(self):
         performances = []
         for ticket in self.tickets.values('performance_id').distinct():
@@ -97,6 +102,16 @@ class Sale(TimeStampedModel):
             performances.append(performance)
         return performances
 
+    def transaction_type_description(self):
+        if self.transaction_type == self.TRANSACTION_TYPE_CASH:
+            return 'Cash'
+        elif self.transaction_type == self.TRANSACTION_TYPE_STRIPE:
+            return 'Stripe'
+        elif self.transaction_type == self.TRANSACTION_TYPE_SQUAREUP:
+            return 'SquareUp'
+        else:
+            return 'Unknown'
+        
     def __str__(self):
         return f'{self.id} ({self.customer})'
 
@@ -193,18 +208,6 @@ class Basket(TimeStampedModel):
     @property
     def total_cost(self):
         return self.ticket_cost + self.fringer_cost
-
-    @property
-    def stripe_charge(self):
-        return ((self.total_cost + settings.STRIPE_FEE_FIXED) / (1 - settings.STRIPE_FEE_PERCENT)).quantize(Decimal('.01'), rounding = ROUND_05UP)
-
-    @property
-    def stripe_charge_pence(self):
-        return int(self.stripe_charge * 100)
-
-    @property
-    def stripe_fee(self):
-        return self.stripe_charge - self.total_cost
 
     @property
     def performances(self):

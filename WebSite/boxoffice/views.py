@@ -31,7 +31,7 @@ from core.models import User
 from program.models import Show, ShowPerformance
 from tickets.models import BoxOffice, Sale, Refund, TicketType, Ticket, Fringer, Checkpoint
 
-from .forms import CheckpointForm, SaleStartForm, SaleTicketsForm, SaleExtrasForm, SaleEMailForm, RefundStartForm
+from .forms import CheckpointForm, SaleTicketsForm, SaleExtrasForm, SaleCompleteForm, SaleEMailForm, RefundStartForm
 
 # Logging
 import logging
@@ -63,22 +63,6 @@ def get_checkpoints(boxoffice):
     # Get today's checkpoints
     return boxoffice.checkpoints.filter(created__date = timezone.now().date()).order_by('-created')
 
-def create_sale_start_form(post_data = None):
-
-    # Create form
-    form = SaleStartForm(data = post_data)
-
-    # Add crispy forms helper
-    form.helper = FormHelper()
-    form.helper.form_id = 'sale-start-form'
-    form.helper.layout = Layout(
-        Field('customer'),
-        Button('start', 'Start', css_class = 'btn-primary',  onclick = 'saleStart()'),
-    )
-
-    # Return form
-    return form
-
 def create_sale_tickets_form(festival, sale, performance, post_data = None):
 
     # Validate parameters
@@ -86,17 +70,13 @@ def create_sale_tickets_form(festival, sale, performance, post_data = None):
     assert sale
     assert performance
 
-    # Get ticket types and efringers
+    # Get ticket types
     ticket_types = []
     for ticket_type in sale.festival.ticket_types.order_by('seqno'):
         ticket_types.append(ticket_type)
-    efringers = []
-    if sale.customer_user:
-        for fringer in sale.customer_user.fringers.order_by('name'):
-            efringers.append(fringer)
 
     # Create form
-    form = SaleTicketsForm(ticket_types, efringers, data = post_data)
+    form = SaleTicketsForm(ticket_types, data = post_data)
 
     # Add crispy form helper
     form.helper = FormHelper()
@@ -104,40 +84,8 @@ def create_sale_tickets_form(festival, sale, performance, post_data = None):
     form.helper.form_class = 'form-horizontal'
     form.helper.label_class = 'col-6'
     form.helper.field_class = 'col-6'
-    tabs = [Tab('Tickets', *(Field(form.ticket_field_name(tt)) for tt in form.ticket_types), css_class = 'pt-2')]
-    if sale.customer_user:
-        tab_content = []
-        if form.efringers:
-            fringers_available = []
-            fringers_used = []
-            fringers_empty = []
-            for fringer in form.efringers:
-                if fringer.is_available(performance):
-                    fringers_available.append(fringer)
-                else:
-                    form.fields[SaleTicketsForm.efringer_field_name(fringer)].disabled = True
-                    if fringer.is_available():
-                        fringers_used.append(fringer)
-                    else:
-                        fringers_empty.append(fringer)
-            if fringers_available:
-                tab_content.append(HTML("<p>Available for this performance.</p>"))
-                tab_content.extend(Field(form.efringer_field_name(ef)) for ef in fringers_available)
-            if fringers_used:
-                tab_content.append(HTML("<p>Already used for this performance.</p>"))
-                tab_content.extend(Field(form.efringer_field_name(ef)) for ef in fringers_used)
-            if fringers_empty:
-                tab_content.append(HTML("<p>No tickets remaining.</p>"))
-                tab_content.extend(Field(form.efringer_field_name(ef)) for ef in fringers_empty)
-        else:
-            tab_content.append(HTML("<p>None.</p>"))
-        tabs.append(Tab(
-            'eFringers',
-            *tab_content,
-            css_class = 'pt-2',
-        ))
     form.helper.layout = Layout(
-        TabHolder(*tabs),
+        *(Field(form.ticket_field_name(tt)) for tt in form.ticket_types),
         Button('add', 'Add', css_class = 'btn-primary',  onclick = 'saleAddTickets()'),
     )
 
@@ -168,6 +116,27 @@ def create_sale_extras_form(sale, post_data = None):
         Field('buttons'),
         Field('fringers'),
         Button('add', 'Add/Update', css_class = 'btn-primary',  onclick = 'saleUpdateExtras()'),
+    )
+
+    # Return form
+    return form
+
+def create_sale_complete_form(sale, post_data = None):
+
+    # Validate parameters
+    assert sale
+
+    # Create form
+    form = SaleCompleteForm(data = post_data)
+
+    # Add crispy form helper
+    form.helper = FormHelper()
+    form.helper.form_id = 'sale-complete-form'
+    form.helper.layout = Layout(
+        Field('email'),
+        Field('type'),
+        Button('Complete', 'Complete', css_class = 'btn-primary', onclick = 'saleComplete()'),
+        Button('cancel', 'Cancel', css_class = 'btn-secondary', onclick = 'saleCancel()'),
     )
 
     # Return form
@@ -253,9 +222,6 @@ def render_main(request, boxoffice, tab = None, checkpoint_form = None):
     context = {
         'boxoffice': boxoffice,
         'tab': tab or 'sales',
-        'sale_start_form': create_sale_start_form(),
-        'sale_tickets_form': None,
-        'sale_extras_form': None,
         'sale': None,
         'sales': get_sales(boxoffice),
         'refund_start_form': create_refund_start_form(),
@@ -266,7 +232,7 @@ def render_main(request, boxoffice, tab = None, checkpoint_form = None):
     }
     return render(request, 'boxoffice/main.html', context)
 
-def render_sale(request, boxoffice, sale = None, show = None, performance = None, start_form = None, tickets_form = None, extras_form = None):
+def render_sale(request, boxoffice, sale = None, show = None, performance = None, tickets_form = None, extras_form = None, complete_form = None):
 
     # Show and performance must match
     assert not performance or show == performance.show
@@ -293,13 +259,13 @@ def render_sale(request, boxoffice, sale = None, show = None, performance = None
             'all_sales_closed': all_sales_closed,
             'sale_tickets_form': tickets_form or create_sale_tickets_form(request.festival, sale, performance) if performance else None,
             'sale_extras_form': extras_form or create_sale_extras_form(sale),
+            'sale_complete_form': complete_form or create_sale_complete_form(sale),
             'sale_email_form': create_sale_email_form(sale),
             'sales': get_sales(boxoffice),
         }
     else:
         context = {
             'boxoffice': boxoffice,
-            'sale_start_form': start_form or create_sale_start_form(),
             'sales': get_sales(boxoffice),
         }
     return render(request, 'boxoffice/_main_sales.html', context)
@@ -373,30 +339,25 @@ def main(request, boxoffice_uuid, tab = None):
     return render_main(request, boxoffice, tab)
     
 # AJAX sale support
-@require_POST
+@require_GET
 @login_required
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
 @transaction.atomic
 def sale_start(request, boxoffice_uuid):
     boxoffice = get_object_or_404(BoxOffice, uuid = boxoffice_uuid)
     sale = None
-    form = create_sale_start_form(request.POST)
-    if form.is_valid():
 
-        # Create new sale
-        customer = form.cleaned_data['customer']
-        sale = Sale(
-            festival = boxoffice.festival,
-            boxoffice = boxoffice,
-            user = request.user,
-            customer = customer,
-        )
-        sale.save()
-        form = None
-        logger.info(f"Sale {sale.id} ({sale.customer}) started at {boxoffice.name}")
+    # Create new sale
+    sale = Sale(
+        festival = boxoffice.festival,
+        boxoffice = boxoffice,
+        user = request.user,
+    )
+    sale.save()
+    logger.info(f"Sale {sale.id} started at {boxoffice.name}")
 
     # Render sales tab content
-    return render_sale(request, boxoffice, sale, start_form = form)
+    return render_sale(request, boxoffice, sale)
 
 @require_GET
 @login_required
@@ -465,21 +426,6 @@ def sale_tickets_add(request, sale_uuid, performance_uuid):
                         )
                         ticket.save()
                         logger.info(f"{ticket_type.name} ticket {ticket.id} for {performance.show.name} on {performance.date} at {performance.time} added to sale {sale.id}")
-
-            # Update eFringers
-            for efringer in form.efringers:
-                if form.cleaned_data[SaleTicketsForm.efringer_field_name(efringer)]:
-                    ticket = Ticket(
-                        sale = sale,
-                        user = sale.customer_user,
-                        performance = performance,
-                        fringer = efringer,
-                        description = 'eFringer',
-                        cost = 0,
-                        payment = efringer.payment,
-                    )
-                    ticket.save()
-                    logger.info(f"eFringer {efringer.name} ticket {ticket.id} for {performance.show.name} on {performance.date} at {performance.time} added to sale {sale.id}")
 
             # If sale is complete then update the total
             if sale.completed:
@@ -578,20 +524,38 @@ def sale_remove_ticket(request, sale_uuid, ticket_uuid):
         logger.warning(f"Completed sale {sale.id} updated")
     return render_sale(request, sale.boxoffice, sale)
 
-@require_GET
+@require_POST
 @login_required
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
 @transaction.atomic
 def sale_complete(request, sale_uuid):
+
+    #Get sale
     sale = get_object_or_404(Sale, uuid = sale_uuid)
     if sale.completed:
         logger.error(f"Attempt to complete sale {sale.id} which is already completed")
+
     else:
-        sale.amount = sale.total_cost
-        sale.completed = timezone.now()
-        sale.save()
-        logger.info(f"Sale {sale.id} completed")
-    return render_sale(request, sale.boxoffice, sale)
+        # Process form
+        form = create_sale_complete_form(sale, request.POST)
+        if form.is_valid():
+
+            # Complete sale
+            email = form.cleaned_data['email']
+            type = form.cleaned_data['type']
+            sale.customer = email
+            sale.transaction_type = Sale.TRANSACTION_TYPE_SQUAREUP if type == 'SquareUp' else Sale.TRANSACTION_TYPE_CASH
+            sale.transaction_fee = 0
+            sale.amount = sale.total_cost
+            sale.completed = timezone.now()
+            sale.save()
+            logger.info(f"Sale {sale.id} completed")
+
+            # Reset form
+            form = None
+
+    # Render updated sales
+    return render_sale(request, sale.boxoffice, sale, complete_form = form)
 
 @require_GET
 @login_required

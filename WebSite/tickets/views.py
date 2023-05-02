@@ -682,7 +682,8 @@ def checkout_stripe(request):
             user = request.user,
             customer = request.user.email,
             amount = basket.total_cost,
-            stripe_fee = basket.stripe_fee,
+            transaction_type = Sale.TRANSACTION_TYPE_STRIPE,
+            transaction_fee = 0,
         )
         sale.save()
         logger.info(f"Sale {sale.id} created")
@@ -957,20 +958,6 @@ class PrintSaleView(LoginRequiredMixin, View):
                 )
                 story.append(table)
             story.append(Spacer(1, 0.5*cm))
-
-        # Stripe fee
-        table = Table(
-            (
-                ("", Paragraph("<para><b>Card fee:</b></para>", styles['Normal']), f"£{sale.stripe_fee}"),
-            ),
-            colWidths = (8*cm, 4*cm, 4*cm),
-            hAlign = 'LEFT',
-            style = (
-                ('ALIGN', (2, 0), (2, 0), 'RIGHT'),
-            )
-        )
-        story.append(table)
-        story.append(Spacer(1, 0.5*cm))
 
         # Total
         table = Table(

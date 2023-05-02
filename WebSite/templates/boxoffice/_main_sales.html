@@ -10,14 +10,19 @@
 </style>
 
 <div class="row">
-    <div class="col-6">
-        {% if not sale %}
+    {% if not sale %}
+        <div class="col-6">
             <div class="card mb-2">
                 <h6 class="card-header">New Sale</h6>
                 <div class="card-body">
-                    {% crispy sale_start_form %}
+                    <div class="alert alert-info">
+                        <p>To start a new sale click Start.</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="saleStart()">Start</button>
                 </div>
             </div>
+        </div>
+        <div class="col-6">
             <div class="card">
                 <h6 class="card-header">Sales Since Last Checkpoint</h6>
                 <div class="card-body">
@@ -41,7 +46,9 @@
                     </table>
                 </div>
             </div>
-        {% else %}
+        </div>
+    {% else %}
+        <div class="col-6">
             <div class="card mb-2">
                 <h6 class="card-header">Add Tickets{% if selected_performance %}<div class="float-right">Available: {{ selected_performance.tickets_available }}</div>{% endif %}</h6>
                 <div class="card-body">
@@ -88,18 +95,10 @@
                     {% crispy sale_extras_form %}
                 </div>
             </div>
-        {% endif %}
-    </div>
-
-    <div class="col-6">
-        {% if not sale %}
-            <div class="alert alert-info">
-                <p>To start a new sale enter the customer name or e-mail address and click Start.</p>
-                <p><strong>Important:</strong> if the customer wants to purchase tickets using an eFringer you must enter the e-mail address of the account used to purchase the eFringer.</p>
-            </div>
-        {% else %}
+        </div>
+        <div class="col-6">
             <div class="card">
-                <h6 class="card-header"><i class="fa fa-user-circle {% if sale.customer_user %}text-primary{% endif %}"></i> {{ sale.customer }}<div class="float-right">Sale: {{ sale.id }}</div></h6>
+                <h6 class="card-header">Sale: {{ sale.id }}</h6>
                 <div class="card-body">
                     {% if sale.completed %}
                         <div class="alert alert-success">
@@ -108,7 +107,8 @@
                         </div>
                     {% else %}
                         <div class="alert alert-info">
-                            <p>Once the customer has paid select Complete to finish the sale.</p>
+                            <p>If the sale includes tickets enter the customer's e-mail address so that they can be contacted if there are changes to the program.</p>
+                            <p>Once the customer has paid select the payment type and click on Complete to finish the sale.</p>
                             <p>If you select Cancel (or leave this page) the sale will be cancelled and no tickets will be issued.</p>
                         </div>
                     {% endif %}
@@ -150,7 +150,11 @@
                     {% endfor %}
                     <div class="row mb-2">
                         <div class="col-9"><strong>Total</strong></div>
-                        <div class="col-3 text-right">{% if sale %}&#163;{{ sale.total_cost }}{% endif %}</div>
+                        <div class="col-3 text-right">&#163;{{ sale.total_cost }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-9"><strong>Payment type</strong></div>
+                        <div class="col-3 text-right">{{ sale.transaction_type_description }}</div>
                     </div>
                     <div class="row mb-2">
                         <div class="col-12">
@@ -161,17 +165,14 @@
                                     <a class="btn btn-secondary" href="#" onclick="updateSalesTab('{% url "boxoffice:sale_close" sale.uuid %}')">Close</a>
                                 </div>
                             {% else %}
-                                <a class="btn btn-primary" href="#" onclick="updateSalesTab('{% url "boxoffice:sale_complete" sale.uuid %}')">Complete</a>
-                                <div class="float-right">
-                                    <a class="btn btn-secondary" href="#" onclick="updateSalesTab('{% url "boxoffice:sale_cancel" sale.uuid %}')">Cancel</a>
-                                </div>
-                                {% endif %}
+                                {% crispy sale_complete_form %}
+                            {% endif %}
                         </div>
                     </div>
                 </div>
             </div>
-        {% endif %}
-    </div>
+        </div>
+    {% endif %}
 </div>
 
 {% if sale_email_form %}
@@ -198,8 +199,7 @@
     {% if not sale %}
 
         function saleStart() {
-            var postData = $('#sale-start-form').serializeArray();
-            updateSalesTab('{% url "boxoffice:sale_start" boxoffice.uuid %}', postData);
+            updateSalesTab('{% url "boxoffice:sale_start" boxoffice.uuid %}');
         }
 
     {% else %}
@@ -236,6 +236,17 @@
             function saleUpdateExtras() {
                 var postData = $('#sale-extras-form').serializeArray();
                 updateSalesTab('{% url "boxoffice:sale_extras_update" sale.uuid %}', postData);
+            }
+        {% endif %}
+
+        {% if sale_complete_form %}
+            function saleComplete() {
+                var postData = $('#sale-complete-form').serializeArray();
+                updateSalesTab('{% url "boxoffice:sale_complete" sale.uuid %}', postData);
+            }
+
+            function saleCancel() {
+                updateSalesTab('{% url "boxoffice:sale_cancel" sale.uuid %}');
             }
         {% endif %}
 

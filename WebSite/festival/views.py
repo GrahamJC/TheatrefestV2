@@ -308,7 +308,6 @@ class AdminSaleListView(LoginRequiredMixin, View):
                     'buttons': sale.button_cost,
                     'fringers': sale.fringer_cost,
                     'tickets': sale.tickets.all(),
-                    'stripe': sale.stripe_fee,
                     'total': sale.total_cost,
                     'type': 'Boxoffice' if sale.boxoffice else f'Venue ({sale.venue.name})' if sale.venue else 'Online',
                 }

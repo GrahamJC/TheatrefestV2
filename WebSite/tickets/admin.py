@@ -81,7 +81,7 @@ class SaleAdmin(admin.ModelAdmin):
     model = Sale
     date_hierarchy = 'created'
     search_fields = ['id', 'customer']
-    fields = ['id', 'created', 'updated', 'user', 'boxoffice', 'venue', 'customer', 'buttons', 'amount', 'stripe_fee', 'stripe_pi', 'completed', 'cancelled']
+    fields = ['id', 'created', 'updated', 'user', 'boxoffice', 'venue', 'customer', 'buttons', 'amount', 'completed', 'cancelled', 'transaction_type', 'transaction_fee', 'stripe_pi']
     readonly_fields = ['id', 'created', 'updated']
     autocomplete_fields = ['user']
     list_display = ('id', 'customer', 'sale_type', 'amount', 'completed')
