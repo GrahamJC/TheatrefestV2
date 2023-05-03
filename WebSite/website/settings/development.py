@@ -18,11 +18,17 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'theatrefest',
-#       'NAME': 'training',
         'USER': 'postgres',
         'PASSWORD': 'barnum',
         'HOST': 'localhost',
-#        'HOST': 'theatrefestvm.ukwest.cloudapp.azure.com',
+        'PORT': '5432',
+    },
+    'test': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'test',
+        'USER': 'postgres',
+        'PASSWORD': 'barnum',
+        'HOST': 'localhost',
         'PORT': '5432',
     },
 }
@@ -112,5 +118,5 @@ LOGGING = {
 }
 
 # Application settings
-VENUE_SHOW_ALL_PERFORMANCES = False
+VENUE_SHOW_ALL_PERFORMANCES = True
 #VOLUNTEER_CANCEL_SHIFTS = False

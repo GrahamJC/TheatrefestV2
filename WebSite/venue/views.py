@@ -31,7 +31,7 @@ from reportlab.lib import colors
 from core.models import User
 from program.models import Show, ShowPerformance, Venue
 from tickets.models import Sale, TicketType, Ticket, Fringer, Checkpoint
-from .forms import OpenCheckpointForm, SaleStartForm, SaleForm, CloseCheckpointForm
+from .forms import OpenCheckpointForm, SaleForm, CloseCheckpointForm
 
 # Logging
 import logging
@@ -66,7 +66,6 @@ def create_open_form(performance, post_data = None):
     form.helper.label_class = 'col-3'
     form.helper.field_class = 'col-9'
     form.helper.layout = Layout(
-        Field('cash'),
         Field('buttons'),
         Field('fringers'),
         Field('notes'),
@@ -94,35 +93,11 @@ def create_close_form(performance, post_data = None):
     form.helper.label_class = 'col-3'
     form.helper.field_class = 'col-9'
     form.helper.layout = Layout(
-            Field('cash'),
             Field('buttons'),
             Field('fringers'),
             Field('audience'),
             Field('notes'),
             Submit('update', 'Update') if checkpoint else Submit('close', 'Close Performance'),
-    )
-
-    # Return form
-    return form
-
-
-def create_sale_start_form(performance, post_data = None):
-
-    # Validate parameters
-    assert performance
-    assert is_next(performance)
-    assert performance.has_open_checkpoint
-    assert not performance.has_close_checkpoint
-
-    # Create form
-    form = SaleStartForm(data = post_data)
-
-    # Add crispy forms helper
-    form.helper = FormHelper()
-    form.helper.form_id = 'sale-start-form'
-    form.helper.layout = Layout(
-        Field('customer'),
-        Button('start', 'Start', css_class = 'btn-primary',  onclick = 'saleStart()'),
     )
 
     # Return form
@@ -150,26 +125,8 @@ def create_sale_form(performance, sale, post_data = None):
         ticket_types.append(ticket_type)
         initial_data[SaleForm.ticket_field_name(ticket_type)] = sale.tickets.filter(description = ticket_type.name).count()
 
-    # Get eFringers and add initial values
-    efringers = []
-    efringers_in_sale = []
-    if sale.customer_user:
-        for fringer in sale.customer_user.fringers.order_by('name'):
-            efringers.append(fringer)
-            if sale.tickets.filter(fringer = fringer).exists():
-                efringers_in_sale.append(fringer)
-                initial_data[SaleForm.efringer_field_name(fringer)] = True
-
-    # Get volunteer complimentary tickets details
-    volunteer = sale.customer_user.volunteer if sale.customer_user and sale.customer_user.is_volunteer else None
-    if volunteer:
-        volunteer_earned = volunteer.comps_earned
-        volunteer_used = volunteer.comps_used
-        volunteer_available = volunteer.comps_available
-        initial_data['volunteer'] = sale.tickets.filter(user = volunteer.user, description = 'Volunteer').exists()
-
     # Create form
-    form = SaleForm(ticket_types, efringers, data = post_data, initial = initial_data)
+    form = SaleForm(ticket_types, data = post_data, initial = initial_data)
 
     # Add crispy form helper
     form.helper = FormHelper()
@@ -177,55 +134,20 @@ def create_sale_form(performance, sale, post_data = None):
     form.helper.form_class = 'form-horizontal'
     form.helper.label_class = 'col-6'
     form.helper.field_class = 'col-6'
-    tabs = [Tab('Tickets', *(Field(form.ticket_field_name(tt)) for tt in form.ticket_types), css_class = 'pt-2')]
-    if sale.customer_user:
-        tab_content = []
-        if form.efringers:
-            fringers_available = []
-            fringers_used = []
-            fringers_empty = []
-            for fringer in form.efringers:
-                if fringer in efringers_in_sale or fringer.is_available(performance):
-                    fringers_available.append(fringer)
-                else:
-                    form.fields[SaleForm.efringer_field_name(fringer)].disabled = True
-                    if fringer.is_available():
-                        fringers_used.append(fringer)
-                    else:
-                        fringers_empty.append(fringer)
-            if fringers_available:
-                tab_content.append(HTML("<p>Available for this performance.</p>"))
-                tab_content.extend(Field(form.efringer_field_name(ef)) for ef in fringers_available)
-            if fringers_used:
-                tab_content.append(HTML("<p>Already used for this performance.</p>"))
-                tab_content.extend(Field(form.efringer_field_name(ef)) for ef in fringers_used)
-            if fringers_empty:
-                tab_content.append(HTML("<p>No tickets remaining.</p>"))
-                tab_content.extend(Field(form.efringer_field_name(ef)) for ef in fringers_empty)
-        else:
-            tab_content.append(HTML("<p>None.</p>"))
-        tabs.append(Tab(
-            'eFringers',
-            *tab_content,
-            css_class = 'pt-2',
-        ))
-    if volunteer:
-        status = f"Used {volunteer_used} of {volunteer_earned} volunteer tickets."
-        if volunteer_available > 0:
-            tabs.append(Tab('Volunteer', HTML(f"<p>{status}<p>"), Field('volunteer'), css_class = 'pt-2'))
-        else:
-            tabs.append(Tab('Volunteer', HTML(f"<p>{status}<p>"), css_class = 'pt-2'))
-    tabs.append(Tab('Other', 'buttons', 'fringers', css_class = 'pt-2'))
     form.helper.layout = Layout(
-        TabHolder(*tabs),
-        Button('update', 'Update', css_class = 'btn-primary',  onclick = f"saleUpdate()"),
+        HTML('<h5>Tickets</h5>'),
+        *(Field(form.ticket_field_name(tt)) for tt in form.ticket_types),
+        HTML('<h5>Other</h5>'),
+        'buttons',
+        'fringers',        
+        Button('update', 'Add/Update Sale', css_class = 'btn-primary',  onclick = f"saleUpdate()"),
     )
 
     # Return form
     return form
 
 
-def render_main(request, venue, performance, tab = None, open_form = None, start_form = None, close_form = None):
+def render_main(request, venue, performance, tab = None, open_form = None, close_form = None):
 
     # Validate parameters
     assert venue
@@ -245,8 +167,6 @@ def render_main(request, venue, performance, tab = None, open_form = None, start
         # Create forms if not specified
         if not open_form and (performance.has_open_checkpoint or is_next(performance)):
             open_form = create_open_form(performance)
-        if not start_form and performance.has_open_checkpoint and not performance.has_close_checkpoint:
-            start_form = create_sale_start_form(performance)
         if not close_form and performance.has_open_checkpoint and (performance.has_close_checkpoint or is_next(performance)):
             close_form = create_close_form(performance)
 
@@ -263,7 +183,7 @@ def render_main(request, venue, performance, tab = None, open_form = None, start
     if settings.VENUE_SHOW_ALL_PERFORMANCES:
         performances = ShowPerformance.objects.filter(show__venue = venue, show__is_cancelled = False).order_by('date', 'time')
     else:
-        performances = ShowPerformance.objects.filter(date = datetime.date.today(), show__venue = venue, show__is_cancelled = False).order_by('time')
+        performances = ShowPerformance.objects.filter(date = request.now.date, show__venue = venue, show__is_cancelled = False).order_by('time')
     context = {
         'venue': venue,
         'tab': tab,
@@ -274,14 +194,13 @@ def render_main(request, venue, performance, tab = None, open_form = None, start
         'sales': sales,
         'sale': None,
         'open_form': open_form,
-        'start_form': start_form,
         'close_form': close_form,
         'tickets': performance.tickets.order_by('id') if performance else None,
     }
     return render(request, 'venue/main.html', context)
 
 
-def render_sales(request, performance, sale = None, start_form = None, sale_form = None):
+def render_sales(request, performance, sale = None, sale_form = None):
 
     # Validate parameters
     assert performance
@@ -297,8 +216,6 @@ def render_sales(request, performance, sale = None, start_form = None, sale_form
 
     # Create forms if not specified
     if not performance.has_close_checkpoint:
-        if not start_form and not sale:
-            start_form = create_sale_start_form(performance)
         if not sale_form and sale:
             sale_form = create_sale_form(performance, sale)
 
@@ -308,7 +225,6 @@ def render_sales(request, performance, sale = None, start_form = None, sale_form
         'performance': performance,
         'sales': sales,
         'sale': sale,
-        'start_form': start_form,
         'sale_form': sale_form,
         'available': performance.tickets_available + (sale.tickets.count() if sale else 0),
     }
@@ -352,7 +268,7 @@ def main(request, venue_uuid):
     if settings.VENUE_SHOW_ALL_PERFORMANCES:
         performance = venue.get_next_performance() or venue.get_last_performance()
     else:
-        performance = venue.get_next_performance(datetime.date.today()) or venue.get_last_performance(datetime.date.today())
+        performance = venue.get_next_performance(request.now.date) or venue.get_last_performance(request.now.date)
 
     # Delete any imcomplete sales for this venue
     for sale in venue.sales.filter(user_id = request.user.id, completed__isnull = True):
@@ -403,7 +319,7 @@ def performance_open(request, performance_uuid):
             user = request.user,
             venue = venue,
             open_performance = performance,
-            cash = open_form.cleaned_data['cash'],
+            cash = 0,
             buttons = open_form.cleaned_data['buttons'],
             fringers = open_form.cleaned_data['fringers'],
             notes = open_form.cleaned_data['notes'],
@@ -470,7 +386,7 @@ def performance_close(request, performance_uuid):
             user = request.user,
             venue = venue,
             close_performance = performance,
-            cash = close_form.cleaned_data['cash'],
+            cash = 0,
             buttons = close_form.cleaned_data['buttons'],
             fringers = close_form.cleaned_data['fringers'],
             notes = close_form.cleaned_data['notes'],
@@ -547,7 +463,7 @@ def sale_select(request, performance_uuid, sale_uuid):
     return  render_sales(request, performance, sale = sale)
 
 
-@require_POST
+@require_GET
 @login_required
 @user_passes_test(lambda u: u.is_venue or u.is_admin)
 @transaction.atomic
@@ -559,25 +475,17 @@ def sale_start(request, performance_uuid):
     assert not performance.has_close_checkpoint
     venue = performance.show.venue
 
-    # Process start sale form
-    sale = None
-    start_form = create_sale_start_form(performance, request.POST)
-    if start_form.is_valid():
-
-        # Create new sale
-        customer = start_form.cleaned_data['customer']
-        sale = Sale(
-            festival = request.festival,
-            venue = venue,
-            user = request.user,
-            customer = customer,
-        )
-        sale.save()
-        logger.info(f"Sale {sale.id} ({sale.customer}) started at {venue.name} for {performance.show.name} on {performance.date} at {performance.time}")
-        start_form = None
+    # Create new sale
+    sale = Sale(
+        festival = request.festival,
+        venue = venue,
+        user = request.user,
+    )
+    sale.save()
+    logger.info(f"Sale {sale.id} started at {venue.name} for {performance.show.name} on {performance.date} at {performance.time}")
 
     # Render sales tab content
-    return  render_sales(request, performance, sale = sale, start_form = start_form)
+    return  render_sales(request, performance, sale = sale)
 
 
 @require_POST
@@ -621,46 +529,6 @@ def sale_update(request, performance_uuid, sale_uuid):
                     )
                     ticket.save()
                     logger.info(f"{ticket_type.name} ticket {ticket.id} added to sale {sale.id}")
-
-            # Update eFringers
-            for efringer in sale_form.efringers:
-                form_is_used = sale_form.cleaned_data[SaleForm.efringer_field_name(efringer)]
-                ticket = sale.tickets.filter(fringer = efringer).first()
-                if form_is_used and not ticket:
-                    ticket = Ticket(
-                        sale = sale,
-                        user = sale.customer_user,
-                        performance = performance,
-                        fringer = efringer,
-                        description = 'eFringer',
-                        cost = 0,
-                        payment = efringer.payment,
-                    )
-                    ticket.save()
-                    logger.info(f"eFringer {efringer.name} ticket {ticket.id} added to sale {sale.id}")
-                elif ticket and not form_is_used:
-                    logger.info(f"eFringer {efringer.name} ticket {ticket.id} removed from sale {sale.id}")
-                    ticket.delete()
-
-
-            # Update volunteer complimentary tickets
-            if sale.customer_user and sale.customer_user.is_volunteer:
-                ticket = sale.tickets.filter(user = sale.customer_user, description = 'Volunteer').first()
-                use_volunteer = sale_form.cleaned_data['volunteer']
-                if use_volunteer and not ticket:
-                    ticket = Ticket(
-                        sale = sale,
-                        user = sale.customer_user,
-                        performance = performance,
-                        description = 'Volunteer',
-                        cost = 0,
-                        payment = 0,
-                    )
-                    ticket.save()
-                    logger.info(f"Volunteer ticket {ticket.id} added to sale {sale.id}")
-                elif ticket and not use_volunteer:
-                    logger.info(f"Volunteer ticket {ticket.id} removed from sale {sale.id}")
-                    ticket.delete()
 
             # Update buttons
             buttons = sale_form.cleaned_data['buttons']
@@ -726,6 +594,8 @@ def sale_complete(request, performance_uuid, sale_uuid):
         
     # Complete the sale
     sale.amount = sale.total_cost
+    sale.transaction_type = Sale.TRANSACTION_TYPE_SQUAREUP
+    sale.transaction_fee = 0
     sale.completed = timezone.now()
     sale.save()
     logger.info("Sale %s completed", sale)
