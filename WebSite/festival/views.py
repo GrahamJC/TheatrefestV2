@@ -23,7 +23,7 @@ from core.models import Festival, User
 
 from tickets.models import BoxOffice, Sale
 
-from .forms import PasswordResetForm, EMailForm, AdminSaleListForm
+from .forms import PasswordResetForm, EMailForm, AdminSaleListForm, AdminSetupForm
 
 # Logging
 import logging
@@ -76,6 +76,86 @@ def admin(request):
     return render(request, 'festival/admin.html', context)
 
 
+class AdminSetupView(LoginRequiredMixin, View):
+
+    def _get_form(self, festival, post_data = None):
+        form = AdminSetupForm(instance=festival, data=post_data)
+        helper = FormHelper()
+        helper.form_method = 'POST'
+        helper.layout = Layout(
+            Row(
+                Column('online_sales_open', css_class='col-6'),
+                Column('online_sales_close', css_class='col-6'),
+                css_class='form-row',
+            ),
+            Row(
+                Column('boxoffice_open', css_class='col-6'),
+                Column('boxoffice_close', css_class='col-6'),
+                css_class='form-row',
+            ),
+            Row(
+                Column('button_price'),
+                css_class='form-row',
+            ),
+            Row(
+                Column('fringer_price', css_class='col-6'),
+                Column('fringer_shows', css_class='col-6'),
+                css_class='form-row',
+            ),
+            Row(
+                Column('volunteer_comps'),
+                css_class='form-row',
+            ),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('cancel', 'Cancel'),
+            )
+        )
+        form.helper = helper
+        return form
+
+    def get(self, request):
+
+        # Render setup form
+        form = self._get_form(request.festival)
+        context = {
+            'festival': request.festival,
+            'breadcrumbs': [
+                { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+                { 'text': 'Setup' },
+            ],
+            'form': form,
+        }
+        return render(request, 'festival/admin_setup.html', context)
+
+    def post(self, request):
+
+        # Get setup form and update festival
+        form = self._get_form(request.festival, request.POST)
+        if form.is_valid():
+            festival = request.festival
+            festival.online_sales_open = form.cleaned_data['online_sales_open']
+            festival.online_sales_close = form.cleaned_data['online_sales_close']
+            festival.boxoffice_open = form.cleaned_data['boxoffice_open']
+            festival.boxoffice_close = form.cleaned_data['boxoffice_close']
+            festival.button_price = form.cleaned_data['button_price']
+            festival.fringer_price = form.cleaned_data['fringer_price']
+            festival.fringer_shows = form.cleaned_data['fringer_shows']
+            festival.volunteer_comps = form.cleaned_data['volunteer_comps']
+            festival.save()
+
+        # Render page
+        context = {
+            'festival': request.festival,
+            'breadcrumbs': [
+                { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+                { 'text': 'Sales' },
+            ],
+            'form': form,
+        }
+        return render(request, 'festival/admin_setup.html', context)
+
+
 @user_passes_test(lambda u: u.is_admin)
 @login_required
 def reports_venue(request):
@@ -94,6 +174,7 @@ def admin_user_list(request):
 
     # Render page
     context = {
+        'festival': request.festival,
         'breadcrumbs': [
             { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
             { 'text': 'Users' },
@@ -117,6 +198,7 @@ def admin_user_activate(request, user_uuid):
 
     # Render page
     context = {
+        'festival': request.festival,
         'breadcrumbs': [
             { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
             { 'text': 'Users' },
@@ -149,6 +231,7 @@ def admin_user_password(request, user_uuid):
 
     # Render page
     context = {
+        'festival': request.festival,
         'breadcrumbs': [
             { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
             { 'text': 'Users' },
@@ -173,6 +256,7 @@ def admin_user_email(request):
     helper.add_input(Submit('submit', 'Send'))
     form.helper = helper
     context = {
+        'festival': request.festival,
         'breadcrumbs': [
             { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
             { 'text': 'e-mail' },
@@ -209,6 +293,7 @@ def admin_user_email_send(request):
     helper.add_input(Submit('submit', 'Send'))
     form.helper = helper
     context = {
+        'festival': request.festival,
         'breadcrumbs': [
             { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
             { 'text': 'e-mail' },
@@ -224,7 +309,6 @@ class AdminSaleListView(LoginRequiredMixin, View):
         form = AdminSaleListForm(festival, data = post_data)
         helper = FormHelper()
         helper.form_method = 'POST'
-        #helper.add_input(Submit('submit', 'Search'))
         helper.layout = Layout(
             Row(
                 Column('date', css_class='col-4'),
@@ -248,6 +332,7 @@ class AdminSaleListView(LoginRequiredMixin, View):
         # Render search form
         form = self._get_form(request.festival)
         context = {
+            'festival': request.festival,
             'breadcrumbs': [
                 { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
                 { 'text': 'Sales' },
@@ -293,6 +378,7 @@ class AdminSaleListView(LoginRequiredMixin, View):
 
         # Render search form and result list
         context = {
+            'festival': request.festival,
             'breadcrumbs': [
                 { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
                 { 'text': 'Sales' },

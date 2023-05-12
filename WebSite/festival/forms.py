@@ -5,7 +5,7 @@ from django.contrib.auth.password_validation import validate_password
 
 from bootstrap_datepicker_plus.widgets import DatePickerInput
 
-from core.models import User
+from core.models import User, Festival
 from content.models import Page, PageImage, Navigator
 from program.models import Venue
 from tickets.models import BoxOffice
@@ -97,3 +97,25 @@ class AdminSaleListForm(forms.Form):
         # Add venue field
         self.fields['boxoffice'] = forms.ModelChoiceField(BoxOffice.objects.filter(festival = festival), required = False)
         self.fields['venue'] = forms.ModelChoiceField(Venue.objects.filter(festival = festival, is_ticketed = True), required = False)
+
+
+class AdminSetupForm(forms.ModelForm):
+
+    class Meta:
+        model = Festival
+        fields = [
+            'online_sales_open',
+            'online_sales_close',
+            'boxoffice_open',
+            'boxoffice_close',
+            'button_price',
+            'fringer_price',
+            'fringer_shows',
+            'volunteer_comps',
+        ]
+        widgets = {
+            'online_sales_open': DatePickerInput,
+            'online_sales_close': DatePickerInput,
+            'boxoffice_open': DatePickerInput,
+            'boxoffice_close': DatePickerInput,
+        }

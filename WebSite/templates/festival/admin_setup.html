@@ -1,0 +1,21 @@
+﻿{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+
+{% block pagetitle %}{{ festival.name }}: Setup{% endblock %}
+
+{% block content %}
+
+    {% crispy form %}
+
+{% endblock %}
+
+{% block body-script %}
+
+    <script language="javascript">
+
+        $('#button-id-cancel').addClass('btn-secondary').on('click', function () { window.location.href = '{% url 'festival:admin' %}'; });
+
+    </script>
+
+{% endblock %}
