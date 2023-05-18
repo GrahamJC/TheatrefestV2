@@ -183,7 +183,7 @@ def render_main(request, venue, performance, tab = None, open_form = None, close
     if settings.VENUE_SHOW_ALL_PERFORMANCES:
         performances = ShowPerformance.objects.filter(show__venue = venue, show__is_cancelled = False).order_by('date', 'time')
     else:
-        performances = ShowPerformance.objects.filter(date = request.now.date, show__venue = venue, show__is_cancelled = False).order_by('time')
+        performances = ShowPerformance.objects.filter(date = request.now.date(), show__venue = venue, show__is_cancelled = False).order_by('time')
     context = {
         'venue': venue,
         'tab': tab,
@@ -268,7 +268,7 @@ def main(request, venue_uuid):
     if settings.VENUE_SHOW_ALL_PERFORMANCES:
         performance = venue.get_next_performance() or venue.get_last_performance()
     else:
-        performance = venue.get_next_performance(request.now.date) or venue.get_last_performance(request.now.date)
+        performance = venue.get_next_performance(request.now.date()) or venue.get_last_performance(request.now.date())
 
     # Delete any imcomplete sales for this venue
     for sale in venue.sales.filter(user_id = request.user.id, completed__isnull = True):
