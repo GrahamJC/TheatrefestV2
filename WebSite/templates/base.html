@@ -108,6 +108,13 @@
                                                     {% endif %}
                                                 {% endif %}
                                                 <div class="dropdown-divider"></div>
+                                                {% if user.is_admin %}
+                                                    {% if request.festival.name == 'TEST' %}
+                                                        <a class="dropdown-item" href="{% url 'festival:switch' %}">live site</a>
+                                                    {% else %}
+                                                        <a class="dropdown-item" href="{% url 'festival:switch_name' 'TEST' %}">test site</a>
+                                                    {% endif %}
+                                                {% endif %}
                                                 {% if user.is_superuser %}
                                                     <a class="dropdown-item" href="{% url 'core:debug' %}">debug</a>
                                                 {% endif %}

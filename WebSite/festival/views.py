@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse, JsonResponse
@@ -63,6 +64,25 @@ def archive_festival(request, festival_name):
 
     # Redirect to show listing
     return redirect('program:shows')
+
+
+@login_required
+@user_passes_test(lambda u: u.is_admin)
+def switch(request, name=None):
+
+    # Get requested festival
+    if name:
+        festival = get_object_or_404(Festival, name__iexact=name)
+    else:
+        festival = None
+
+    # Log user out
+    logout(request)
+
+    # Save new festival in session and redirect to home page
+    if festival:
+        request.session['festival_id'] = festival.id
+    return redirect('home')
 
 
 @user_passes_test(lambda u: u.is_admin)

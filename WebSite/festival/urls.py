@@ -9,6 +9,9 @@ urlpatterns = [
     path('archive/index', views.archive_index, name='archive_index'),
     path('archive/home', views.archive_home, name='archive_home'),
     path('archive/<festival_name>', views.archive_festival, name='archive_festival'),
+    # Festival test
+    path('switch', views.switch, name='switch'),
+    path('switch/<name>', views.switch, name='switch_name'),
     # Festival admin
     path('admin', views.admin, name='admin'),
     path('admin/setup', views.AdminSetupView.as_view(), name='admin_setup'),
