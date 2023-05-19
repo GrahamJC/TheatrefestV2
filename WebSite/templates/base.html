@@ -108,11 +108,11 @@
                                                     {% endif %}
                                                 {% endif %}
                                                 <div class="dropdown-divider"></div>
-                                                {% if user.is_admin %}
+                                                {% if user.is_boxoffice or user.is_venue %}
                                                     {% if request.festival.name == 'TEST' %}
-                                                        <a class="dropdown-item" href="{% url 'festival:switch' %}">live site</a>
+                                                        <a class="dropdown-item" href="{% url 'festival:switch' %}">return to live site</a>
                                                     {% else %}
-                                                        <a class="dropdown-item" href="{% url 'festival:switch_name' 'TEST' %}">test site</a>
+                                                        <a class="dropdown-item" href="{% url 'festival:switch_name' 'TEST' %}">switch to test site</a>
                                                     {% endif %}
                                                 {% endif %}
                                                 {% if user.is_superuser %}
