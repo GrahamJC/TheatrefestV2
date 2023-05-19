@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import logout
+from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse, JsonResponse
@@ -70,14 +70,16 @@ def archive_festival(request, festival_name):
 @user_passes_test(lambda u: u.is_admin)
 def switch(request, name=None):
 
-    # Get requested festival
+    # Get requested festival and matching user in that festival
     if name:
         festival = get_object_or_404(Festival, name__iexact=name)
     else:
-        festival = None
+        festival = request.site.info.festival
+    user = get_object_or_404(User, site_id=request.site.id, festival_id=festival.id, email=request.user.email)
 
-    # Log user out
+    # Logout as current user out and login as matching user in new festival
     logout(request)
+    login(request, user)
 
     # Save new festival in session and redirect to home page
     if festival:
