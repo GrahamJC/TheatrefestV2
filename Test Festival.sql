@@ -168,7 +168,7 @@ begin
 			join tmp_performance tp on tp.seqno = ts.seqno;
 
 	-- Set online sales and box office open dates
-	update core_festival set online_sales_open = current_date, boxoffice_open = current_date;
+	update core_festival set online_sales_open = current_date, boxoffice_open = current_date where id = v_test_festival_id;
 
 	-- Copy users from current festival
 	insert
