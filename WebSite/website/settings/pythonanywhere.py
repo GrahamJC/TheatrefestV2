@@ -46,6 +46,7 @@ EMAIL_PORT = 587
 EMAIL_HOST_USER = "postmaster@mg.theatrefest.co.uk"
 EMAIL_HOST_PASSWORD = get_secret("MAILGUN_EMAIL_HOST_PASSWORD")
 EMAIL_USE_TLS = True
+DEFAULT_FROM_EMAIL = 'postmaster@theatrefest.co.uk'
 
 # Stripe
 STRIPE_PUBLIC_KEY = get_secret("STRIPE_PUBLIC_KEY")
