@@ -40,7 +40,7 @@ def render_shifts(request, volunteer):
     for day in shifts.order_by('date').values('date').distinct():
         days.append({
             'date': day['date'],
-            'shifts': [s for s in shifts.filter(date = day['date']).order_by('start_time', 'location__name')]
+            'shifts': shifts.filter(date = day['date']).order_by('start_time')
         })
     context = {
         'my_shifts': volunteer.shifts.all(),
