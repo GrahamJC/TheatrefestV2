@@ -26,7 +26,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Field, HTML, Submit, Button, Row, Column
 from crispy_forms.bootstrap import FormActions, TabHolder, Tab, Div
 
-from .models import Sale, Refund, Basket, FringerType, Fringer, TicketType, Ticket, Donation
+from .models import Sale, Refund, Basket, FringerType, Fringer, TicketType, Ticket, Donation, PayAsYouWill
 from .forms import BuyTicketForm, RenameFringerForm, BuyFringerForm
 from program.models import Show, ShowPerformance
 
@@ -545,6 +545,72 @@ class BuyConfirmVolunteerTicketView(LoginRequiredMixin, View):
         return render(request, "tickets/buy_confirm_volunteer_ticket.html", context)
 
 
+class PAYWView(LoginRequiredMixin, View):
+
+    def get(self, request, show_uuid):
+
+        # Get show details
+        show = get_object_or_404(Show, uuid = show_uuid)
+
+        # Get fringers available
+        fringers = Fringer.get_available(request.user)
+
+        # Display PAYW page
+        context = {
+            'show': show,
+            'fringers': fringers,
+        }
+        return render(request, "tickets/payw.html", context)
+
+    @transaction.atomic
+    def post(self, request, show_uuid):
+
+        # Get show details
+        show = get_object_or_404(Show, uuid = show_uuid)
+
+        # Get the requested action
+        action = request.POST.get("action")
+
+        # Donate eFfringer credits
+        if action == "UseFringers":
+
+            # Create a sale
+            sale = Sale(
+                festival = request.festival,
+                user = request.user,
+                customer = request.user.email,
+                completed = timezone.now(),
+            )
+            sale.save()
+
+            # Process each checked fringer
+            for fringer_id in request.POST.getlist('fringer_id'):
+
+                # Get fringer and donate to this show
+                fringer = Fringer.objects.get(pk = int(fringer_id))
+                payw = PayAsYouWill(
+                    sale = sale,
+                    show = show,
+                    fringer = fringer,
+                    amount = fringer.payment,
+                )
+                payw.save()
+
+                # Confirm purchase
+                logger.info(f"eFringer {fringer.name} used for PAYW donation to {{ show.name }}")
+                messages.success(request, f"eFringer {fringer.name} credit donated")
+
+        # Get fringers available
+        fringers = Fringer.get_available(request.user)
+
+        # Display PAYW page
+        context = {
+            'show': show,
+            'fringers': fringers,
+        }
+        return render(request, "tickets/payw.html", context)
+
+
 class CheckoutView(LoginRequiredMixin, View):
 
     @method_decorator(never_cache)
@@ -938,7 +1004,7 @@ class PrintSaleView(LoginRequiredMixin, View):
         # Tickets
         if sale.tickets:
             is_first = True
-            for performance in sale.performances:
+            for performance in sale.ticket_performances:
                 if not is_first:
                     story.append(Spacer(1, 0.3*cm))
                 is_first = False

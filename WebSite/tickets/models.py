@@ -283,7 +283,7 @@ class Fringer(TimeStampedModel):
 
     @property
     def used(self):
-        return self.tickets.filter(refund = None).count()
+        return self.tickets.filter(refund = None).count() + self.PAYW_donations.count()
 
     @property
     def available(self):
@@ -390,4 +390,5 @@ class PayAsYouWill(TimeStampedModel):
 
     sale = models.ForeignKey(Sale, on_delete = models.CASCADE, null = True, blank = True, related_name = 'PAYW_donations')
     show = models.ForeignKey(Show, on_delete = models.PROTECT, related_name = 'PAYW_donations')
+    fringer = models.ForeignKey(Fringer, on_delete = models.PROTECT, null = True, blank = True, related_name = 'PAYW_donations')
     amount = models.IntegerField()

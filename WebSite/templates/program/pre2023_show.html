@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block pagetitle %}{% endblock %}
 
@@ -8,7 +8,7 @@
         
         <div class="row">
             
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-3">
                 <h5 class="d-block d-md-none tf-show-name">{{ show.name }}</h5>
                 <h6 class="d-block d-md-none tf-company-name">{{ show.company.name }}</h6>
                 {% if show.image %}
@@ -20,9 +20,6 @@
                     {% endif %}
                     {% if show.age_range %}
                         <p class="tf-age-range m-0">{{ show.age_range }}</p>
-                    {% endif %}
-                    {% if show.warnings %}
-                        <p class="tf-warning m-0 mb-1">{{ show.warnings }}</p>
                     {% endif %}
                     {% if show.duration %}
                         <p class="tf-duration">{{ show.duration }} mins</p>
@@ -63,24 +60,19 @@
                                     <p>Online ticket sales are not yet open.</p>
                                 {% endif %}
                             </div>
-                            {% if not show.venue.is_ticketed %}
-                                <p>
-                                    You can also make credit card donations to this show at the central box office or donate an <a href="{% url 'tickets:payw' show.uuid %}">eFringer</a> voucher if you have one available.
-                                </p>
-                            {% endif %}
                         {% endif %}
                     {% endif %}
                 </div>
                 {% if show.venue.sponsor %}
-                    <div class="tf-sponsor-name text-left" style="{% if show.venue.sponsor.background %}background-color: {{ show.venue.sponsor.background }};{% endif %}">
+                    <div class="tf-sponsor-name text-right" style="{% if show.venue.sponsor.background %}background-color: {{ show.venue.sponsor.background }};{% endif %}">
                         <a href="{{ show.venue.sponsor.url }}" target="_blank"  style="{% if show.venue.sponsor.color %}color: {{ show.venue.sponsor.color }};{% endif %}">
-                            {% if show.venue.sponsor.image %}<img class="m-0" style="height: 45px;" src="{{ show.venue.sponsor.image.url }}" />{% endif %}
+                            {% if show.venue.sponsor.image %}<img class="m-1" style="height: 45px;" src="{{ show.venue.sponsor.image.url }}" />{% endif %}
                         </a>
                     </div>
                 {% endif %}
             </div>
 
-            <div class="col-12 col-md-8">
+            <div class="col-12 col-md-9">
                 <h5 class="d-none d-md-block tf-show-name">{{ show.name }}</h5>
                 <h6 class="d-none d-md-block tf-company-name">{{ show.company.name }}</h6>
                 <div class="tf-description">
