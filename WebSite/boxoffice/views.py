@@ -29,9 +29,9 @@ from dal.autocomplete import Select2QuerySetView
 
 from core.models import User
 from program.models import Show, ShowPerformance
-from tickets.models import BoxOffice, Sale, Refund, TicketType, Ticket, Fringer, Checkpoint
+from tickets.models import BoxOffice, Sale, Refund, TicketType, Ticket, PayAsYouWill, Fringer, Checkpoint
 
-from .forms import CheckpointForm, SaleTicketsForm, SaleExtrasForm, SaleCompleteForm, SaleEMailForm, RefundStartForm
+from .forms import CheckpointForm, SaleTicketsForm, SalePAYWForm, SaleExtrasForm, SaleCompleteForm, SaleEMailForm, RefundStartForm
 
 # Logging
 import logging
@@ -92,6 +92,29 @@ def create_sale_tickets_form(festival, sale, performance, post_data = None):
     # Return form
     return form
 
+def create_sale_payw_form(sale, show, post_data = None):
+
+    # Validate parameters
+    assert sale
+    assert show
+
+    # Create form
+    form = SalePAYWForm(data = post_data)
+
+    # Add crispy form helper
+    form.helper = FormHelper()
+    form.helper.form_id = 'sale-payw-form'
+    form.helper.form_class = 'form-horizontal'
+    form.helper.label_class = 'col-6'
+    form.helper.field_class = 'col-6'
+    form.helper.layout = Layout(
+        Field('amount'),
+        Button('add', 'Add', css_class = 'btn-primary',  onclick = 'saleAddPAYW()'),
+    )
+
+    # Return form
+    return form
+
 def create_sale_extras_form(sale, post_data = None):
 
     # Validate parameters
@@ -101,6 +124,7 @@ def create_sale_extras_form(sale, post_data = None):
     initial_data = {
         'buttons': sale.buttons,
         'fringers': sale.fringers.count(),
+        'donation': sale.donation,
     }
 
     # Create form
@@ -115,6 +139,7 @@ def create_sale_extras_form(sale, post_data = None):
     form.helper.layout = Layout(
         Field('buttons'),
         Field('fringers'),
+        Field('donation'),
         Button('add', 'Add/Update', css_class = 'btn-primary',  onclick = 'saleUpdateExtras()'),
     )
 
@@ -232,7 +257,7 @@ def render_main(request, boxoffice, tab = None, checkpoint_form = None):
     }
     return render(request, 'boxoffice/main.html', context)
 
-def render_sale(request, boxoffice, sale = None, show = None, performance = None, tickets_form = None, extras_form = None, complete_form = None):
+def render_sale(request, boxoffice, sale = None, accordion='tickets', show = None, performance = None, tickets_form = None, show_payw = None, payw_form = None, extras_form = None, complete_form = None):
 
     # Show and performance must match
     assert not performance or show == performance.show
@@ -240,17 +265,17 @@ def render_sale(request, boxoffice, sale = None, show = None, performance = None
     # Check if there is an active sale 
     if sale:
 
-        # Box office sales are closed 30 mins before the performance starts
+        # Box office sales are closed once a venue has opened a show
         boxoffice_sales_closed = False
         all_sales_closed = False
         if performance:
             # Ok to use naive datetimes to calculate differenc since both are local
-            delta = datetime.datetime.combine(performance.date, performance.time) - request.now
-            boxoffice_sales_closed = delta.days < 0 or delta.total_seconds() <= (30 * 60)
+            boxoffice_sales_closed = performance.has_open_checkpoint
             all_sales_closed = performance.has_close_checkpoint
         context = {
             'boxoffice': boxoffice,
             'sale': sale,
+            'accordion': accordion,
             'shows': Show.objects.filter(festival = request.festival, is_cancelled = False, venue__is_ticketed = True),
             'selected_show': show,
             'performances': show.performances.order_by('date', 'time') if show else None,
@@ -258,6 +283,9 @@ def render_sale(request, boxoffice, sale = None, show = None, performance = None
             'boxoffice_sales_closed': boxoffice_sales_closed,
             'all_sales_closed': all_sales_closed,
             'sale_tickets_form': tickets_form or create_sale_tickets_form(request.festival, sale, performance) if performance else None,
+            'shows_payw': Show.objects.filter(festival = request.festival, is_cancelled = False, venue__is_ticketed = False),
+            'selected_show_payw': show_payw,
+            'sale_payw_form': payw_form or create_sale_payw_form(sale, show_payw) if show_payw else None,
             'sale_extras_form': extras_form or create_sale_extras_form(sale),
             'sale_complete_form': complete_form or create_sale_complete_form(sale),
             'sale_email_form': create_sale_email_form(sale),
@@ -373,7 +401,7 @@ def sale_show_select(request, sale_uuid, show_uuid = None):
         show = get_object_or_404(Show, uuid = show_uuid)
 
     # Render sales tab content
-    return render_sale(request, boxoffice, sale, show = show)
+    return render_sale(request, boxoffice, sale, accordion='tickets', show = show)
 
 @require_GET
 @login_required
@@ -387,7 +415,7 @@ def sale_performance_select(request, sale_uuid, performance_uuid):
     performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
 
     # Render sales tab content
-    return render_sale(request, boxoffice, sale, show = performance.show, performance = performance)
+    return render_sale(request, boxoffice, sale, accordion='tickets', show = performance.show, performance = performance)
 
 @require_POST
 @login_required
@@ -400,7 +428,6 @@ def sale_tickets_add(request, sale_uuid, performance_uuid):
     boxoffice = sale.boxoffice
     assert boxoffice
     performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
-    assert performance
 
     # Process form
     form = create_sale_tickets_form(request.festival, sale, performance, request.POST)
@@ -442,7 +469,103 @@ def sale_tickets_add(request, sale_uuid, performance_uuid):
             form.add_error(None, f"There are only {available_tickets} tickets available for this performance.")
 
     # Render sales tab content
-    return  render_sale(request, boxoffice, sale = sale, performance = performance, tickets_form = form)
+    return  render_sale(request, boxoffice, sale = sale, accordion='tickets', performance = performance, tickets_form = form)
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+@transaction.atomic
+def sale_remove_performance(request, sale_uuid, performance_uuid):
+    sale = get_object_or_404(Sale, uuid = sale_uuid)
+    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+    for ticket in sale.tickets.filter(performance = performance):
+        logger.info(f"{ticket.description} ticket {ticket.id} for {performance.show.name} on {performance.date} at {performance.time} removed from sale {sale.id}")
+        ticket.delete()
+    if sale.completed:
+        logger.warning(f"Completed sale {sale.id} updated")
+    return render_sale(request, sale.boxoffice, sale, accordion='tickets')
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+@transaction.atomic
+def sale_remove_ticket(request, sale_uuid, ticket_uuid):
+    sale = get_object_or_404(Sale, uuid = sale_uuid)
+    ticket = get_object_or_404(Ticket, uuid = ticket_uuid)
+    assert ticket.sale == sale
+    performance = ticket.performance
+    logger.info(f"{ticket.description} ticket {ticket.id} for {performance.show.name} on {performance.date} at {performance.time} removed from sale {sale.id}")
+    ticket.delete()
+    if sale.completed:
+        logger.warning(f"Completed sale {sale.id} updated")
+    return render_sale(request, sale.boxoffice, sale, accordion='tickets')
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+def sale_show_select_payw(request, sale_uuid, show_uuid = None):
+
+    # Get sale, box office and show
+    sale = get_object_or_404(Sale, uuid = sale_uuid)
+    boxoffice = sale.boxoffice
+    assert boxoffice
+    show = None
+    if show_uuid != uuid.UUID('00000000-0000-0000-0000-000000000000'):
+        show = get_object_or_404(Show, uuid = show_uuid)
+
+    # Render sales tab content
+    return render_sale(request, boxoffice, sale, accordion='payw', show_payw = show)
+
+@require_POST
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+@transaction.atomic
+def sale_payw_add(request, sale_uuid, show_uuid):
+
+    # Get sale, box office and performance
+    sale = get_object_or_404(Sale, uuid = sale_uuid)
+    boxoffice = sale.boxoffice
+    assert boxoffice
+    show = get_object_or_404(Show, uuid = show_uuid)
+
+    # Process form
+    form = create_sale_payw_form(sale, show, request.POST)
+    if form.is_valid():
+
+        # Add PAYW
+        amount = form.cleaned_data['amount']
+        payw = PayAsYouWill(
+            sale = sale,
+            show = show,
+            amount = amount,
+        )
+        payw.save()
+        logger.info(f"£{amount} PAYW donation for {show.name} added to sale {sale.id}")
+
+        # If sale is complete then update the total
+        if sale.completed:
+            sale.amount = sale.total_cost
+            sale.save()
+
+        # Prepare for adding more  PAYW donations
+        form = None
+        show = None
+
+    # Render sales tab content
+    return  render_sale(request, boxoffice, sale = sale, accordion='payw', show_payw = show, payw_form = form)
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+@transaction.atomic
+def sale_payw_remove(request, sale_uuid, payw_uuid):
+    sale = get_object_or_404(Sale, uuid = sale_uuid)
+    payw = get_object_or_404(PayAsYouWill, uuid = payw_uuid)
+    logger.info(f"£{payw.amount} PAYW donation for {payw.show.name} removed from sale {sale.id}")
+    payw.delete()
+    if sale.completed:
+        logger.warning(f"Completed sale {sale.id} updated")
+    return render_sale(request, sale.boxoffice, sale, accordion='payw')
 
 @require_POST
 @login_required
@@ -483,6 +606,13 @@ def sale_extras_update(request, sale_uuid):
                 fringer.save()
                 logger.info(f"Fringer {fringer.id} added to {sale.id}")
 
+        # Update donation
+        donation = form.cleaned_data['donation']
+        if sale.donation != donation:
+            sale.donation = donation
+            sale.save()
+            logger.info(f"Donation updated to £{donation} for {sale.id}")
+
         # If sale is complete then update the total
         if sale.completed:
             sale.amount = sale.total_cost
@@ -493,36 +623,7 @@ def sale_extras_update(request, sale_uuid):
         form = None
 
     # Render sales tab content
-    return  render_sale(request, boxoffice, sale = sale, extras_form = form)
-
-@require_GET
-@login_required
-@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
-@transaction.atomic
-def sale_remove_performance(request, sale_uuid, performance_uuid):
-    sale = get_object_or_404(Sale, uuid = sale_uuid)
-    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
-    for ticket in sale.tickets.filter(performance = performance):
-        logger.info(f"{ticket.description} ticket {ticket.id} for {performance.show.name} on {performance.date} at {performance.time} removed from sale {sale.id}")
-        ticket.delete()
-    if sale.completed:
-        logger.warning(f"Completed sale {sale.id} updated")
-    return render_sale(request, sale.boxoffice, sale)
-
-@require_GET
-@login_required
-@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
-@transaction.atomic
-def sale_remove_ticket(request, sale_uuid, ticket_uuid):
-    sale = get_object_or_404(Sale, uuid = sale_uuid)
-    ticket = get_object_or_404(Ticket, uuid = ticket_uuid)
-    assert ticket.sale == sale
-    performance = ticket.performance
-    logger.info(f"{ticket.description} ticket {ticket.id} for {performance.show.name} on {performance.date} at {performance.time} removed from sale {sale.id}")
-    ticket.delete()
-    if sale.completed:
-        logger.warning(f"Completed sale {sale.id} updated")
-    return render_sale(request, sale.boxoffice, sale)
+    return  render_sale(request, boxoffice, sale = sale, accordion='extras', extras_form = form)
 
 @require_POST
 @login_required

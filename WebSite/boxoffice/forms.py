@@ -35,11 +35,16 @@ class SaleTicketsForm(forms.Form):
             sum([self.cleaned_data[self.ticket_field_name(tt)] for tt in self.ticket_types])
         )
 
+class SalePAYWForm(forms.Form):
+
+    amount = forms.IntegerField(label = 'Amount', required = True, initial = 0, min_value = 0, widget = forms.NumberInput(attrs = { 'style': 'width: 75px' }))
+
 
 class SaleExtrasForm(forms.Form):
 
     buttons = forms.IntegerField(label = 'Badges', required = True, initial = 0, min_value = 0, widget = forms.NumberInput(attrs = { 'style': 'width: 75px' }))
     fringers = forms.IntegerField(label = 'Paper fringers (buy)', required = True, initial = 0, min_value = 0, widget = forms.NumberInput(attrs = { 'style': 'width: 75px' }))
+    donation = forms.IntegerField(label = 'Donation to Theatrefest', required = True, initial = 0, min_value = 0, widget = forms.NumberInput(attrs = { 'style': 'width: 75px' }))
 
 
 class SaleCompleteForm(forms.Form):

@@ -9,7 +9,7 @@ from decimal import Decimal, ROUND_05UP
 from core.models import TimeStampedModel, Festival
 from core.utils import AutoOneToOneField
 
-from program.models import ShowPerformance, Venue
+from program.models import Show, ShowPerformance, Venue
 
 class BoxOffice(TimeStampedModel):
     
@@ -40,6 +40,7 @@ class Sale(TimeStampedModel):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete = models.PROTECT, related_name = 'sales')
     customer = models.CharField(max_length = 64, blank = True, default = '')
     buttons = models.IntegerField(blank = True, default = 0)
+    donation = models.IntegerField(blank = True, default = 0)
     amount = models.DecimalField(blank = True, default = 0, max_digits = 5, decimal_places = 2)
     completed = models.DateTimeField(null = True, blank = True)
     cancelled = models.DateTimeField(null = True, blank = True)
@@ -81,11 +82,15 @@ class Sale(TimeStampedModel):
         return sum([t.cost for t in self.tickets.all()])
 
     @property
-    def total_cost(self):
-        return self.button_cost + self.fringer_cost + self.ticket_cost
+    def payw_cost(self):
+        return sum([p.amount for p in self.PAYW_donations.all()])
 
     @property
-    def performances(self):
+    def total_cost(self):
+        return self.button_cost + self.fringer_cost + self.ticket_cost + self.payw_cost + self.donation
+
+    @property
+    def ticket_performances(self):
         performances = []
         for ticket in self.tickets.values('performance_id').distinct():
             p = ShowPerformance.objects.get(pk = ticket['performance_id'])
@@ -379,3 +384,10 @@ class Donation(TimeStampedModel):
 
     def __str__(self):
         return f'{self.festival}/{self.email}/£{self.amount}'
+
+
+class PayAsYouWill(TimeStampedModel):
+
+    sale = models.ForeignKey(Sale, on_delete = models.CASCADE, null = True, blank = True, related_name = 'PAYW_donations')
+    show = models.ForeignKey(Show, on_delete = models.PROTECT, related_name = 'PAYW_donations')
+    amount = models.IntegerField()

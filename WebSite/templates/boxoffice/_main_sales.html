@@ -49,50 +49,84 @@
         </div>
     {% else %}
         <div class="col-6">
-            <div class="card mb-2">
-                <h6 class="card-header">Add Tickets{% if selected_performance %}<div class="float-right">Available: {{ selected_performance.tickets_available }}</div>{% endif %}</h6>
-                <div class="card-body">
-                    <div class="row form-group">
-                        <label class="col-4 form-control-label">Show</label>
-                        <div class="col-8">
-                            <select id="sale-show-select" class="form-control" onchange="saleSelectShow(this.value)">
-                                <option value="" {% if not selected_show %}selected{%endif %}>-- Select show --</option>
-                                {% for s in shows %}
-                                    <option value="{{ s.uuid }}" {% if s == selected_show %}selected{%endif %}>{{ s.name }}</option>
-                                {% endfor %}
-                            </select>
+            <div id="sale-accordion" class="accordion">
+                <div class="card">
+                    <div id="sale-tickets-head" class="card-header">
+                        <button class="btn btn-link btn-block text-left {% if accordion != 'tickets' %}collapsed{% endif %}" type="button" data-toggle="collapse" data-target="#sale-tickets-body" aria-expanded="true" aria-controls="sale-tickets-body">Tickets</button>
+                        {% if selected_performance %}<div class="float-right">Available: {{ selected_performance.tickets_available }}</div>{% endif %}
+                    </div>
+                    <div id="sale-tickets-body" class="collapse {% if accordion == 'tickets' %}show{% endif %}" data-parent="#sale-accordion" aria-labelledby="sale-tickets-head">
+                        <div class="card-body">
+                            <div class="row form-group">
+                                <label class="col-4 form-control-label">Show</label>
+                                <div class="col-8">
+                                    <select id="sale-show-select" class="form-control" onchange="saleSelectShow(this.value)">
+                                        <option value="" {% if not selected_show %}selected{%endif %}>-- Select show --</option>
+                                        {% for s in shows %}
+                                            <option value="{{ s.uuid }}" {% if s == selected_show %}selected{% endif %}>{{ s.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            {% if performances %}
+                                <div class="row form-group">
+                                    <label class="col-4 form-control-label">Performance</label>
+                                    <div class="col-8">
+                                        <select id="sale-performance-select" class="form-control" onchange="saleSelectPerformance(this.value)">
+                                            <option value="" {% if not selected_performance %}selected{%endif %}>-- Select performance --</option>
+                                            {% for p in performances %}
+                                                <option value="{{ p.uuid }}" {% if p == selected_performance %}selected{% endif %}>{{ p.date | date:'D, j M' }} at {{ p.time | time:'h:ip' }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            {% endif %}
+                            {% if all_sales_closed %}
+                                <div class="alert alert-info">
+                                    Sales for this performance are now closed.
+                                </div>
+                            {% elif boxoffice_sales_closed %}
+                                <div class="alert alert-info">
+                                    Box office and online sales for this performance are now closed and tickets can only be purchased at the venue.
+                                </div>
+                            {% elif sale_tickets_form %}
+                                {% crispy sale_tickets_form %}
+                            {% endif %}
                         </div>
                     </div>
-                    {% if performances %}
-                        <div class="row form-group">
-                            <label class="col-4 form-control-label">Performance</label>
-                            <div class="col-8">
-                                <select id="sale-performance-select" class="form-control" onchange="saleSelectPerformance(this.value)">
-                                    <option value="" {% if not selected_performance %}selected{%endif %}>-- Select performance --</option>
-                                    {% for p in performances %}
-                                        <option value="{{ p.uuid }}" {% if p == selected_performance %}selected{% endif %}>{{ p.date | date:'D, j M' }} at {{ p.time | time:'h:ip' }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                    {% endif %}
-                    {% if all_sales_closed %}
-                        <div class="alert alert-info">
-                            Sales for this performance are now closed.
-                        </div>
-                    {% elif boxoffice_sales_closed %}
-                        <div class="alert alert-info">
-                            Box office and online sales for this performance are now closed and tickets can only be purchased at the venue.
-                        </div>
-                    {% elif sale_tickets_form %}
-                        {% crispy sale_tickets_form %}
-                    {% endif %}
                 </div>
-            </div>
-            <div class="card mb-2">
-                <h6 class="card-header">Extras</h6>
-                <div class="card-body">
-                    {% crispy sale_extras_form %}
+                <div class="card">
+                    <div id="sale-payw-head" class="card-header">
+                        <button class="btn btn-link btn-block text-left {% if accordion != 'payw' %}collapsed{% endif %}" type="button" data-toggle="collapse" data-target="#sale-payw-body" aria-expanded="true" aria-controls="sale-payw-body">Pay as You Will</button>
+                    </div>
+                    <div id="sale-payw-body" class="collapse {% if accordion == 'payw' %}show{% endif %}" data-parent="#sale-accordion" aria-labelledby="sale-payw-head">
+                        <div class="card-body">
+                            <div class="row form-group">
+                                <label class="col-4 form-control-label">Show</label>
+                                <div class="col-8">
+                                    <select id="sale-show-select-payw" class="form-control" onchange="saleSelectShowPAYW(this.value)">
+                                        <option value="" {% if not selected_show_payw %}selected{%endif %}>-- Select show --</option>
+                                        {% for s in shows_payw %}
+                                            <option value="{{ s.uuid }}" {% if s == selected_show_payw %}selected{% endif %}>{{ s.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            {% if sale_payw_form %}
+                                {% crispy sale_payw_form %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div id="sale-extras-head" class="card-header">
+                        <button class="btn btn-link btn-block text-left {% if accordion != 'extras' %}collapsed{% endif %}" type="button" data-toggle="collapse" data-target="#sale-extras-body" aria-expanded="true" aria-controls="sale-extras-body">Extras</button>
+                    </div>
+                    <div id="sale-extras-body" class="collapse {% if accordion == 'extras' %}show{% endif %}" data-parent="#sale-accordion" aria-labelledby="sale-extras-head">
+                        <div class="card-body">
+                            {% crispy sale_extras_form %}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -124,7 +158,13 @@
                             <div class="col-3 text-right">&#163;{{ sale.fringer_cost }}</div>
                         </div>
                     {% endif %}
-                    {% for performance in sale.performances %}
+                    {% if sale.donation > 0 %}
+                        <div class="row mb-2">
+                            <div class="col-9"><strong>Donation to Theatrefest</strong></div>
+                            <div class="col-3 text-right">&#163;{{ sale.donation | floatformat:'2'}}</div>
+                        </div>
+                    {% endif %}
+                    {% for performance in sale.ticket_performances %}
                         <div class="row mb-2">
                             <div class="col-9"><strong>{{ performance.show }}</strong></div>
                             <div class="col-3 text-right">&#163;{{ performance.ticket_cost }}</div>
@@ -145,6 +185,16 @@
                                         </div>
                                     </div>
                                 {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                    {% for payw in sale.PAYW_donations.all %}
+                        <div class="row mb-2">
+                            <div class="col-9"><strong>{{ payw.show.name }}</strong></div>
+                            <div class="col-3 text-right">&#163;{{ payw.amount | floatformat:'2' }}</div>
+                            <div class="col-9">Pay as You Will donation</div>
+                            <div class="col-3 text-right">
+                                <a href="#" onclick="updateSalesTab('{% url "boxoffice:sale_payw_remove" sale.uuid payw.uuid %}')">Remove</a>
                             </div>
                         </div>
                     {% endfor %}
@@ -231,6 +281,21 @@
             function saleAddTickets() {
                 var postData = $('#sale-tickets-form').serializeArray();
                 updateSalesTab('{% url "boxoffice:sale_tickets_add" sale.uuid selected_performance.uuid %}', postData);
+            }
+        {% endif %}
+
+        function saleSelectShowPAYW(showUuid) {
+            url = '{% url "boxoffice:sale_show_select_payw" sale.uuid "00000000-0000-0000-0000-000000000000" %}';
+            if (showUuid) {
+                url = url.replace('00000000-0000-0000-0000-000000000000', showUuid);
+            }
+            updateSalesTab(url);
+        }
+
+        {% if sale_payw_form %}
+            function saleAddPAYW() {
+                var postData = $('#sale-payw-form').serializeArray();
+                updateSalesTab('{% url "boxoffice:sale_payw_add" sale.uuid selected_show_payw.uuid %}', postData);
             }
         {% endif %}
 

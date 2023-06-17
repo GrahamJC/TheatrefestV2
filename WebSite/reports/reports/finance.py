@@ -1104,7 +1104,7 @@ def sale_pdf(request, sale_uuid):
 
     # Tickets
     is_first = True
-    for performance in sale.performances:
+    for performance in sale.ticket_performances:
         if not is_first:
             story.append(Spacer(1, 0.5*cm))
         is_first = False
