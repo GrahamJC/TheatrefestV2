@@ -141,9 +141,8 @@
                         </div>
                     {% else %}
                         <div class="alert alert-info">
-                            <p>If the sale includes tickets enter the customer's e-mail address so that they can be contacted if there are changes to the program.</p>
-                            <p>Once the customer has paid select the payment type and click on Complete to finish the sale.</p>
-                            <p>If you select Cancel (or leave this page) the sale will be cancelled and no tickets will be issued.</p>
+                            <p>The sale should not be completed until payment has been received.</p>
+                            {% if sale.tickets.count > 0 %}<p>An e-mail address is required when purchasing tickets to identify the ticket holder at the venue and to notify them if the show is cancelled.</p>{% endif %}
                         </div>
                     {% endif %}
                     {% if sale.buttons %}

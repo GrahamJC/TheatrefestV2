@@ -152,17 +152,24 @@ def create_sale_complete_form(sale, post_data = None):
     assert sale
 
     # Create form
-    form = SaleCompleteForm(data = post_data)
+    form = SaleCompleteForm(sale, data = post_data)
 
     # Add crispy form helper
     form.helper = FormHelper()
     form.helper.form_id = 'sale-complete-form'
-    form.helper.layout = Layout(
-        Field('email'),
-        Field('type'),
-        Button('Complete', 'Complete', css_class = 'btn-primary', onclick = 'saleComplete()'),
-        Button('cancel', 'Cancel', css_class = 'btn-secondary', onclick = 'saleCancel()'),
-    )
+    if sale.tickets.count() > 0:
+        form.helper.layout = Layout(
+            Field('email'),
+            Field('type'),
+            Button('Complete', 'Complete', css_class = 'btn-primary', onclick = 'saleComplete()'),
+            Button('cancel', 'Cancel', css_class = 'btn-secondary', onclick = 'saleCancel()'),
+        )
+    else:
+        form.helper.layout = Layout(
+            Field('type'),
+            Button('Complete', 'Complete', css_class = 'btn-primary', onclick = 'saleComplete()'),
+            Button('cancel', 'Cancel', css_class = 'btn-secondary', onclick = 'saleCancel()'),
+        )
 
     # Return form
     return form

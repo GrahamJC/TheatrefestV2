@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 @receiver(user_logged_in)
 def user_logged_in_signal(sender, user, request, **kwargs):
-    logger.info(f"User {user.email} logged on")
+    logger.info(f"User {user} logged on")
 
     # Delete any incomplete sales and return items to basket
     for sale in user.sales.filter(boxoffice__isnull = True, venue__isnull = True, completed__isnull = True):
@@ -29,4 +29,4 @@ def user_logged_in_signal(sender, user, request, **kwargs):
 
 @receiver(user_logged_out)
 def user_logged_out_signal(sender, user, request, **kwargs):
-    logger.info(f"User {user.email} logged out")
+    logger.info(f"User {user} logged out")

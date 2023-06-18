@@ -574,36 +574,43 @@ class PAYWView(LoginRequiredMixin, View):
         # Donate eFfringer credits
         if action == "UseFringers":
 
-            # Create a sale
-            sale = Sale(
-                festival = request.festival,
-                user = request.user,
-                customer = request.user.email,
-                completed = timezone.now(),
-            )
-            sale.save()
+            # Check if any fringers are selected
+            fringer_ids = request.POST.getlist('fringer_id')
+            if fringer_ids:
 
-            # Process each checked fringer
-            for fringer_id in request.POST.getlist('fringer_id'):
-
-                # Get fringer and donate to this show
-                fringer = Fringer.objects.get(pk = int(fringer_id))
-                payw = PayAsYouWill(
-                    sale = sale,
-                    show = show,
-                    fringer = fringer,
-                    amount = fringer.payment,
+                # Create a sale
+                sale = Sale(
+                    festival = request.festival,
+                    user = request.user,
+                    customer = request.user.email,
+                    completed = timezone.now(),
                 )
-                payw.save()
+                sale.save()
+                logger.info(f"Sale { sale.id } crfeated for eFringer PAYW donation to { show.name }")
 
-                # Confirm purchase
-                logger.info(f"eFringer {fringer.name} used for PAYW donation to {{ show.name }}")
-                messages.success(request, f"eFringer {fringer.name} credit donated")
+                # Create donations for each fringer seleted
+                for fringer_id in fringer_ids:
 
-        # Get fringers available
+                    # Get fringer and donate to this show
+                    fringer = Fringer.objects.get(pk = int(fringer_id))
+                    payw = PayAsYouWill(
+                        sale = sale,
+                        show = show,
+                        fringer = fringer,
+                        amount = fringer.payment,
+                    )
+                    payw.save()
+
+                    # Confirm donation
+                    logger.info(f"eFringer {fringer.name} PAYW donation added to sale { sale.id }")
+                    messages.success(request, f"eFringer {fringer.name} credit donated to { show.name }")
+
+                # Return to show page
+                return redirect(reverse("program:show", args=[show.uuid]))
+            
+        # No fringers selected so redisplay
+        messages.warning(request, f"No fringers selected for donation")
         fringers = Fringer.get_available(request.user)
-
-        # Display PAYW page
         context = {
             'show': show,
             'fringers': fringers,

@@ -67,7 +67,7 @@ def archive_festival(request, festival_name):
 
 
 @login_required
-@user_passes_test(lambda u: u.is_venue or v_is_boxoffice)
+@user_passes_test(lambda u: u.is_venue or u.is_boxoffice)
 def switch(request, name=None):
 
     # Get requested festival and matching user in that festival
@@ -75,6 +75,7 @@ def switch(request, name=None):
         festival = get_object_or_404(Festival, name__iexact=name)
     else:
         festival = request.site.info.festival
+    logger.info(f"Switch session to {festival.name}.")
     user = get_object_or_404(User, site_id=request.site.id, festival_id=festival.id, email=request.user.email)
 
     # Logout as current user out and login as matching user in new festival

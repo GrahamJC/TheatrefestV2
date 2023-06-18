@@ -10,8 +10,10 @@ begin
 	select id into v_test_festival_id from core_festival where name = 'TEST';
 	select id into v_curr_festival_id from core_festival where name = 'TF2023';
 
-	-- Delete tickets, sales, refunds, checkpoints, efringers and box offices
+	-- Delete tickets, PAYW, sales, refunds, checkpoints, efringers and box offices
 	delete from tickets_ticket where sale_id in (select id from tickets_sale where festival_id = v_test_festival_id);
+	delete from tickets_payasyouwill where sale_id in (select id from tickets_sale where festival_id = v_test_festival_id);
+	delete from tickets_fringer where sale_id in (select id from tickets_sale where festival_id = v_test_festival_id);
 	delete from tickets_ticket where refund_id in (select id from tickets_refund where festival_id = v_test_festival_id);
 	delete from tickets_sale where festival_id = v_test_festival_id;
 	delete from tickets_refund where festival_id = v_test_festival_id;
@@ -36,15 +38,15 @@ begin
 	into	tickets_boxoffice
 			(uuid, created, updated, festival_id, name)
 	values	(uuid_generate_v4(), clock_timestamp(), clock_timestamp(), v_test_festival_id, 'Boxoffice');
-			
+
 	-- Companies
 	create temp table tmp_company (
 		name varchar(64) not null,
 		id integer
 	) on commit drop;
-	
+
 	insert into tmp_company (name) values ('Company');
-	
+
 	insert
 	into	program_company
 			(uuid, created, updated, festival_id, name, image, listing, listing_short, detail,
@@ -52,7 +54,7 @@ begin
 	select	uuid_generate_v4(), clock_timestamp(), clock_timestamp(), v_test_festival_id, tc.name, '', '', '', '',
 			'', '', '', '', '', '', '', '', '', ''
 	from 	tmp_company tc;
-	
+
 	update	tmp_company tc
 	set 	id = pc.id
 	from 	program_company pc
@@ -62,13 +64,16 @@ begin
 	-- Venues
 	create temp table tmp_venue (
 		name varchar(64) not null,
+		is_ticketed bool not null,
 		id integer
 	) on commit drop;
 
-	insert into tmp_venue (name) values ('Venue A');
-	insert into tmp_venue (name) values ('Venue B');
-	insert into tmp_venue (name) values ('Venue C');
-	insert into tmp_venue (name) values ('Venue D');
+	insert into tmp_venue (name, is_ticketed) values ('Venue A', true);
+	insert into tmp_venue (name, is_ticketed) values ('Venue B', true);
+	insert into tmp_venue (name, is_ticketed) values ('Venue C', true);
+	insert into tmp_venue (name, is_ticketed) values ('Venue D', true);
+	insert into tmp_venue (name, is_ticketed) values ('Alt Space A', false);
+	insert into tmp_venue (name, is_ticketed) values ('Alt Space B', false);
 
 	insert
 	into	program_venue
@@ -77,9 +82,9 @@ begin
 			is_ticketed, is_scheduled, is_searchable, capacity, map_index, color)
 	select	uuid_generate_v4(), clock_timestamp(), clock_timestamp(), v_test_festival_id, tv.name, '', '', '', '',
 			'', '', '', '', '', '', '', '', '', '',
-			true, true, true, 50, 0, ''
+			tv.is_ticketed, true, true, 50, 0, ''
 	from 	tmp_venue tv;
-	
+
 	update	tmp_venue tv
 	set 	id = pv.id
 	from 	program_venue pv
@@ -107,6 +112,12 @@ begin
 	insert into tmp_show (name, company, venue, seqno) values ('Show D1', 'Company', 'Venue D', 1);
 	insert into tmp_show (name, company, venue, seqno) values ('Show D2', 'Company', 'Venue D', 2);
 	insert into tmp_show (name, company, venue, seqno) values ('Show D3', 'Company', 'Venue D', 3);
+	insert into tmp_show (name, company, venue, seqno) values ('Alt Show A1', 'Company', 'Alt Space A', 0);
+	insert into tmp_show (name, company, venue, seqno) values ('Alt Show A2', 'Company', 'Alt Space A', 0);
+	insert into tmp_show (name, company, venue, seqno) values ('Alt Show A3', 'Company', 'Alt Space A', 0);
+	insert into tmp_show (name, company, venue, seqno) values ('Alt Show B1', 'Company', 'Alt Space B', 0);
+	insert into tmp_show (name, company, venue, seqno) values ('Alt Show B2', 'Company', 'Alt Space B', 0);
+	insert into tmp_show (name, company, venue, seqno) values ('Alt Show B3', 'Company', 'Alt Space B', 0);
 
 	insert
 	into	program_show
@@ -146,21 +157,21 @@ begin
 	insert into tmp_performance (seqno, time) values (3, '19:00');
 	insert into tmp_performance (seqno, time) values (3, '22:00');
 
-	insert 
+	insert
 	into 	program_showperformance
 			(uuid, created, updated, show_id, date, time, audience, notes)
 	select	uuid_generate_v4(), clock_timestamp(), clock_timestamp(), ts.id, current_date, tp.time, 0, ''
 	from 	tmp_show ts
 			join tmp_performance tp on tp.seqno = ts.seqno;
 
-	insert 
+	insert
 	into 	program_showperformance
 			(uuid, created, updated, show_id, date, time, audience, notes)
 	select	uuid_generate_v4(), clock_timestamp(), clock_timestamp(), ts.id, current_date + 1, tp.time, 0, ''
 	from 	tmp_show ts
 			join tmp_performance tp on tp.seqno = ts.seqno;
 
-	insert 
+	insert
 	into 	program_showperformance
 			(uuid, created, updated, show_id, date, time, audience, notes)
 	select	uuid_generate_v4(), clock_timestamp(), clock_timestamp(), ts.id, current_date + 2, tp.time, 0, ''
@@ -172,7 +183,7 @@ begin
 
 	-- Copy users from current festival
 	insert
-	into 	core_user 
+	into 	core_user
 			(uuid, created, updated,
 			site_id, festival_id, email, password, first_name, last_name,
 			is_active, is_superuser, is_admin, is_volunteer, is_boxoffice, is_venue)
@@ -183,9 +194,9 @@ begin
 	where 	festival_id = v_curr_festival_id
 	and 	is_active = true
 	and 	(is_boxoffice = true or is_venue = true);
-	
-	insert 
-	into 	volunteers_volunteer 
+
+	insert
+	into 	volunteers_volunteer
 			(uuid, created, updated, user_id, is_dbs)
 	select	uuid_generate_v4(), clock_timestamp(), clock_timestamp(), tcu.id, cvv.is_dbs
 	from	core_user tcu

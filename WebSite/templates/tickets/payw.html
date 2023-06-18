@@ -9,9 +9,9 @@
 
         <h5 class="tf-show-name"><a href="{% url 'program:show' show.uuid %}">{{ show.name }}</a></h5>
 
-        <p>Select the eFringer credits you would like to use and then click on Confirm to make the donation.</p>
-
         {% if fringers %}
+            <p>Select the eFringer credits you would like to use and then click on Confirm to make the donation.</p>
+
             <form method="post">
                 {% csrf_token %}
                 <table class="table table-striped">
@@ -24,6 +24,7 @@
                     {% endfor %}
                 </table>
                 <button type="submit" class="btn btn-primary" name="action" value="UseFringers">Confirm</button>
+                <a class="btn btn-secondary" href="{% url 'program:show' show.uuid %}">Cancel</a>
             </form>
         {% else %}
             <p>You do not have any eFringer credits available.</p>

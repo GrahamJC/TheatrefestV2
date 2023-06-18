@@ -65,7 +65,7 @@
                             </div>
                             {% if not show.venue.is_ticketed %}
                                 <p>
-                                    You can also make credit card donations to this show at the central box office or donate an <a href="{% url 'tickets:payw' show.uuid %}">eFringer</a> voucher if you have one available.
+                                    You can also make cash or card donations at the central box office or <a href="{% url 'tickets:payw' show.uuid %}">donate an eFringer credit</a> if you have one available.
                                 </p>
                             {% endif %}
                         {% endif %}

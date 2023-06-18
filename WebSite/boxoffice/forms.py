@@ -53,8 +53,12 @@ class SaleCompleteForm(forms.Form):
         ('Cash', 'Cash'),
         ('SquareUp', 'Card (SquareUp)'),
     ]
-    email = forms.EmailField(label = 'e-mail address (ticket sales only)', required = False, widget = forms.TextInput(attrs = { 'style': 'width: 100%' }))
+    email = forms.EmailField(label = 'e-mail address', required = True, widget = forms.TextInput(attrs = { 'style': 'width: 100%' }))
     type = forms.ChoiceField(label = 'Payment type', required = True, choices = TYPE_CHOICES, widget=forms.RadioSelect())
+
+    def __init__(self, sale, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['email'].required = (sale.tickets.count() > 0)
 
 
 class SaleEMailForm(forms.Form):
