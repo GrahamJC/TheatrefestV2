@@ -59,7 +59,7 @@
                             <p>If you select Cancel (or leave this page) the sale will be cancelled and no tickets will be issued.</p>
                         {% endif %}
                     </div>
-                    {% for performance in sale.performances %}
+                    {% for performance in sale.ticket_performances %}
                         <div class="row mb-2">
                             <div class="col-12"><strong>{{ performance.show }}</strong></div>
                             <div class="col-12">{{ performance.date | date:'D, j M' }} at {{ performance.time | time:'h:ia' }}</div>

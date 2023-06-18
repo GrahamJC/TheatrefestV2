@@ -67,7 +67,7 @@ def archive_festival(request, festival_name):
 
 
 @login_required
-@user_passes_test(lambda u: u.is_admin)
+@user_passes_test(lambda u: u.is_venue or v_is_boxoffice)
 def switch(request, name=None):
 
     # Get requested festival and matching user in that festival
