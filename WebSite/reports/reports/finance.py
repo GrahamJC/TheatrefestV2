@@ -422,7 +422,8 @@ def boxoffice_summary(request):
     first = Checkpoint.objects.filter(created__date = date, boxoffice = boxoffice).order_by('created').first()
     last = Checkpoint.objects.filter(created__date = date, boxoffice = boxoffice).order_by('created').last()
     if first and last and first != last:
-        sales_cash = Sale.objects.filter(boxoffice = boxoffice, created__date = date).aggregate(Sum('amount'))['amount__sum'] or 0
+        sales_cash = Sale.objects.filter(boxoffice = boxoffice, created__date = date, transaction_type = Sale.TRANSACTION_TYPE_CASH).aggregate(Sum('amount'))['amount__sum'] or 0
+        sales_card = Sale.objects.filter(boxoffice = boxoffice, created__date = date).exclude(transaction_type = Sale.TRANSACTION_TYPE_CASH).aggregate(Sum('amount'))['amount__sum'] or 0
         sales_fringers = Fringer.objects.filter(sale__boxoffice = boxoffice, sale__created__date = date).count() or 0
         sales_buttons = Sale.objects.filter(boxoffice = boxoffice, created__date = date).aggregate(Sum('buttons'))['buttons__sum'] or 0
         refunds_cash = Refund.objects.filter(boxoffice = boxoffice, created__date = date).aggregate(Sum('amount'))['amount__sum'] or 0
@@ -432,6 +433,7 @@ def boxoffice_summary(request):
             'close': last,
             'sales': {
                 'cash': sales_cash,
+                'card': sales_card,
                 'fringers': sales_fringers,
                 'buttons': sales_buttons,
             },
@@ -457,7 +459,8 @@ def boxoffice_summary(request):
         open = prev_checkpoint
         close = checkpoint
         if open and close:
-            sales_cash = Sale.objects.filter(boxoffice = boxoffice, created__gt = open.created, created__lt = close.created).aggregate(Sum('amount'))['amount__sum'] or 0
+            sales_cash = Sale.objects.filter(boxoffice = boxoffice, created__gt = open.created, created__lt = close.created, transaction_type = Sale.TRANSACTION_TYPE_CASH).aggregate(Sum('amount'))['amount__sum'] or 0
+            sales_card = Sale.objects.filter(boxoffice = boxoffice, created__gt = open.created, created__lt = close.created).exclude(transaction_type = Sale.TRANSACTION_TYPE_CASH).aggregate(Sum('amount'))['amount__sum'] or 0
             sales_fringers = Fringer.objects.filter(sale__boxoffice = boxoffice, sale__created__gt = open.created, sale__created__lt = close.created).count() or 0
             sales_buttons = Sale.objects.filter(boxoffice = boxoffice, created__gt = open.created, created__lt = close.created).aggregate(Sum('buttons'))['buttons__sum'] or 0
             refunds_cash = Refund.objects.filter(boxoffice = boxoffice, created__gt = open.created, created__lt = close.created).aggregate(Sum('amount'))['amount__sum'] or 0
@@ -467,6 +470,7 @@ def boxoffice_summary(request):
                 'close': close,
                 'sales': {
                     'cash': sales_cash,
+                    'card': sales_card,
                     'fringers': sales_fringers,
                     'buttons': sales_buttons,
                 },
@@ -551,6 +555,14 @@ def boxoffice_summary(request):
             f"£{ period['refunds']['cash'] }" if period.get('refunds', None) else '',
             f"£{ period['close'].cash }" if period.get('close', None) else '',
             f"£{ period['variance']['cash'] }" if period.get('variance', None) else '',
+        ))
+        table_data.append((
+            'Card',
+            '',
+            period['sales']['card'] if period.get('sales', None) else '',
+            '',
+            '',
+            '',
         ))
         table_data.append((
             'Fringers',

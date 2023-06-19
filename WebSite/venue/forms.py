@@ -51,7 +51,7 @@ class CloseCheckpointForm(forms.Form):
 
     buttons = forms.IntegerField(label = 'Badges', required = True, widget = forms.NumberInput(attrs = { 'style': 'width: 75px' }))
     fringers = forms.IntegerField(label = 'Fringers', required = True, widget = forms.NumberInput(attrs = { 'style': 'width: 75px' }))
-    audience = forms.IntegerField(label = 'Audience', required = True, widget = forms.NumberInput(attrs = { 'style': 'width: 75px' }))
+    audience = forms.IntegerField(label = 'Audience', required = False, widget = forms.NumberInput(attrs = { 'style': 'width: 75px' }))
     notes = forms.CharField(label = 'Notes', widget = forms.Textarea(attrs = { 'style': 'width: 100%; height: 200px' }), required = False)
 
     def __init__(self, checkpoint, *args, **kwargs):

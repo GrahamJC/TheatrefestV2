@@ -395,7 +395,7 @@ class AdminSaleListView(LoginRequiredMixin, View):
                     sales = sales.filter(venue__isnull = False)
             elif sale_type == 'Online':
                 sales = sales.filter(user__isnull = False)
-            sales = sales.order_by('completed__date', 'customer')[:50]
+            sales = sales.order_by('id')[:50]
             if sales.count() == 0:
                 messages.warning(request, "No sales found")
 
@@ -412,13 +412,14 @@ class AdminSaleListView(LoginRequiredMixin, View):
                     'id': sale.id,
                     'uuid': sale.uuid,
                     'date': sale.completed.date,
+                    'type': sale.transaction_type_description(),
                     'customer': sale.customer,
                     'is_customer_email': sale.is_customer_email,
                     'buttons': sale.button_cost,
                     'fringers': sale.fringer_cost,
                     'tickets': sale.tickets.all(),
                     'total': sale.total_cost,
-                    'type': 'Boxoffice' if sale.boxoffice else f'Venue ({sale.venue.name})' if sale.venue else 'Online',
+                    'location': 'Boxoffice' if sale.boxoffice else f'Venue ({sale.venue.name})' if sale.venue else 'Online',
                 }
                 for sale in sales
             ],
