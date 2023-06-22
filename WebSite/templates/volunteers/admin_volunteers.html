@@ -26,6 +26,8 @@
                 <th>Roles</th>
                 <th>Quals</th>
                 <th>Shifts</th>
+                <th>Comps</th>
+                <th>Used</th>
             </tr>
         </thead>
         <tbody>
@@ -35,6 +37,8 @@
                     <td>{{ user.volunteer.roles.all|join:', ' }}</td>
                     <td>{% if user.volunteer.is_dbs %}DBS{% endif %}</td>
                     <td>{{ user.volunteer.shifts.count }}</td>
+                    <td>{{ user.volunteer.comps_earned }}</td>
+                    <td>{{ user.volunteer.comps_used }}</td>
                 </tr>
             {% endfor %}
         </tbody>
