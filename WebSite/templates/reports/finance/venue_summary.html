@@ -27,6 +27,14 @@
             <td class="text-right">{% if period.variance %}&#163;{{ period.variance.cash }}{% endif %}</td>
         </tr>
         <tr>
+            <td class="text-right">Card</td>
+            <td class="text-right"></td>
+            <td class="text-right">{% if period.sales %}&#163;{{ period.sales.card }}{% endif %}</td>
+            <td class="text-right"></td>
+            <td class="text-right"></td>
+            <td class="text-right"></td>
+        </tr>
+        <tr>
             <td class="text-right">Fringers</td>
             <td class="text-right">{% if period.open %}{{ period.open.fringers }}{% endif %}</td>
             <td class="text-right">{% if period.sales %}{{ period.sales.fringers }}{% endif %}</td>
