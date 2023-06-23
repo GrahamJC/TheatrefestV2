@@ -11,7 +11,16 @@
         <h6>{{ performance.date|date:'D, j M' }} at {{ performance.time|time:'P' }}</h6>
         <p>Tickets available: {{ performance.tickets_available }}</p>
 
-        {% if performance.tickets_available %}
+        {% if performance.has_close_checkpoint %}
+
+            <div class="card">
+                <div class="card-header">Sales Closed</div>
+                <div class="card-body">
+                    Ticket sales for this performance are now closed.
+                </div>
+            </div>
+
+        {% elif performance.tickets_available %}
 
             <div class="alert alert-info">
                 <strong>Every audience member aged 13+ needs a <a href="#tf_fringe_badges" data-toggle="collapse">Fringe Badge</a> to enter a ticketed venue.</strong>
@@ -133,8 +142,6 @@
                                         <p>You do not have any volunteer tickets available</p>
                                     {% elif not performance.has_open_checkpoint %}
                                         <p>Volunteer tickets cannot be used until venue sales are open for this performance.</p>
-                                    {% elif performance.has_close_checkpoint %}
-                                        <p>Ticket sales for this performance are now closed.</p>
                                     {% else %}
                                         <p>You have {{ volunteer_available }} voluteer tickets available.</p>
                                         <p>To use a volunteer ticket for this performance click the button below.</p>

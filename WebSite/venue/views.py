@@ -378,7 +378,7 @@ def performance_close(request, performance_uuid):
     if close_form.is_valid():
 
         # Record audience tokens
-        performance.audience = close_form.cleaned_data['audience']
+        performance.audience = close_form.cleaned_data['audience'] or 0
         performance.save()
 
         # Create close checkpoint
@@ -418,7 +418,7 @@ def checkpoint_update_close(request, checkpoint_uuid):
     if close_form.is_valid():
 
         # Update audience tokens
-        performance.audience = close_form.cleaned_data['audience']
+        performance.audience = close_form.cleaned_data['audience'] or 0
         performance.save()
 
         # Update checkpoint
