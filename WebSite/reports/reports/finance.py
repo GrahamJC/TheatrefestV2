@@ -755,7 +755,6 @@ def venue_summary(request):
             period['sales']['card'] if period.get('sales', None) else '',
             '',
             '',
-            '',
         ))
         table_data.append((
             'Fringers',
