@@ -494,6 +494,7 @@ def sale_tickets_add(request, sale_uuid, performance_uuid):
             if sale.completed:
                 sale.amount = sale.total_cost
                 sale.save()
+                logger.warning(f"Completed sale {sale.id} updated")
 
             # Prepare for adding more tickets
             form = None
@@ -512,13 +513,23 @@ def sale_tickets_add(request, sale_uuid, performance_uuid):
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
 @transaction.atomic
 def sale_remove_performance(request, sale_uuid, performance_uuid):
+
+    # Get the sale and performance
     sale = get_object_or_404(Sale, uuid = sale_uuid)
     performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+
+    # Remove all tickets for this performance
     for ticket in sale.tickets.filter(performance = performance):
         logger.info(f"{ticket.description} ticket {ticket.id} for {performance.show.name} on {performance.date} at {performance.time} removed from sale {sale.id}")
         ticket.delete()
+
+    # If sale is complete then update the total
     if sale.completed:
+        sale.amount = sale.total_cost
+        sale.save()
         logger.warning(f"Completed sale {sale.id} updated")
+
+    # Render updated sale
     return render_sale(request, sale.boxoffice, sale, accordion='tickets')
 
 @require_GET
@@ -526,14 +537,24 @@ def sale_remove_performance(request, sale_uuid, performance_uuid):
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
 @transaction.atomic
 def sale_remove_ticket(request, sale_uuid, ticket_uuid):
+
+    # Get sale and ticket
     sale = get_object_or_404(Sale, uuid = sale_uuid)
     ticket = get_object_or_404(Ticket, uuid = ticket_uuid)
     assert ticket.sale == sale
+
+    # Remove ticket
     performance = ticket.performance
     logger.info(f"{ticket.description} ticket {ticket.id} for {performance.show.name} on {performance.date} at {performance.time} removed from sale {sale.id}")
     ticket.delete()
+
+    # If sale is complete then update the total
     if sale.completed:
+        sale.amount = sale.total_cost
+        sale.save()
         logger.warning(f"Completed sale {sale.id} updated")
+
+    # Render updated sale
     return render_sale(request, sale.boxoffice, sale, accordion='tickets')
 
 @require_GET
@@ -986,11 +1007,15 @@ def tickets_search(request, boxoffice_uuid):
     form = create_ticket_search_form(boxoffice, request.POST)
     if form.is_valid():
 
-        tickets = Ticket.objects.filter(sale__festival=boxoffice.festival)
+        # Get confirmed tickets
+        tickets = Ticket.objects.filter(sale__festival=boxoffice.festival, sale__completed__isnull=False)
+
+        # Filter by customer e-mail
         email = form.cleaned_data['email']
         if email:
             tickets = tickets.filter(sale__customer__iexact=email)
-            #tickets = tickets.filter(sale__customer__startswith=email)
+
+        # Sort by show, performnce and ticket ID
         tickets = tickets.order_by(Lower('performance__show__name'), 'performance__date', 'performance__time', 'id')[:50]
 
     # Render checkpoint tab content

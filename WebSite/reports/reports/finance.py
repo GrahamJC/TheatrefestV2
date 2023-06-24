@@ -42,14 +42,14 @@ def festival_summary(request):
     boxoffice_list = [bo for bo in BoxOffice.objects.filter(festival = request.festival).order_by('name')]
 
     # Sales by channel
-    online_pre = Sale.objects.filter(festival = request.festival, created__lt = date_list[0], completed__isnull = False, refund__isnull = True, boxoffice__isnull = True, venue__isnull = True).aggregate(Sum('amount'))['amount__sum'] or 0
+    online_pre = Sale.objects.filter(festival = request.festival, created__lt = date_list[0], completed__isnull = False, boxoffice__isnull = True, venue__isnull = True).aggregate(Sum('amount'))['amount__sum'] or 0
     online = {
         'pre': online_pre,
         'dates': [],
         'total': online_pre,
     }
     venues = OrderedDict([(v.name, {'dates': [], 'total': 0}) for v in venue_list])
-    boxoffices = OrderedDict([(bo.name, {'dates': [], 'total': 0}) for bo in boxoffice_list])
+    boxoffices = OrderedDict([(bo.name, {'cash': {'dates': [], 'total': 0}, 'card': {'dates': [], 'total': 0}}) for bo in boxoffice_list])
     totals = {
         'pre': online_pre,
         'dates': [],
@@ -68,9 +68,13 @@ def festival_summary(request):
             venues[venue.name]['total'] += date_amount
             date_total += date_amount
         for boxoffice in boxoffice_list:
-            date_amount = query.filter(boxoffice = boxoffice).aggregate(Sum('amount'))['amount__sum'] or 0
-            boxoffices[boxoffice.name]['dates'].append(date_amount)
-            boxoffices[boxoffice.name]['total'] += date_amount
+            date_amount = query.filter(boxoffice = boxoffice, transaction_type = Sale.TRANSACTION_TYPE_CASH).aggregate(Sum('amount'))['amount__sum'] or 0
+            boxoffices[boxoffice.name]['cash']['dates'].append(date_amount)
+            boxoffices[boxoffice.name]['cash']['total'] += date_amount
+            date_total += date_amount
+            date_amount = query.filter(boxoffice = boxoffice, transaction_type = Sale.TRANSACTION_TYPE_SQUAREUP).aggregate(Sum('amount'))['amount__sum'] or 0
+            boxoffices[boxoffice.name]['card']['dates'].append(date_amount)
+            boxoffices[boxoffice.name]['card']['total'] += date_amount
             date_total += date_amount
         totals['dates'].append(date_total)
         totals['total'] += date_total
@@ -242,10 +246,15 @@ def festival_summary(request):
     row.append(f'£{sales_by_channel["online"]["total"]:.0f}')
     table_data.append(row)
     for boxoffice in boxoffice_list:
-        row = [boxoffice.name, '']
-        for amount in sales_by_channel['boxoffices'][boxoffice.name]['dates']:
+        row = [boxoffice.name + ' (cash)', '']
+        for amount in sales_by_channel['boxoffices'][boxoffice.name]['cash']['dates']:
             row.append(f'£{amount:.0f}')
-        row.append(f'£{sales_by_channel["boxoffices"][boxoffice.name]["total"]:.0f}')
+        row.append(f'£{sales_by_channel["boxoffices"][boxoffice.name]["cash"]["total"]:.0f}')
+        table_data.append(row)
+        row = [boxoffice.name + ' (card)', '']
+        for amount in sales_by_channel['boxoffices'][boxoffice.name]['card']['dates']:
+            row.append(f'£{amount:.0f}')
+        row.append(f'£{sales_by_channel["boxoffices"][boxoffice.name]["card"]["total"]:.0f}')
         table_data.append(row)
     for venue in venue_list:
         row = [venue.name, '']

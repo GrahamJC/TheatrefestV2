@@ -18,12 +18,20 @@
     </tr>
     {% for boxoffice_name, boxoffice_sales in sales_by_channel.boxoffices.items %}
         <tr>
-            <td>{{ boxoffice_name }}</td>
+            <td>{{ boxoffice_name }} (cash)</td>
             <td></td>
-            {% for x in boxoffice_sales.dates %}
+            {% for x in boxoffice_sales.cash.dates %}
                 <td class="text-right">&#163;{{ x | floatformat:'0' | default:'' }}</td>
             {% endfor %}
-            <td class="text-right">&#163;{{ boxoffice_sales.total | floatformat:'0' | default:'' }}</td>
+            <td class="text-right">&#163;{{ boxoffice_sales.cash.total | floatformat:'0' | default:'' }}</td>
+        </tr>
+        <tr>
+            <td>{{ boxoffice_name }} (card)</td>
+            <td></td>
+            {% for x in boxoffice_sales.card.dates %}
+                <td class="text-right">&#163;{{ x | floatformat:'0' | default:'' }}</td>
+            {% endfor %}
+            <td class="text-right">&#163;{{ boxoffice_sales.card.total | floatformat:'0' | default:'' }}</td>
         </tr>
     {% endfor %}
     {% for venue_name, venue_sales in sales_by_channel.venues.items %}
