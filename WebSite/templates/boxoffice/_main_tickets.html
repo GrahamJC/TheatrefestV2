@@ -1,0 +1,53 @@
+{% load crispy_forms_tags %}
+{% load widget_tweaks %}
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <h6 class="card-header">Search for Tickets</h6>
+            <div class="card-body">
+                {% crispy ticket_search_form %}
+            </div>
+        </div>
+
+        <div class="card mt-5">
+            <h6 class="card-header">Results</h6>
+            <div class="card-body">
+                {% if tickets %}
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Id</th>
+                                <th>Show</th>
+                                <th>Performance</th>
+                                <th>Type</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ticket in tickets %}
+                                <tr>
+                                    <td>{{ ticket.id }}</td>
+                                    <td>{{ ticket.performance.show.name }}</td>
+                                    <td>{{ ticket.performance.date | date:'D' }} at {{ ticket.performance.time | time:'H:i'}}</td>
+                                    <td>{{ ticket.description }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>No tickets found</p>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script language="javascript">
+
+    function ticketsSearch() {
+        var postData = $('#ticket-search-form').serializeArray();
+        updateTicketsTab('{% url "boxoffice:tickets_search" boxoffice.uuid %}', postData);
+    }
+
+</script>

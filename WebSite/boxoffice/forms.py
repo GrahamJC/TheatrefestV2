@@ -86,3 +86,8 @@ class CheckpointForm(forms.Form):
             self.fields['cash'].disabled = True
             self.fields['buttons'].disabled = True
             self.fields['fringers'].disabled = True
+
+
+class TicketSearchForm(forms.Form):
+
+    email = forms.EmailField(label='e-mail', required=True, widget = forms.TextInput(attrs = { 'style': 'width: 100%' }))

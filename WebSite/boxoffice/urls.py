@@ -41,4 +41,6 @@ urlpatterns = [
     path('checkpoint/<uuid:checkpoint_uuid>/select', views.checkpoint_select, name = 'checkpoint_select'),
     path('checkpoint/<uuid:checkpoint_uuid>/update', views.checkpoint_update, name = 'checkpoint_update'),
     path('checkpoint/<uuid:checkpoint_uuid>/cancel', views.checkpoint_cancel, name = 'checkpoint_cancel'),
+    # Tickets
+    path('<uuid:boxoffice_uuid>/tickets/search', views.tickets_search, name = 'tickets_search'),
 ]

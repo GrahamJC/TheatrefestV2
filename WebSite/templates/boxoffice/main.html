@@ -12,6 +12,7 @@
             <a id="refunds-tab" class="nav-item nav-link {% if tab == 'refunds' %}active{% endif %}" href="#refunds-tab-content" data-toggle="tab">Refunds</a>
         {% endif %}
         <a id="checkpoints-tab" class="nav-item nav-link {% if tab == 'checkpoints' %}active{% endif %}" href="#checkpoints-tab-content" data-toggle="tab">Checkpoints</a>
+        <a id="tickets-tab" class="nav-item nav-link {% if tab == 'tickets' %}active{% endif %}" href="#tickets-tab-content" data-toggle="tab">Tickets</a>
     </div>
 
     <div class="tab-content">
@@ -40,6 +41,10 @@
 
         <div id="checkpoints-tab-content" class="tab-pane {% if tab == 'checkpoints' %}active{% endif %}">
             {% include 'boxoffice/_main_checkpoints.html' %}
+        </div>
+
+        <div id="tickets-tab-content" class="tab-pane {% if tab == 'tickets' %}active{% endif %}">
+            {% include 'boxoffice/_main_tickets.html' %}
         </div>
     
     </div>
@@ -78,6 +83,17 @@
             $('#tf-alerts').empty();
             $('body').css({ 'cursor': 'wait' });
             $('#checkpoints-tab-content').load(url, data, function(response, status, xhr) {
+                if (status != 'success') {
+                    $('#tf-alerts').append('<div class="alert alert-danger"><a class="close" data-dismiss="alert">x</a><span>Sorry but there was an error. Please try again.</span></div>');
+                }
+                $('body').css({ 'cursor': 'default' });
+            });
+        }
+        
+        function updateTicketsTab(url, data) {
+            $('#tf-alerts').empty();
+            $('body').css({ 'cursor': 'wait' });
+            $('#tickets-tab-content').load(url, data, function(response, status, xhr) {
                 if (status != 'success') {
                     $('#tf-alerts').append('<div class="alert alert-danger"><a class="close" data-dismiss="alert">x</a><span>Sorry but there was an error. Please try again.</span></div>');
                 }

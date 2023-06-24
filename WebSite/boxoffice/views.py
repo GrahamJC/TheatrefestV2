@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Q, Sum
-from django.db.models.functions import Coalesce
+from django.db.models.functions import Coalesce, Lower
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
@@ -31,7 +31,7 @@ from core.models import User
 from program.models import Show, ShowPerformance
 from tickets.models import BoxOffice, Sale, Refund, TicketType, Ticket, PayAsYouWill, Fringer, Checkpoint
 
-from .forms import CheckpointForm, SaleTicketsForm, SalePAYWForm, SaleExtrasForm, SaleCompleteForm, SaleEMailForm, RefundStartForm
+from .forms import CheckpointForm, SaleTicketsForm, SalePAYWForm, SaleExtrasForm, SaleCompleteForm, SaleEMailForm, RefundStartForm, TicketSearchForm
 
 # Logging
 import logging
@@ -246,6 +246,23 @@ def create_checkpoint_form(boxoffice, checkpoint, post_data = None):
     # Return form
     return form
 
+def create_ticket_search_form(boxoffice, post_data = None):
+
+    # Create form
+    form = TicketSearchForm(data = post_data)
+
+    # Add crispy forms helper
+    form.helper = FormHelper()
+    form.helper.form_action = reverse('boxoffice:tickets_search', args = [boxoffice.uuid])
+    form.helper.form_id = 'ticket-search-form'
+    form.helper.layout = Layout(
+        Field('email'),
+        Button('search', 'Search', css_class = 'btn-primary',  onclick = 'ticketsSearch()'),
+    )
+
+    # Return form
+    return form
+
 def render_main(request, boxoffice, tab = None, checkpoint_form = None):
 
     # Render main page
@@ -261,6 +278,8 @@ def render_main(request, boxoffice, tab = None, checkpoint_form = None):
         'refunds': get_refunds(boxoffice),
         'checkpoint_form': checkpoint_form or create_checkpoint_form(boxoffice, None),
         'checkpoints': get_checkpoints(boxoffice),
+        'ticket_search_form': create_ticket_search_form(boxoffice),
+        'tickets': None,
     }
     return render(request, 'boxoffice/main.html', context)
 
@@ -345,6 +364,16 @@ def render_checkpoint(request, boxoffice, checkpoint, checkpoint_form = None):
         'checkpoint': checkpoint,
     }
     return render(request, 'boxoffice/_main_checkpoints.html', context)
+
+def render_tickets(request, boxoffice, search_form = None, tickets=None):
+
+    # Render tickets tab content
+    context = {
+        'boxoffice': boxoffice,
+        'ticket_search_form': search_form or create_ticket_search_form(boxoffice),
+        'tickets': tickets,
+    }
+    return render(request, 'boxoffice/_main_tickets.html', context)
 
 # View functions
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
@@ -943,3 +972,26 @@ def checkpoint_cancel(request, checkpoint_uuid):
 
     # Render checkpoint tab content
     return render_checkpoint(request, boxoffice, None)
+
+@require_POST
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+def tickets_search(request, boxoffice_uuid):
+
+    # Get box office
+    boxoffice = get_object_or_404(BoxOffice, uuid = boxoffice_uuid)
+
+    # Find tickets
+    tickets = None
+    form = create_ticket_search_form(boxoffice, request.POST)
+    if form.is_valid():
+
+        tickets = Ticket.objects.filter(sale__festival=boxoffice.festival)
+        email = form.cleaned_data['email']
+        if email:
+            tickets = tickets.filter(sale__customer__iexact=email)
+            #tickets = tickets.filter(sale__customer__startswith=email)
+        tickets = tickets.order_by(Lower('performance__show__name'), 'performance__date', 'performance__time', 'id')[:50]
+
+    # Render checkpoint tab content
+    return render_tickets(request, boxoffice, form, tickets)
