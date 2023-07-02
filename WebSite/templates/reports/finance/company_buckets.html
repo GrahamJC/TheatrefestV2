@@ -1,0 +1,42 @@
+{% load tf_filters %}
+
+<table class="table table-sm">
+    {% for company in companies %}
+        <tr>
+            <td colspan="{{ bucket_types | length | add:1 }}"><h5>{{ company.name }}</h5></td>
+            <td class="text-right"><strong>£{{ company.total | floatformat:2 }}</strong></td>
+        </tr>
+        <tr>
+            <td></td>
+            {% for bucket_type in bucket_types %}
+                <td class="text-right"><strong>{{ bucket_type.title }}</strong></td>
+            {% endfor %}
+            <td></td>
+        </tr>
+        {% for show in company.shows %}
+            <tr>
+                <td class="pl-2" colspan="{{ bucket_types | length | add:1 }}"><strong>{{ show.name }}</td><strong></td>
+                <td class="text-right"><strong>£{{ show.total | floatformat:2 }}</strong></td>
+            </tr>
+            {% for performance in show.performances %}
+                <tr>
+                    <td class="pl-4">{{ performance.date | date:'l, F j' }} at {{ performance.time | time:'g:ia' }}</td>
+                    {% for bucket_type in bucket_types %}
+                        <td class="text-right">£{{ performance | lookup:bucket_type.name | floatformat:2 }}</td>
+                    {% endfor %}
+                    <td class="text-right">£{{ performance.total | floatformat:2 }}</td>
+                </tr>
+            {% endfor %}
+            {% if show.other.total %}
+                <tr>
+                    <td class="pl-4">Other</td>
+                    {% for bucket_type in bucket_types %}
+                        <td class="text-right">£{{ show.other | lookup:bucket_type.name | floatformat:2 }}</td>
+                    {% endfor %}
+                    <td class="text-right">£{{ show.other.total | floatformat:2 }}</td>
+                </tr>
+            {% endif %}
+            <tr><td colspan="{{ bucket_types | length | add:2 }}">&nbsp;</td></tr>
+        {% endfor %}
+    {% endfor %}
+</table>

@@ -3,7 +3,7 @@
 <table class="table table-sm">
     {% for company in companies %}
         <tr>
-            <td colspan="{{ ticket_types | length | add:1 }}"><strong>{{ company.name }}</strong></td>
+            <td colspan="{{ ticket_types | length | add:1 }}"><h5>{{ company.name }}</h5></td>
             <td class="text-right"><strong>£{{ company.payment | floatformat:2 }}</strong></td>
         </tr>
         <tr>

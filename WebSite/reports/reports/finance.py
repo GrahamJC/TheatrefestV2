@@ -1160,7 +1160,7 @@ def company_payment(request):
     if request.GET['company']:
         selected_company = Company.objects.get(id = int(request.GET['company']))
 
-    # Fetch data
+    # Ticketed venues
     ticket_types = [{'name': tt.name, 'payment': tt.payment} for tt in TicketType.objects.filter(festival = request.festival).order_by('name')]
     ticket_types.append({'name': 'eFringer', 'payment': Decimal('4.00')})
     ticket_types.append({'name': 'Volunteer', 'payment': Decimal('0.00')})
@@ -1168,8 +1168,8 @@ def company_payment(request):
     if selected_company:
         companies.append(_get_company_tickets_by_type(selected_company, ticket_types))
     else:
-        ticketed_company_ids = Show.objects.filter(festival = request.festival, venue__is_ticketed = True).values('company_id').distinct()
-        for company in Company.objects.filter(id__in = ticketed_company_ids).order_by('name'):
+        company_ids = Show.objects.filter(festival = request.festival, venue__is_ticketed = True).values('company_id').distinct()
+        for company in Company.objects.filter(id__in = company_ids).order_by('name'):
             companies.append(_get_company_tickets_by_type(company, ticket_types))
 
     # Check for HTML
@@ -1190,6 +1190,234 @@ def company_payment(request):
     # Excel
     elif format.lower() == 'xlsx':
         return company_payment_xlsx(request, companies, ticket_types)
+
+    # Unsupported format
+    return HttpResponseNotFound()
+
+
+def _get_performance_buckets(performance):
+
+    cash = Bucket.objects.filter(performance = performance).aggregate(Sum('cash'))['cash__sum'] or 0
+    fringers = 4 * (Bucket.objects.filter(performance = performance).aggregate(Sum('fringers'))['fringers__sum'] or 0)
+    return {
+        'date': performance.date,
+        'time': performance.time,
+        'cash': cash,
+        'fringers': fringers,
+        'boxoffice': 0,
+        'efringers': 0,
+        'total': cash + fringers,
+    }
+
+def _get_show_buckets(show):
+
+    performances = [_get_performance_buckets(p) for p in show.performances.order_by('date', 'time')]
+    other_cash = Bucket.objects.filter(show = show, performance__isnull = True).aggregate(Sum('cash'))['cash__sum'] or 0
+    other_fringers = 4 * (Bucket.objects.filter(show = show, performance__isnull = True).aggregate(Sum('fringers'))['fringers__sum'] or 0)
+    other_boxoffice = PayAsYouWill.objects.filter(show = show, sale__completed__isnull = False, fringer__isnull = True).aggregate(Sum('amount'))['amount__sum'] or 0
+    other_efringers = PayAsYouWill.objects.filter(show = show, sale__completed__isnull = False, fringer__isnull = False).aggregate(Sum('amount'))['amount__sum'] or 0
+    other = {
+        'cash': other_cash,
+        'fringers': other_fringers,
+        'boxoffice': other_boxoffice,
+        'efringers': other_efringers,
+        'total': other_cash + other_fringers + other_boxoffice + other_efringers,
+    }
+    return {
+        'name': show.name,
+        'performances': performances,
+        'other': other,
+        'total': sum([p['total'] for p in performances]) + other['total'],
+    }
+
+def _get_company_buckets(company):
+
+    shows = [_get_show_buckets(s) for s in company.shows.filter(venue__is_ticketed = False).order_by('name')]
+    return {
+        'name': company.name,
+        'shows': shows,
+        'total': sum([s['total'] for s in shows]),
+    }
+
+def company_buckets_pdf(request, companies, bucket_types):
+
+    # Render as PDF
+    response = HttpResponse(content_type = 'application/pdf')
+    response['Content-Disposition'] = 'inline'
+    doc = SimpleDocTemplate(
+        response,
+        pagesize = portrait(A4),
+        leftMargin = 1.5*cm,
+        rightMargin = 1.5*cm,
+        topMargin = 1.5*cm,
+        bottomMargin = 1.5*cm,
+    )
+    styles = getSampleStyleSheet()
+    story = []
+
+    # Festival banner
+    if request.festival.banner:
+        banner = Image(request.festival.banner.get_absolute_path(), width = 16*cm, height = 4*cm)
+        banner.hAlign = 'CENTER'
+        story.append(banner)
+        story.append(Spacer(1, 1*cm))
+
+    # Companies
+    for company in companies:
+
+        # Header
+        story.append(Paragraph(f"<para><b>{company['name']}</b>: £{company['total']}</para>", styles['Normal']))
+        for show in company['shows']:
+            story.append(Spacer(1, 0.2*cm))
+            story.append(Paragraph(f"<para>{show['name']}: £{show['total']}</para>", styles['Normal']))
+            table_data = []
+            table_styles = [
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
+            ]
+            row = ['']
+            for bucket_type in bucket_types:
+                row.append(bucket_type['title'])
+            row.append('Total')
+            table_data.append(row)
+
+            # Performances
+            for performance in show['performances']:
+                row = [Paragraph(f"<para>{ performance['date']:%a, %b %d } at { performance['time']:%I:%M%p }</para>", styles['Normal'])]
+                for bucket_type in bucket_types:
+                    row.append(f'£{performance[bucket_type["name"]]}')
+                row.append(f"£{performance['total']}")
+                table_data.append(row)
+
+            # Other
+            if show['other']['total'] > 0:
+                row = [Paragraph(f"<para>Other</para>", styles['Normal'])]
+                for bucket_type in bucket_types:
+                    row.append(f'£{show["other"][bucket_type["name"]]}')
+                row.append(f"£{show['other']['total']}")
+                table_data.append(row)
+
+            # Column widths
+            colWidths = [5*cm]
+            for bucket_type in bucket_types:
+                colWidths.append((11 / len(bucket_types))*cm)
+            colWidths.append(2*cm)
+
+            # Add to story
+            table = Table(
+                table_data,
+                colWidths = colWidths,
+                style = table_styles,
+            )
+            story.append(table)
+
+        story.append(Spacer(1, 0.5*cm))
+
+    # Render PDF document and return it
+    doc.build(story)
+    return response
+
+def get_bucket_total(company, bucket_type):
+
+    total = 0
+    for show in company['shows']:
+        for performance in show['performances']:
+            total += performance[bucket_type] 
+        total += show['other'][bucket_type]
+    return total
+
+def company_buckets_xlsx(request, companies, ticket_types):
+
+        # Create an in-memory output file for the new workbook.
+        output = io.BytesIO()
+
+        # Even though the final file will be in memory the module uses temp
+        # files during assembly for efficiency. To avoid this on servers that
+        # don't allow temp files, for example the Google APP Engine, set the
+        # 'in_memory' Workbook() constructor option as shown in the docs.
+        workbook = xlsx.Workbook(output)
+        worksheet = workbook.add_worksheet()
+
+        # Column headers
+        worksheet.write(0, 0, 'Company')
+        worksheet.write(0, 1, 'Cash')
+        worksheet.write(0, 2, 'Fringers')
+        worksheet.write(0, 3, 'Box office')
+        worksheet.write(0, 4, 'eFringers')
+        worksheet.write(0, 5, 'Total')
+        worksheet.write(0, 6, 'Notes')
+
+        # Company data
+        row = 1
+        for company in companies:
+            worksheet.write(row, 0, company['name'])
+            worksheet.write(row, 1, get_bucket_total(company, 'cash'))
+            worksheet.write(row, 2, get_bucket_total(company, 'fringers'))
+            worksheet.write(row, 3, get_bucket_total(company, 'boxoffice'))
+            worksheet.write(row, 4, get_bucket_total(company, 'efringers'))
+            worksheet.write_formula(row, 5, f'=SUM({xlsx.utility.xl_range(row, 1, row, 4)})')
+            row += 1
+
+        # Close the workbook before sending the data.
+        workbook.close()
+
+        # Rewind the buffer.
+        output.seek(0)
+
+        # Set up the Http response.
+        filename = 'company_buckets.xlsx'
+        response = HttpResponse(
+            output,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename=%s' % filename
+        return response
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_admin)
+def company_buckets(request):
+
+    # Get selection criteria
+    selected_company = None
+    if request.GET['company']:
+        selected_company = Company.objects.get(id = int(request.GET['company']))
+
+    # Bucket donation types
+    bucket_types = [
+        {'name': 'cash', 'title': 'Cash' },
+        {'name': 'fringers', 'title': 'Paper fringers' },
+        {'name': 'boxoffice', 'title': 'Box office' },
+        {'name': 'efringers', 'title': 'eFringers' },
+    ]
+
+    # Alt space companies
+    companies = []
+    if selected_company:
+        companies.append(_get_company_buckets(selected_company))
+    else:
+        company_ids = Show.objects.filter(festival = request.festival, venue__is_ticketed = False).values('company_id').distinct()
+        for company in Company.objects.filter(id__in = company_ids).order_by('name'):
+            companies.append(_get_company_buckets(company))
+
+    # Check for HTML
+    format = request.GET['format']
+    if format.lower() == 'html':
+
+        # Render tickets
+        context = {
+            'bucket_types': bucket_types,
+            'companies': companies,
+        }
+        return render(request, "reports/finance/company_buckets.html", context)
+
+    # PDF
+    elif format.lower() == 'pdf':
+        return company_buckets_pdf(request, companies, bucket_types)
+
+    # Excel
+    elif format.lower() == 'xlsx':
+        return company_buckets_xlsx(request, companies, bucket_types)
 
     # Unsupported format
     return HttpResponseNotFound()

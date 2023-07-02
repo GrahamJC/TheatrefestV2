@@ -148,7 +148,7 @@ class SelectAdmissionForm(forms.Form):
         self.fields['performance'].choices = choices
 
 
-class SelectCompanyForm(forms.Form):
+class SelectTicketedCompanyForm(forms.Form):
 
     company = forms.ChoiceField(choices = [], label = 'Company')
 
@@ -165,8 +165,31 @@ class SelectCompanyForm(forms.Form):
             is_required = 'company' in required
             self.fields['company'].required = is_required
             choices = [('', 'Select company' if required else 'All companies')]
-            ticketed_company_ids = Show.objects.filter(festival = self.festival, venue__is_ticketed = True).values('company_id').distinct()
-            for company in Company.objects.filter(id__in = ticketed_company_ids).order_by('name'):
+            company_ids = Show.objects.filter(festival = self.festival, venue__is_ticketed = True).values('company_id').distinct()
+            for company in Company.objects.filter(id__in = company_ids).order_by('name'):
+                choices.append((company.id, company.name))
+            self.fields['company'].choices = choices
+
+
+class SelectAltSpaceCompanyForm(forms.Form):
+
+    company = forms.ChoiceField(choices = [], label = 'Company')
+
+    def __init__(self, festival, fields, required, *args, **kwargs):
+
+        # Save festival
+        self.festival = festival
+
+        # Call base
+        super().__init__(*args, **kwargs)
+
+        # Company
+        if 'company' in fields:
+            is_required = 'company' in required
+            self.fields['company'].required = is_required
+            choices = [('', 'Select company' if required else 'All companies')]
+            company_ids = Show.objects.filter(festival = self.festival, venue__is_ticketed = False).values('company_id').distinct()
+            for company in Company.objects.filter(id__in = company_ids).order_by('name'):
                 choices.append((company.id, company.name))
             self.fields['company'].choices = choices
 
