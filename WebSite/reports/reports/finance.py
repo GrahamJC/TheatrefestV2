@@ -28,8 +28,13 @@ from reportlab.lib import colors
 import xlsxwriter as xlsx
 
 from program.models import Company, Venue, Show, ShowPerformance
-from tickets.models import BoxOffice, Sale, Refund, Fringer, TicketType, Ticket, Checkpoint
+from tickets.models import BoxOffice, Sale, Refund, Fringer, TicketType, Ticket, Checkpoint, PayAsYouWill, Bucket
 from volunteers.models import Volunteer
+
+def date_list(from_date, to_date):
+
+    return [from_date + datetime.timedelta(days = d) for d in range((to_date - from_date).days + 1)]
+
 
 @require_GET
 @login_required
@@ -37,12 +42,12 @@ from volunteers.models import Volunteer
 def festival_summary(request):
 
     # General stuff
-    date_list = [request.festival.boxoffice_open + datetime.timedelta(days = d) for d in range(int((request.festival.boxoffice_close - request.festival.boxoffice_open).days) + 1)]
     venue_list = [v for v in Venue.objects.filter(festival = request.festival, is_ticketed = True).order_by('name')]
     boxoffice_list = [bo for bo in BoxOffice.objects.filter(festival = request.festival).order_by('name')]
 
     # Sales by channel
-    online_pre = Sale.objects.filter(festival = request.festival, created__lt = date_list[0], completed__isnull = False, boxoffice__isnull = True, venue__isnull = True).aggregate(Sum('amount'))['amount__sum'] or 0
+    dates = date_list(request.festival.boxoffice_open, request.festival.boxoffice_close)
+    online_pre = Sale.objects.filter(festival = request.festival, completed__lt = dates[0], boxoffice__isnull = True, venue__isnull = True).aggregate(Sum('amount'))['amount__sum'] or 0
     online = {
         'pre': online_pre,
         'dates': [],
@@ -55,8 +60,8 @@ def festival_summary(request):
         'dates': [],
         'total': online_pre,
     }
-    for date in date_list:
-        query = Sale.objects.filter(festival = request.festival, created__date = date, completed__isnull = False)
+    for date in dates:
+        query = Sale.objects.filter(festival = request.festival, completed__date = date)
         date_total = 0
         date_amount = query.filter(boxoffice__isnull = True, venue__isnull = True).aggregate(Sum('amount'))['amount__sum'] or 0
         online['dates'].append(date_amount)
@@ -79,7 +84,7 @@ def festival_summary(request):
         totals['dates'].append(date_total)
         totals['total'] += date_total
     sales_by_channel = {
-        'dates': date_list,
+        'dates': dates,
         'online': online,
         'venues': venues,
         'boxoffices': boxoffices,
@@ -87,43 +92,100 @@ def festival_summary(request):
     }
 
     # Sales by type
-    efringers_pre = Fringer.objects.filter(user__isnull = False, sale__festival = request.festival, sale__created__lt = date_list[0], sale__completed__isnull = False).aggregate(Sum('cost'))['cost__sum'] or 0
-    tickets_pre = Ticket.objects.filter(user__isnull = False, sale__festival = request.festival, sale__created__lt = date_list[0], sale__completed__isnull = False).aggregate(Sum('cost'))['cost__sum'] or 0
+    dates = date_list(request.festival.boxoffice_open, request.festival.boxoffice_close)
+    efringers_pre = Fringer.objects.filter(user__isnull = False, sale__festival = request.festival, sale__completed__lt = dates[0]).aggregate(Sum('cost'))['cost__sum'] or 0
+    tickets_pre = Ticket.objects.filter(user__isnull = False, sale__festival = request.festival, sale__completed__lt = dates[0]).aggregate(Sum('cost'))['cost__sum'] or 0
     types = OrderedDict([
-        ('buttons', {'title': 'Badges', 'pre': None, 'dates': [], 'total': 0}),
-        ('fringers', {'title': 'Paper fringers', 'pre': None, 'dates': [], 'total': 0}),
+        ('buttons', {'title': 'Badges', 'pre': 0, 'dates': [], 'total': 0}),
+        ('fringers', {'title': 'Paper fringers', 'pre': 0, 'dates': [], 'total': 0}),
         ('efringers', {'title': 'eFringers', 'pre': efringers_pre, 'dates': [], 'total': efringers_pre}),
         ('tickets', {'title': 'Tickets', 'pre': tickets_pre, 'dates': [], 'total': tickets_pre}),
+        ('payw', {'title': 'PAYW', 'pre': 0, 'dates': [], 'total': 0}),
+        ('donations', {'title': 'Donations', 'pre': 0, 'dates': [], 'total': 0}),
     ])
     totals = {
         'pre': efringers_pre + tickets_pre,
         'dates': [],
         'total': efringers_pre + tickets_pre,
     }
-    for date in date_list:
+    for date in dates:
         date_total = 0
-        date_amount = request.festival.button_price * (Sale.objects.filter(festival = request.festival, created__date = date, completed__isnull = False).aggregate(Sum('buttons'))['buttons__sum'] or 0)
+        date_amount = request.festival.button_price * (Sale.objects.filter(festival = request.festival, completed__date = date).aggregate(Sum('buttons'))['buttons__sum'] or 0)
         types['buttons']['dates'].append(date_amount)
         types['buttons']['total'] += date_amount
         date_total += date_amount
-        date_amount = Fringer.objects.filter(user__isnull = True, sale__festival = request.festival, sale__created__date = date, sale__completed__isnull = False).aggregate(Sum('cost'))['cost__sum'] or 0
+        date_amount = Fringer.objects.filter(user__isnull = True, sale__festival = request.festival, sale__completed__date = date).aggregate(Sum('cost'))['cost__sum'] or 0
         types['fringers']['dates'].append(date_amount)
         types['fringers']['total'] += date_amount
         date_total += date_amount
-        date_amount = Fringer.objects.filter(user__isnull = False, sale__festival = request.festival, sale__created__date = date, sale__completed__isnull = False).aggregate(Sum('cost'))['cost__sum'] or 0
+        date_amount = Fringer.objects.filter(user__isnull = False, sale__festival = request.festival, sale__completed__date = date).aggregate(Sum('cost'))['cost__sum'] or 0
         types['efringers']['dates'].append(date_amount)
         types['efringers']['total'] += date_amount
         date_total += date_amount
-        date_amount = Ticket.objects.filter(sale__festival = request.festival, sale__created__date = date, sale__completed__isnull = False).aggregate(Sum('cost'))['cost__sum'] or 0
+        date_amount = Ticket.objects.filter(sale__festival = request.festival, sale__completed__date = date).aggregate(Sum('cost'))['cost__sum'] or 0
         types['tickets']['dates'].append(date_amount)
         types['tickets']['total'] += date_amount
+        date_total += date_amount
+        date_amount = PayAsYouWill.objects.filter(sale__festival = request.festival, sale__completed__date = date, fringer_id__isnull = True).aggregate(Sum('amount'))['amount__sum'] or 0
+        types['payw']['dates'].append(date_amount)
+        types['payw']['total'] += date_amount
+        date_total += date_amount
+        date_amount = Sale.objects.filter(festival = request.festival, completed__date = date).aggregate(Sum('donation'))['donation__sum'] or 0
+        types['donations']['dates'].append(date_amount)
+        types['donations']['total'] += date_amount
         date_total += date_amount
         totals['dates'].append(date_total)
         totals['total'] += date_total
     sales_by_type = {
-        'dates': date_list,
+        'dates': dates,
         'types': types,
         'totals': totals,
+    }
+
+    # Bucket collections
+    first_performance = ShowPerformance.objects.filter(show__festival = request.festival, show__venue__is_ticketed = False).order_by('date', 'time').first()
+    last_performance = ShowPerformance.objects.filter(show__festival = request.festival, show__venue__is_ticketed = False).order_by('date', 'time').last()
+    dates = date_list(first_performance.date, last_performance.date)
+    types = OrderedDict([
+        ('cash', {'title': 'Cash', 'dates': [], 'post': 0, 'total': 0}),
+        ('fringers', {'title': 'Paper fringers', 'dates': [], 'post': 0, 'total': 0}),
+        ('boxoffice', {'title': 'Box office', 'dates': [], 'post': 0, 'total': 0}),
+        ('efringers', {'title': 'eFringers', 'dates': [], 'post': 0, 'total': 0}),
+    ])
+    totals = {
+        'dates': [],
+        'post': 0,
+        'total': 0,
+    }
+    for date in dates:
+        date_total = 0
+        date_amount = Bucket.objects.filter(company__festival = request.festival, date = date).aggregate(Sum('cash'))['cash__sum'] or 0
+        types['cash']['dates'].append(date_amount)
+        types['cash']['total'] += date_amount
+        date_total += date_amount
+        date_amount = 4 * (Bucket.objects.filter(company__festival = request.festival, date = date).aggregate(Sum('fringers'))['fringers__sum'] or 0)
+        types['fringers']['dates'].append(date_amount)
+        types['fringers']['total'] += date_amount
+        date_total += date_amount
+        date_amount = PayAsYouWill.objects.filter(sale__festival = request.festival, sale__completed__date = date, fringer_id__isnull = True).aggregate(Sum('amount'))['amount__sum'] or 0
+        types['boxoffice']['dates'].append(date_amount)
+        types['boxoffice']['total'] += date_amount
+        date_total += date_amount
+        date_amount = PayAsYouWill.objects.filter(sale__festival = request.festival, sale__completed__date = date, fringer_id__isnull = False).aggregate(Sum('amount'))['amount__sum'] or 0
+        types['efringers']['dates'].append(date_amount)
+        types['efringers']['total'] += date_amount
+        date_total += date_amount
+        totals['dates'].append(date_total)
+        totals['total'] += date_total
+    efringers_post = PayAsYouWill.objects.filter(sale__festival = request.festival, sale__completed__date__gt = dates[-1], fringer_id__isnull = False).aggregate(Sum('amount'))['amount__sum'] or 0
+    types['efringers']['post'] = efringers_post
+    types['efringers']['total'] += efringers_post
+    totals['post'] = efringers_post
+    totals['total'] += efringers_post
+    buckets = {
+        'dates': dates,
+        'types': types,
+        'totals': totals
     }
 
     # Tickets
@@ -158,20 +220,34 @@ def festival_summary(request):
 
     # Paper fringers
     fringers_sold = Fringer.objects.filter(user__isnull = True, sale__festival = request.festival, sale__completed__isnull = False).count() or 0
+    fringer_total = 6 * fringers_sold
     fringer_tickets = Ticket.objects.filter(sale__festival = request.festival, sale__completed__isnull = False, refund__isnull = True, description = 'Fringer').count() or 0
+    fringer_buckets = Bucket.objects.filter(company__festival = request.festival).aggregate(Sum('fringers'))['fringers__sum'] or 0
+    fringer_unused = fringer_total - fringer_tickets - fringer_buckets
     fringers = {
         'sold': fringers_sold,
-        'used': fringer_tickets,
-        'percent': ((100 * fringer_tickets) / (fringers_sold * 6)) if fringers_sold else 0,
+        'tickets': fringer_tickets,
+        'tickets_pcent': ((100 * fringer_tickets) / fringer_total) if fringers_sold else 0,
+        'buckets': fringer_buckets,
+        'buckets_pcent': ((100 * fringer_buckets) / fringer_total) if fringers_sold else 0,
+        'unused': fringer_unused,
+        'unused_pcent': ((100 * fringer_unused) / fringer_total) if fringers_sold else 0,
     }
 
     # eFringers
     efringers_sold = Fringer.objects.filter(user__isnull = False, sale__festival = request.festival, sale__completed__isnull = False).count() or 0
+    efringer_total = Fringer.objects.filter(user__isnull = False, sale__festival = request.festival, sale__completed__isnull = False).aggregate(Sum('shows'))['shows__sum'] or 0
     efringer_tickets = Ticket.objects.filter(sale__festival = request.festival, sale__completed__isnull = False, refund__isnull = True, fringer__isnull = False).count() or 0
+    efringer_buckets = PayAsYouWill.objects.filter(show__festival = request.festival, sale__completed__isnull = False, fringer__isnull = False).count() or 0
+    efringer_unused = efringer_total - efringer_tickets - efringer_buckets
     efringers = {
         'sold':  efringers_sold,
-        'used':  efringer_tickets,
-        'percent': ((100 * efringer_tickets) / (efringers_sold * 6)) if efringers_sold else 0,
+        'tickets': efringer_tickets,
+        'tickets_pcent': ((100 * efringer_tickets) / efringer_total) if efringers_sold else 0,
+        'buckets': efringer_buckets,
+        'buckets_pcent': ((100 * efringer_buckets) / efringer_total) if efringers_sold else 0,
+        'unused': efringer_unused,
+        'unused_pcent': ((100 * efringer_unused) / efringer_total) if efringers_sold else 0,
     }
 
     # Volunteer tickets
@@ -179,10 +255,15 @@ def festival_summary(request):
     for volunteer in Volunteer.objects.filter(user__festival = request.festival):
         volunteers_earned += volunteer.comps_earned
     volunteer_tickets = Ticket.objects.filter(description = 'Volunteer', sale__festival = request.festival, sale__completed__isnull = False, refund__isnull = True).count() or 0
+    volunteer_unused = volunteers_earned - volunteer_tickets
     volunteers = {
         'earned': volunteers_earned,
-        'used': volunteer_tickets,
-        'percent': ((100 * volunteer_tickets) / volunteers_earned) if volunteers_earned else 0,
+        'tickets': volunteer_tickets,
+        'tickets_pcent': ((100 * volunteer_tickets) / volunteers_earned) if volunteers_earned else 0,
+        'buckets': 0,
+        'buckets_pcent': 0,
+        'unused': volunteer_unused,
+        'unused_pcent': ((100 * volunteer_unused) / volunteers_earned) if volunteers_earned else 0,
     }
 
     # Check for HTML
@@ -191,9 +272,9 @@ def festival_summary(request):
 
         # Render HTML
         context = {
-            'dates': date_list,
             'sales_by_channel': sales_by_channel,
             'sales_by_type': sales_by_type,
+            'buckets': buckets,
             'tickets': tickets,
             'fringers': fringers,
             'efringers': efringers,
@@ -224,7 +305,7 @@ def festival_summary(request):
     story.append(Spacer(1, 0.5*cm))
     table_data = []
     colWidths = [4*cm, 2*cm]
-    for date in date_list:
+    for date in sales_by_channel['dates']:
         colWidths.append(2*cm)
     colWidths.append(2*cm)
     table_styles = [
@@ -236,7 +317,7 @@ def festival_summary(request):
         ('LINEABOVE', (0, -1), (-1, -1), 1, (0,0,0)),
     ]
     row = ['', 'Pre\nSales']
-    for date in date_list:
+    for date in sales_by_channel['dates']:
         row.append(f'{date:%a\n%d-%b}')
     row.append('Total')
     table_data.append(row)
@@ -246,18 +327,18 @@ def festival_summary(request):
     row.append(f'£{sales_by_channel["online"]["total"]:.0f}')
     table_data.append(row)
     for boxoffice in boxoffice_list:
-        row = [boxoffice.name + ' (cash)', '']
+        row = [boxoffice.name + ' (cash)', '£0']
         for amount in sales_by_channel['boxoffices'][boxoffice.name]['cash']['dates']:
             row.append(f'£{amount:.0f}')
         row.append(f'£{sales_by_channel["boxoffices"][boxoffice.name]["cash"]["total"]:.0f}')
         table_data.append(row)
-        row = [boxoffice.name + ' (card)', '']
+        row = [boxoffice.name + ' (card)', '£0']
         for amount in sales_by_channel['boxoffices'][boxoffice.name]['card']['dates']:
             row.append(f'£{amount:.0f}')
         row.append(f'£{sales_by_channel["boxoffices"][boxoffice.name]["card"]["total"]:.0f}')
         table_data.append(row)
     for venue in venue_list:
-        row = [venue.name, '']
+        row = [venue.name, '£0']
         for amount in sales_by_channel['venues'][venue.name]['dates']:
             row.append(f'£{amount:.0f}')
         row.append(f'£{sales_by_channel["venues"][venue.name]["total"]:.0f}')
@@ -285,7 +366,7 @@ def festival_summary(request):
     story.append(Spacer(1, 0.5*cm))
     table_data = []
     colWidths = [4*cm, 2*cm]
-    for date in date_list:
+    for date in sales_by_type['dates']:
         colWidths.append(2*cm)
     colWidths.append(2*cm)
     table_styles = [
@@ -297,34 +378,69 @@ def festival_summary(request):
         ('LINEABOVE', (0, -1), (-1, -1), 1, (0,0,0)),
     ]
     row = ['', 'Pre\nSales']
-    for date in date_list:
+    for date in sales_by_type['dates']:
         row.append(f'{date:%a\n%d-%b}')
     row.append('Total')
     table_data.append(row)
-    row = ['Badges', '']
-    for amount in sales_by_type['types']['buttons']['dates']:
-        row.append(f'£{amount:.0f}')
-    row.append(f'£{sales_by_type["types"]["buttons"]["total"]:.0f}')
-    table_data.append(row)
-    row = ['Paper fringers', '']
-    for amount in sales_by_type['types']['fringers']['dates']:
-        row.append(f'£{amount:.0f}')
-    row.append(f'£{sales_by_type["types"]["fringers"]["total"]:.0f}')
-    table_data.append(row)
-    row = ['eFringers', f'£{sales_by_type["types"]["efringers"]["pre"]:.0f}']
-    for amount in sales_by_type['types']['efringers']['dates']:
-        row.append(f'£{amount:.0f}')
-    row.append(f'£{sales_by_type["types"]["efringers"]["total"]:.0f}')
-    table_data.append(row)
-    row = ['Tickets', f'£{sales_by_type["types"]["tickets"]["pre"]:.0f}']
-    for amount in sales_by_type['types']['tickets']['dates']:
-        row.append(f'£{amount:.0f}')
-    row.append(f'£{sales_by_type["types"]["tickets"]["total"]:.0f}')
-    table_data.append(row)
+    for type in sales_by_type['types'].values():
+        row = [type['title'], f'£{type["pre"]:.0f}']
+        for amount in type['dates']:
+            row.append(f'£{amount:.0f}')
+        row.append(f'£{type["total"]:.0f}')
+        table_data.append(row)
     row = ['', f'£{sales_by_type["totals"]["pre"]:.0f}']
     for amount in sales_by_type['totals']['dates']:
         row.append(f'£{amount:.0f}')
     row.append(f'£{sales_by_type["totals"]["total"]:.0f}')
+    table_data.append(row)
+    table = Table(
+        table_data,
+        colWidths = colWidths,
+        style = table_styles,
+    )
+    story.append(table)
+
+    # Bucket collections
+    story.append(PageBreak())
+    if request.festival.banner:
+        banner = Image(request.festival.banner.get_absolute_path(), width = 16*cm, height = 4*cm)
+        banner.hAlign = 'CENTER'
+        story.append(banner)
+        story.append(Spacer(1, 1*cm))
+    story.append(Paragraph('<b>Bucket Collections</b>'))
+    story.append(Spacer(1, 0.5*cm))
+    table_data = []
+    colWidths = [4*cm]
+    for date in buckets['dates']:
+        colWidths.append(2*cm)
+    colWidths.append(2*cm)
+    colWidths.append(2*cm)
+    table_styles = [
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+        ('ALIGN', (1, 0), (-1, 0), 'CENTER'),
+        ('LINEBELOW', (0, 0), (-1, 0), 1, (0,0,0)),
+        ('ALIGN', (1, 1), (-1, -1), 'RIGHT'),
+        ('LINEABOVE', (0, -1), (-1, -1), 1, (0,0,0)),
+    ]
+    row = ['']
+    for date in buckets['dates']:
+        row.append(f'{date:%a\n%d-%b}')
+    row.append('Post-\nfestival')
+    row.append('Total')
+    table_data.append(row)
+    for type in buckets['types'].values():
+        row = [type['title']]
+        for amount in type['dates']:
+            row.append(f'£{amount:.0f}')
+        row.append(f'£{type["post"]:.0f}')
+        row.append(f'£{type["total"]:.0f}')
+        table_data.append(row)
+    row = ['']
+    for amount in buckets['totals']['dates']:
+        row.append(f'£{amount:.0f}')
+    row.append(f'£{buckets["totals"]["post"]:.0f}')
+    row.append(f'£{buckets["totals"]["total"]:.0f}')
     table_data.append(row)
     table = Table(
         table_data,
@@ -378,8 +494,8 @@ def festival_summary(request):
     story.append(Spacer(1, 1*cm))
     story.append(Paragraph('<b>Fringer/Volunteer Tickets Use</b>'))
     story.append(Spacer(1, 0.5*cm))
-    table_data = [('', 'Sold/Earned', 'Used', 'Percent')]
-    colWidths = [4*cm, 3*cm, 3*cm, 3*cm]
+    table_data = [('', 'Sold/Earned', 'Tickets', 'Buckets', 'Unused')]
+    colWidths = [4*cm, 3*cm, 3*cm, 3*cm, 3*cm]
     table_styles = [
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
         ('ALIGN', (0, 0), (0, -1), 'LEFT'),
@@ -390,20 +506,23 @@ def festival_summary(request):
     table_data.append([
         'Paper fringers',
         f'{fringers["sold"]}',
-        f'{fringers["used"]}',
-        f'{fringers["percent"]:.1f}%',
+        f'{fringers["tickets"]} {fringers["tickets_pcent"]:.1f}%',
+        f'{fringers["buckets"]} {fringers["buckets_pcent"]:.1f}%',
+        f'{fringers["unused"]} {fringers["unused_pcent"]:.1f}%',
     ])
     table_data.append([
         'eFringers',
         f'{efringers["sold"]}',
-        f'{efringers["used"]}',
-        f'{efringers["percent"]:.1f}%',
+        f'{efringers["tickets"]} {efringers["tickets_pcent"]:.1f}%',
+        f'{efringers["buckets"]} {efringers["buckets_pcent"]:.1f}%',
+        f'{efringers["unused"]} {efringers["unused_pcent"]:.1f}%',
     ])
     table_data.append([
         'Volunteers',
         f'{volunteers["earned"]}',
-        f'{volunteers["used"]}',
-        f'{volunteers["percent"]:.1f}%',
+        f'{volunteers["tickets"]} {volunteers["tickets_pcent"]:.1f}%',
+        f'{volunteers["buckets"]} {volunteers["buckets_pcent"]:.1f}%',
+        f'{volunteers["unused"]} {volunteers["unused_pcent"]:.1f}%',
     ])
     table = Table(
         table_data,

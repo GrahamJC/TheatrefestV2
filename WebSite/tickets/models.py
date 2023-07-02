@@ -9,7 +9,7 @@ from decimal import Decimal, ROUND_05UP
 from core.models import TimeStampedModel, Festival
 from core.utils import AutoOneToOneField
 
-from program.models import Show, ShowPerformance, Venue
+from program.models import Company, Show, ShowPerformance, Venue
 
 class BoxOffice(TimeStampedModel):
     
@@ -392,3 +392,14 @@ class PayAsYouWill(TimeStampedModel):
     show = models.ForeignKey(Show, on_delete = models.PROTECT, related_name = 'PAYW_donations')
     fringer = models.ForeignKey(Fringer, on_delete = models.PROTECT, null = True, blank = True, related_name = 'PAYW_donations')
     amount = models.IntegerField()
+
+
+class Bucket(TimeStampedModel):
+
+    date = models.DateField()
+    company = models.ForeignKey(Company, on_delete = models.PROTECT, related_name = 'buckets')
+    show = models.ForeignKey(Show, on_delete = models.PROTECT, null = True, blank = True, related_name = 'buckets')
+    performance = models.ForeignKey(ShowPerformance, on_delete = models.PROTECT, null = True, blank = True, related_name = 'buckets')
+    description = models.CharField(max_length = 32)
+    cash = models.DecimalField(max_digits = 5, decimal_places = 2)
+    fringers = models.IntegerField()

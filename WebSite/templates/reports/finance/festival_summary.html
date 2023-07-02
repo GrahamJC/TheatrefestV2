@@ -67,7 +67,7 @@
     {% for type_name, type_sales in sales_by_type.types.items %}
         <tr>
             <td>{{ type_sales.title }}</td>
-            <td>&#163;{{ type_sales.pre | floatformat:'0' | default:'' }}</td>
+            <td class="text-right")>&#163;{{ type_sales.pre | floatformat:'0' | default:'' }}</td>
             {% for x in type_sales.dates %}
                 <td class="text-right">&#163;{{ x | floatformat:'0' | default:'' }}</td>
             {% endfor %}
@@ -81,6 +81,36 @@
             <td class="text-right"><strong>&#163;{{ x | floatformat:'0' | default:'' }}</strong></td>
         {% endfor %}
         <td class="text-right"><strong>&#163;{{ sales_by_type.totals.total | floatformat:'0' | default:'' }}</strong></td>
+    </tr>
+</table>
+
+<h5>Bucket Collections</h5>
+<table class="table">
+    <tr>
+        <th></th>
+        {% for date in buckets.dates %}
+            <th class="text-right">{{ date | date:'D' }}<br>{{ date | date:'j-M' }}</th>
+        {% endfor %}
+        <th class="text-right">Post-<br>festival</th>
+        <th class="text-right">Total</th>
+    </tr>
+    {% for type_name, type_donations in buckets.types.items %}
+        <tr>
+            <td>{{ type_donations.title }}</td>
+            {% for x in type_donations.dates %}
+                <td class="text-right">&#163;{{ x | floatformat:'0' | default:'' }}</td>
+            {% endfor %}
+            <td class="text-right">&#163;{{ type_donations.post | floatformat:'0' | default:'' }}</td>
+            <td class="text-right">&#163;{{ type_donations.total | floatformat:'0' | default:'' }}</td>
+        </tr>
+    {% endfor %}
+    <tr>
+        <td></td>
+        {% for x in buckets.totals.dates %}
+            <td class="text-right"><strong>&#163;{{ x | floatformat:'0' | default:'' }}</strong></td>
+        {% endfor %}
+        <td class="text-right"><strong>&#163;{{ buckets.totals.post | floatformat:'0' | default:'' }}</strong></td>
+        <td class="text-right"><strong>&#163;{{ buckets.totals.total | floatformat:'0' | default:'' }}</strong></td>
     </tr>
 </table>
 
@@ -116,25 +146,29 @@
     <tr>
         <th></th>
         <th class="text-right">Sold/Earned</th>
-        <th class="text-right">Used</th>
-        <th class="text-right">Percent</th>
+        <th class="text-right">Tickets</th>
+        <th class="text-right">Buckets</th>
+        <th class="text-right">Unused</th>
     </tr>
     <tr>
         <td>Paper fringers</td>
-        <td class="text-right">{{ fringers.sold }} (x6)</td>
-        <td class="text-right">{{ fringers.used }}</td>
-        <td class="text-right">{{ fringers.percent | floatformat }}%</td>
+        <td class="text-right">{{ fringers.sold }}</td>
+        <td class="text-right">{{ fringers.tickets }} ({{ fringers.tickets_pcent | floatformat }}%)</td>
+        <td class="text-right">{{ fringers.buckets }} ({{ fringers.buckets_pcent | floatformat }}%)</td>
+        <td class="text-right">{{ fringers.unused }} ({{ fringers.unused_pcent | floatformat }}%)</td>
     </tr>
     <tr>
         <td>eFringers</td>
-        <td class="text-right">{{ efringers.sold }} (x6)</td>
-        <td class="text-right">{{ efringers.used }}</td>
-        <td class="text-right">{{ efringers.percent | floatformat }}%</td>
+        <td class="text-right">{{ efringers.sold }}</td>
+        <td class="text-right">{{ efringers.tickets }} ({{ efringers.tickets_pcent | floatformat }}%)</td>
+        <td class="text-right">{{ efringers.buckets }} ({{ efringers.buckets_pcent | floatformat }}%)</td>
+        <td class="text-right">{{ efringers.unused }} ({{ efringers.unused_pcent | floatformat }}%)</td>
     </tr>
     <tr>
         <td>Volunteers</td>
         <td class="text-right">{{ volunteers.earned }}</td>
-        <td class="text-right">{{ volunteers.used }}</td>
-        <td class="text-right">{{ volunteers.percent | floatformat }}%</td>
+        <td class="text-right">{{ volunteers.tickets }} ({{ volunteers.tickets_pcent | floatformat }}%)</td>
+        <td class="text-right">{{ volunteers.buckets }} ({{ volunteers.buckets_pcent | floatformat }}%)</td>
+        <td class="text-right">{{ volunteers.unused }} ({{ volunteers.unused_pcent | floatformat }}%)</td>
     </tr>
 </table>
