@@ -506,23 +506,23 @@ def festival_summary(request):
     table_data.append([
         'Paper fringers',
         f'{fringers["sold"]}',
-        f'{fringers["tickets"]} {fringers["tickets_pcent"]:.1f}%',
-        f'{fringers["buckets"]} {fringers["buckets_pcent"]:.1f}%',
-        f'{fringers["unused"]} {fringers["unused_pcent"]:.1f}%',
+        f'{fringers["tickets"]} ({fringers["tickets_pcent"]:.1f}%)',
+        f'{fringers["buckets"]} ({fringers["buckets_pcent"]:.1f}%)',
+        f'{fringers["unused"]} ({fringers["unused_pcent"]:.1f}%)',
     ])
     table_data.append([
         'eFringers',
         f'{efringers["sold"]}',
-        f'{efringers["tickets"]} {efringers["tickets_pcent"]:.1f}%',
-        f'{efringers["buckets"]} {efringers["buckets_pcent"]:.1f}%',
-        f'{efringers["unused"]} {efringers["unused_pcent"]:.1f}%',
+        f'{efringers["tickets"]} {efringers["tickets_pcent"]:.1f}%)',
+        f'{efringers["buckets"]} {efringers["buckets_pcent"]:.1f}%)',
+        f'{efringers["unused"]} {efringers["unused_pcent"]:.1f}%)',
     ])
     table_data.append([
         'Volunteers',
         f'{volunteers["earned"]}',
-        f'{volunteers["tickets"]} {volunteers["tickets_pcent"]:.1f}%',
-        f'{volunteers["buckets"]} {volunteers["buckets_pcent"]:.1f}%',
-        f'{volunteers["unused"]} {volunteers["unused_pcent"]:.1f}%',
+        f'{volunteers["tickets"]} ({volunteers["tickets_pcent"]:.1f}%)',
+        f'{volunteers["buckets"]} ({volunteers["buckets_pcent"]:.1f}%)',
+        f'{volunteers["unused"]} ({volunteers["unused_pcent"]:.1f}%)',
     ])
     table = Table(
         table_data,
