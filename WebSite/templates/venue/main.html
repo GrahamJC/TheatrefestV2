@@ -84,7 +84,7 @@
         $( function() {
             $('#select-performance').on('change', function() {
                 var uuid = $('#select-performance').val();
-                location.href = '{% url 'venue:performance' '00000000-0000-0000-0000-000000000000' %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
+                location.href = '{% url 'venue:main_performance' venue.uuid '00000000-0000-0000-0000-000000000000' %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
             });
             {% if performance %}
                 $('#tickets-tab').on('show.bs.tab', function(e) { updateTicketsTab('{% url 'venue:tickets' performance.uuid 'html' %}') });

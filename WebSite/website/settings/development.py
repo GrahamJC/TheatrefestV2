@@ -5,9 +5,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = [
     'localhost',
-    
     '127.0.0.1',
+    '192.168.1.146',
     'grahampc',
+    '81.135.39.136',
 ]
 INTERNAL_IPS = [
         '127.0.0.1',
@@ -58,6 +59,11 @@ STRIPE_PRIVATE_KEY = get_secret("STRIPE_TEST_PRIVATE_KEY")
 STRIPE_WEBHOOK_SECRET = get_secret("STRIPE_TEST_WEBHOOK_SECRET")
 STRIPE_FEE_FIXED = Decimal(0.2)
 STRIPE_FEE_PERCENT = Decimal(0.015)
+
+# Square
+SQUARE_APPLICATION_ID = get_secret("SQUARE_TEST_APPLICATION_ID")
+SQUARE_API_VERSION = 'v2.0'
+SQUARE_CURRENCY_CODE = 'GBP'
 
 # Logging
 LOGGING = {
@@ -118,5 +124,4 @@ LOGGING = {
 }
 
 # Application settings
-#VENUE_SHOW_ALL_PERFORMANCES = True
 #VOLUNTEER_CANCEL_SHIFTS = True

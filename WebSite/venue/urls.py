@@ -9,7 +9,8 @@ urlpatterns = [
     path('select', views.select, name = 'select'),
     # Main page
     path('<uuid:venue_uuid>', views.main, name = 'main'),
-    path('performance/<uuid:performance_uuid>', views.performance, name = 'performance'),
+    path('<uuid:venue_uuid>/performance/<uuid:performance_uuid>', views.main_performance, name = 'main_performance'),
+    path('<uuid:venue_uuid>/performance/<uuid:performance_uuid>/sale/<uuid:sale_uuid>', views.main_performance_sale, name = 'main_performance_sale'),
     # Open/close checkpoint API
     path('performance/<uuid:performance_uuid>/open', views.performance_open, name = 'performance_open'),
     path('performance/<uuid:performance_uuid>/close', views.performance_close, name = 'performance_close'),
@@ -27,4 +28,6 @@ urlpatterns = [
     path('ticket/<uuid:ticket_uuid>/token', views.ticket_token, name = 'ticket_token'),
     # Info API
     path('performance/<uuid:performance_uuid>/info', views.performance_info, name = 'performance_info'),
+    # Square callback
+    path('square/callback', views.square_callback, name='square_callback'),
 ]

@@ -90,6 +90,10 @@ class Sale(TimeStampedModel):
         return self.button_cost + self.fringer_cost + self.ticket_cost + self.payw_cost + self.donation
 
     @property
+    def total_cost_pence(self):
+        return int(self.total_cost * 100)
+
+    @property
     def ticket_performances(self):
         performances = []
         for ticket in self.tickets.values('performance_id').distinct():

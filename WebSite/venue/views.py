@@ -1,4 +1,6 @@
 import datetime
+import json
+
 from decimal import Decimal
 
 from django.conf import settings
@@ -44,10 +46,7 @@ def is_next(performance):
     assert performance
 
     # Check if this is the next performance at the venue
-    if settings.VENUE_SHOW_ALL_PERFORMANCES:
-        return performance == performance.show.venue.get_next_performance()
-    else:
-        return performance == performance.show.venue.get_next_performance(datetime.date.today())
+    return performance == performance.show.venue.get_next_performance(performance.date)
 
 
 def create_open_form(performance, post_data = None):
@@ -147,7 +146,7 @@ def create_sale_form(performance, sale, post_data = None):
     return form
 
 
-def render_main(request, venue, performance, tab = None, open_form = None, close_form = None):
+def render_main(request, venue, performance, sale=None, tab=None, open_form=None, sale_form=None, close_form = None):
 
     # Validate parameters
     assert venue
@@ -167,6 +166,8 @@ def render_main(request, venue, performance, tab = None, open_form = None, close
         # Create forms if not specified
         if not open_form and (performance.has_open_checkpoint or is_next(performance)):
             open_form = create_open_form(performance)
+        if not sale_form and not performance.has_close_checkpoint and sale and not sale.completed:
+            sale_form = create_sale_form(performance, sale)
         if not close_form and performance.has_open_checkpoint and (performance.has_close_checkpoint or is_next(performance)):
             close_form = create_close_form(performance)
 
@@ -180,22 +181,23 @@ def render_main(request, venue, performance, tab = None, open_form = None, close
                 tab = 'sales'
 
     # Render page
-    if settings.VENUE_SHOW_ALL_PERFORMANCES:
-        performances = ShowPerformance.objects.filter(show__venue = venue, show__is_cancelled = False).order_by('date', 'time')
-    else:
-        performances = ShowPerformance.objects.filter(date = request.now.date(), show__venue = venue, show__is_cancelled = False).order_by('time')
     context = {
         'venue': venue,
         'tab': tab,
         'show': performance.show if performance else None,
-        'performances': performances,
+        'performances': ShowPerformance.objects.filter(date = request.now.date(), show__venue = venue, show__is_cancelled = False).order_by('time'),
         'next_performance': venue.get_next_performance(),
         'performance': performance,
         'sales': sales,
-        'sale': None,
+        'sale': sale,
         'open_form': open_form,
+        'sale_form': sale_form,
         'close_form': close_form,
         'tickets': performance.tickets.order_by('id') if performance else None,
+        'available': performance.tickets_available + (sale.tickets.count() if sale else 0) if performance else 0,
+        'square_appliocation_id': settings.SQUARE_APPLICATION_ID,
+        'square_api_version': settings.SQUARE_API_VERSION,
+        'square_currency_code': settings.SQUARE_CURRENCY_CODE,
     }
     return render(request, 'venue/main.html', context)
 
@@ -227,6 +229,9 @@ def render_sales(request, performance, sale = None, sale_form = None):
         'sale': sale,
         'sale_form': sale_form,
         'available': performance.tickets_available + (sale.tickets.count() if sale else 0),
+        'square_appliocation_id': settings.SQUARE_APPLICATION_ID,
+        'square_api_version': settings.SQUARE_API_VERSION,
+        'square_currency_code': settings.SQUARE_CURRENCY_CODE,
     }
     return render(request, "venue/_main_sales.html", context)
 
@@ -265,10 +270,7 @@ def main(request, venue_uuid):
     #   The next performance (i.e. the first performance with no close checkpoint)
     #   The last performance
     venue = get_object_or_404(Venue, uuid = venue_uuid)
-    if settings.VENUE_SHOW_ALL_PERFORMANCES:
-        performance = venue.get_next_performance() or venue.get_last_performance()
-    else:
-        performance = venue.get_next_performance(request.now.date()) or venue.get_last_performance(request.now.date())
+    performance = venue.get_next_performance(request.now.date()) or venue.get_last_performance(request.now.date())
 
     # Delete any imcomplete sales for this venue
     for sale in venue.sales.filter(user_id = request.user.id, completed__isnull = True):
@@ -283,19 +285,36 @@ def main(request, venue_uuid):
 @user_passes_test(lambda u: u.is_venue or u.is_admin)
 @login_required
 @transaction.atomic
-def performance(request, performance_uuid):
+def main_performance(request, venue_uuid, performance_uuid):
 
-    # Get performance and venue
+    # Get venue and performance
+    venue = get_object_or_404(Venue, uuid = venue_uuid)
     performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
-    venue = performance.show.venue
+    assert(venue == performance.show.venue)
 
-    # Delete any imcomplete sales for this venue
+    # Delete any incomplete sales for this venue
     for sale in venue.sales.filter(completed__isnull = True):
         logger.info(f"Sale {sale.id} auto-cancelled")
         sale.delete()
 
     # Render page
     return render_main(request, venue, performance)
+
+   
+@require_GET
+@user_passes_test(lambda u: u.is_venue or u.is_admin)
+@login_required
+@transaction.atomic
+def main_performance_sale(request, venue_uuid, performance_uuid, sale_uuid):
+
+    # Get sale, performance and venue
+    venue = get_object_or_404(Venue, uuid = venue_uuid)
+    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+    assert(venue == performance.show.venue)
+    sale = get_object_or_404(Sale, uuid = sale_uuid)
+
+    # Render page
+    return render_main(request, venue, performance, sale=sale)
 
 
 @require_POST
@@ -596,7 +615,7 @@ def sale_complete(request, performance_uuid, sale_uuid):
     sale.amount = sale.total_cost
     sale.transaction_type = Sale.TRANSACTION_TYPE_SQUAREUP
     sale.transaction_fee = 0
-    sale.completed = timezone.now()
+    sale.completed = request.now
     sale.save()
     logger.info("Sale %s completed", sale)
 
@@ -799,3 +818,45 @@ def ticket_token(request, ticket_uuid):
     return JsonResponse({
         'token_issued': ticket.token_issued
     })
+
+
+# Square web callback
+def square_callback(request):
+
+    # http://localhost:8000/venue/square/callback?com.squareup.pos.REQUEST_METADATA=%7B%22venue_id%22:%20229,%20%22performance_id%22:%20898,%20%22sale_id%22:%207480%7D
+    # http://localhost:8000/venue/square/callback?com.squareup.pos.REQUEST_METADATA=%7B%22venue_id%22:%20229,%20%22performance_id%22:%20898,%20%22sale_id%22:%207480%7D&com.squareup.pos.ERROR_CODE=TRANSACTION_CANCELED
+
+    # Get parameters
+    server_transaction_id = request.GET.get('com.squareup.pos.SERVER_TRANSACTION_ID', None)
+    client_transaction_id = request.GET.get('com.squareup.pos.CLIENT_TRANSACTION_ID', None)
+    request_metadata = request.GET.get('com.squareup.pos.REQUEST_METADATA', None)
+    error_code = request.GET.get('com.squareup.pos.ERROR_CODE', None)
+    error_description = request.GET.get('com.squareup.pos.ERROR_DESCRIPTION', None)
+
+    # Parse meta-data
+    metadata = json.loads(request_metadata)
+    venue = get_object_or_404(Venue, pk=metadata['venue_id'])
+    performance = get_object_or_404(ShowPerformance, pk=metadata['performance_id'])
+    sale = get_object_or_404(Sale, pk=metadata['sale_id'])
+
+    # Check for errors
+    if error_code == 'TRANSACTION_CANCELED':
+        messages.warning(request, "Payment cancelled")
+    elif error_code:
+        messages.error(request, f"Payment failed: {error_description}")
+    else:
+        # Mark tokens issued for tickets
+        for ticket in sale.tickets.all():
+            ticket.token_issued = True
+            ticket.save()
+        
+        # Complete the sale
+        sale.amount = sale.total_cost
+        sale.transaction_type = Sale.TRANSACTION_TYPE_SQUAREUP
+        sale.transaction_fee = 0
+        sale.completed = request.now
+        sale.save()
+        logger.info("Sale %s completed", sale)
+    
+    # Render sale
+    return render_main(request, venue, performance, sale=sale)
