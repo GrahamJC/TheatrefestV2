@@ -139,7 +139,7 @@ def create_sale_form(performance, sale, post_data = None):
         HTML('<h5>Other</h5>'),
         'buttons',
         'fringers',        
-        Button('update', 'Add/Update Sale', css_class = 'btn-primary',  onclick = f"saleUpdate()"),
+        #Button('update', 'Add/Update Sale', css_class = 'btn-primary',  onclick = f"saleUpdate()"),
     )
 
     # Return form

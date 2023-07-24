@@ -20,6 +20,7 @@
                 <h6 class="card-header">New Sale<div class="float-right">Available: {{ available }}</div></h6>
                 <div class="card-body">
                     {% crispy sale_form %}
+                    <button class="btn btn-primary" hx-post="{% url 'venue:sale_update' performance.uuid sale.uuid %}" hx-include="#sale-form" hx-target="#sales-tab-content" hx-swap="innerHTML">Add/Update Sale</button>
                 </div>
             </div>
         {% elif performance.has_close_checkpoint %}
@@ -38,7 +39,7 @@
                     <div class="alert alert-info">
                         <p>To start a new sale click Start.</p>
                     </div>
-                    <button class="btn btn-primary" onclick="saleStart()">Start</button>
+                    <button class="btn btn-primary" hx-get="{% url 'venue:sale_start' performance.uuid %}" hx-target="#sales-tab-content" hx-swap="innerHTML">Start</button>
                 </div>
             </div>
         {% endif %}
@@ -96,13 +97,13 @@
                             <div class="col-12">
                                 {% if sale.completed %}
                                     <div class="float-right">
-                                        <a class="btn btn-secondary" href="#" onclick="updateSalesTab('{% url 'venue:sale_new' performance.uuid %}')">Close</a>
+                                        <a class="btn btn-secondary" hx-get="{% url 'venue:sale_new' performance.uuid %}" hx-target="#sales-tab-content" hx-swap="innerHTML">Close</a>
                                     </div>
                                 {% else %}
-                                    <!-- <a class="btn btn-primary" href="#" onclick="updateSalesTab('{% url 'venue:sale_complete' performance.uuid sale.uuid %}')">Complete</a> -->
-                                    <a class="btn btn-primary" href="intent:#Intent;package=com.squareup;action=com.squareup.pos.action.CHARGE;S.com.squareup.pos.WEB_CALLBACK_URI=https://81.135.39.136{% url 'venue:square_callback' %};S.com.squareup.pos.CLIENT_ID={{ square_appliocation_id }};S.com.squareup.pos.API_VERSION={{ square_api_version }};i.com.squareup.pos.TOTAL_AMOUNT={{ sale.total_cost_pence }};S.com.squareup.pos.CURRENCY_CODE={{ square_currency_code }};S.com.squareup.pos.TENDER_TYPES=com.squareup.pos.TENDER_CARD;S.com.squareup.pos.NOTE={{ sale.id }};S.com.squareup.pos.REQUEST_METADATA={{ sale.id }};end">Take Payment</a>
+                                    <a class="btn btn-primary" href="#" hx-get="{% url 'venue:sale_complete' performance.uuid sale.uuid %}" hx-target="#sales-tab-content" hx-swap="innerHTML">Complete</a>
+                                    <a class="btn btn-primary" href="intent:#Intent;package=com.squareup;action=com.squareup.pos.action.CHARGE;S.com.squareup.pos.WEB_CALLBACK_URI=https://81.135.39.136{% url 'venue:square_callback' %};S.com.squareup.pos.CLIENT_ID={{ square_appliocation_id }};S.com.squareup.pos.API_VERSION={{ square_api_version }};i.com.squareup.pos.TOTAL_AMOUNT={{ sale.total_cost_pence }};S.com.squareup.pos.CURRENCY_CODE={{ square_currency_code }};S.com.squareup.pos.TENDER_TYPES=com.squareup.pos.TENDER_CARD;S.com.squareup.pos.NOTE={{ sale.id }};S.com.squareup.pos.REQUEST_METADATA={{ sale.id }};end">Square</a>
                                     <div class="float-right">
-                                        <a class="btn btn-secondary" href="#" onclick="updateSalesTab('{% url 'venue:sale_cancel' performance.uuid sale.uuid %}')">Cancel</a>
+                                        <a class="btn btn-secondary" hx-get="{% url 'venue:sale_cancel' performance.uuid sale.uuid %}" hx-target="#sales-tab-content" hx-swap="innerHTML">Cancel</a>
                                     </div>
                                 {% endif %}
                             </div>
@@ -132,7 +133,7 @@
                         <tbody>
                             {% for sale in sales %}
                                 <tr>
-                                    <td><a href="#" onclick="saleSelect('{{ sale.uuid }}')">{{ sale.id }}</a></td>
+                                    <td><a href="#" hx-get="{% url "venue:sale_select" performance.uuid sale.uuid %}" hx-target="#sales-tab-content" hx-swap="innerHTML">{{ sale.id }}</a></td>
                                     <td>{{ sale.completed }}</td>
                                     <td>&#163;{{ sale.amount }}</td>
                                 </tr>
@@ -145,26 +146,3 @@
     </div>
 
 </div>
-
-<script language="javascript">
-
-    function saleSelect(uuid) {
-        updateSalesTab('{% url "venue:sale_select" performance.uuid "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid));
-    }
-
-    {% if not sale %}
-
-        function saleStart() {
-            updateSalesTab('{% url "venue:sale_start" performance.uuid %}');
-        }
-
-    {% else %}
-
-        function saleUpdate() {
-            var postData = $('#sale-form').serializeArray();
-            updateSalesTab('{% url "venue:sale_update" performance.uuid sale.uuid %}', postData);
-        }
-
-    {% endif %}
-
-</script>
