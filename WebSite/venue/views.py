@@ -146,6 +146,29 @@ def create_sale_form(performance, sale, post_data = None):
     return form
 
 
+def make_square_intent(venue, performance, sale):
+    if sale:
+        metadata = f'{{ "sale_id": {sale.id}, "venue_id": {venue.id}, "performance_id": {performance.id} }}'
+        callback_url = 'https://81.157.15.65' + reverse('venue:square_callback')
+        intent = ';'.join([
+            'intent:#Intent',
+            'package=com.squareup',
+            'action=com.squareup.pos.action.CHARGE',
+            f'S.com.squareup.pos.WEB_CALLBACK_URI={callback_url}',
+            f'S.com.squareup.pos.CLIENT_ID={settings.SQUARE_APPLICATION_ID}',
+            f'S.com.squareup.pos.API_VERSION={settings.SQUARE_API_VERSION}',
+            f'i.com.squareup.pos.TOTAL_AMOUNT={sale.total_cost_pence}',
+            f'S.com.squareup.pos.CURRENCY_CODE={settings.SQUARE_CURRENCY_CODE}',
+            'S.com.squareup.pos.TENDER_TYPES=com.squareup.pos.TENDER_CARD,com.squareup.pos.TENDER_CASH',
+            f'S.com.squareup.pos.NOTE={sale.id}',
+            f'S.com.squareup.pos.REQUEST_METADATA={metadata}',
+            'end'
+        ])
+    else:
+        intent = ''
+    return intent
+
+
 def render_main(request, venue, performance, sale=None, tab=None, open_form=None, sale_form=None, close_form = None):
 
     # Validate parameters
@@ -166,7 +189,7 @@ def render_main(request, venue, performance, sale=None, tab=None, open_form=None
         # Create forms if not specified
         if not open_form and (performance.has_open_checkpoint or is_next(performance)):
             open_form = create_open_form(performance)
-        if not sale_form and not performance.has_close_checkpoint and sale and not sale.completed:
+        if not sale_form and sale:
             sale_form = create_sale_form(performance, sale)
         if not close_form and performance.has_open_checkpoint and (performance.has_close_checkpoint or is_next(performance)):
             close_form = create_close_form(performance)
@@ -195,9 +218,7 @@ def render_main(request, venue, performance, sale=None, tab=None, open_form=None
         'close_form': close_form,
         'tickets': performance.tickets.order_by('id') if performance else None,
         'available': performance.tickets_available + (sale.tickets.count() if sale else 0) if performance else 0,
-        'square_appliocation_id': settings.SQUARE_APPLICATION_ID,
-        'square_api_version': settings.SQUARE_API_VERSION,
-        'square_currency_code': settings.SQUARE_CURRENCY_CODE,
+        'square_intent': make_square_intent(venue, performance, sale),
     }
     return render(request, 'venue/main.html', context)
 
@@ -229,9 +250,7 @@ def render_sales(request, performance, sale = None, sale_form = None):
         'sale': sale,
         'sale_form': sale_form,
         'available': performance.tickets_available + (sale.tickets.count() if sale else 0),
-        'square_appliocation_id': settings.SQUARE_APPLICATION_ID,
-        'square_api_version': settings.SQUARE_API_VERSION,
-        'square_currency_code': settings.SQUARE_CURRENCY_CODE,
+        'square_intent': make_square_intent(venue, performance, sale),
     }
     return render(request, "venue/_main_sales.html", context)
 
@@ -840,7 +859,7 @@ def square_callback(request):
     sale = get_object_or_404(Sale, pk=metadata['sale_id'])
 
     # Check for errors
-    if error_code == 'TRANSACTION_CANCELED':
+    if error_code == 'com.squareup.pos.ERROR_TRANSACTION_CANCELED':
         messages.warning(request, "Payment cancelled")
     elif error_code:
         messages.error(request, f"Payment failed: {error_description}")
@@ -857,6 +876,8 @@ def square_callback(request):
         sale.completed = request.now
         sale.save()
         logger.info("Sale %s completed", sale)
+        sale = None
+        messages.success(request, "Payment completed")
     
     # Render sale
     return render_main(request, venue, performance, sale=sale)

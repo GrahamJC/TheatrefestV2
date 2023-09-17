@@ -100,8 +100,8 @@
                                         <a class="btn btn-secondary" hx-get="{% url 'venue:sale_new' performance.uuid %}" hx-target="#sales-tab-content" hx-swap="innerHTML">Close</a>
                                     </div>
                                 {% else %}
-                                    <a class="btn btn-primary" href="#" hx-get="{% url 'venue:sale_complete' performance.uuid sale.uuid %}" hx-target="#sales-tab-content" hx-swap="innerHTML">Complete</a>
-                                    <a class="btn btn-primary" href="intent:#Intent;package=com.squareup;action=com.squareup.pos.action.CHARGE;S.com.squareup.pos.WEB_CALLBACK_URI=https://81.135.39.136{% url 'venue:square_callback' %};S.com.squareup.pos.CLIENT_ID={{ square_appliocation_id }};S.com.squareup.pos.API_VERSION={{ square_api_version }};i.com.squareup.pos.TOTAL_AMOUNT={{ sale.total_cost_pence }};S.com.squareup.pos.CURRENCY_CODE={{ square_currency_code }};S.com.squareup.pos.TENDER_TYPES=com.squareup.pos.TENDER_CARD;S.com.squareup.pos.NOTE={{ sale.id }};S.com.squareup.pos.REQUEST_METADATA={{ sale.id }};end">Square</a>
+                                    <!-- <a class="btn btn-primary" href="#" hx-get="{% url 'venue:sale_complete' performance.uuid sale.uuid %}" hx-target="#sales-tab-content" hx-swap="innerHTML">Complete</a> -->
+                                    <a class="btn btn-primary" href="{{square_intent}}">Card Payment</a>
                                     <div class="float-right">
                                         <a class="btn btn-secondary" hx-get="{% url 'venue:sale_cancel' performance.uuid sale.uuid %}" hx-target="#sales-tab-content" hx-swap="innerHTML">Cancel</a>
                                     </div>
