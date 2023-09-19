@@ -24,7 +24,7 @@ class AdminUserCreationForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ('site', 'festival', 'email', 'first_name', 'last_name')
+        fields = ('festival', 'email', 'first_name', 'last_name')
 
     def clean_password2(self):
         password1 = self.cleaned_data.get('password1')
@@ -61,7 +61,6 @@ class AdminUserChangeForm(forms.ModelForm):
 class RegistrationForm(BaseRegistrationForm):
 
     def __init__(self, *args, **kwargs):
-        self.site = kwargs.pop('site')
         self.festival = kwargs.pop('festival')
         super().__init__(*args, **kwargs)
 
@@ -75,9 +74,7 @@ class RegistrationForm(BaseRegistrationForm):
 
     def validate_unique(self):
         exclude = self._get_validation_exclusions()
-        exclude.remove('site')
         exclude.remove('festival')
-        self.instance.site = self.site
         self.instance.festival = self.festival
         try:
             self.instance.validate_unique(exclude)
@@ -88,12 +85,11 @@ class RegistrationForm(BaseRegistrationForm):
 class PasswordResetForm(BasePasswordResetForm):
 
     def __init__(self, *args, **kwargs):
-        self.site = kwargs.pop('site')
         self.festival = kwargs.pop('festival')
         super().__init__(*args, **kwargs)
 
     def get_users(self, email):
-        user = User.objects.get_by_natural_key(self.site, self.festival, email)
+        user = User.objects.get_by_natural_key(self.festival, email)
         return (user,)
 
 

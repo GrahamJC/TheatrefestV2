@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('sites', '0002_alter_domain_unique'),
+        #('sites', '0002_alter_domain_unique'),
         ('auth', '0009_alter_user_last_name_max_length'),
     ]
 

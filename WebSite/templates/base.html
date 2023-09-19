@@ -11,9 +11,6 @@
     {% block css %}
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.1.3/dist/css/bootstrap.min.css">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
-        {% if request.site.info.stylesheet %}
-            <link rel="stylesheet" href="{% static request.site.info.stylesheet %}">
-        {% endif %}
         {% if request.festival.stylesheet %}
             <link rel="stylesheet" href="{{ request.festival.stylesheet.get_absolute_url }}">
         {% endif %}
@@ -36,166 +33,150 @@
             <div class="col-xl-10 offset-xl-1">
 
                 {% block banner %}
-                    {% if request.site.info.banner %}
-                        {% include request.site.info.banner %}
-                    {% else %}
-                        <div id="tf-banner" class="mb-1">
-                            <a href="{% if request.festival.is_archived %}#{% else %}{% url 'home' %}{% endif %}">
-                                {% if request.festival.banner_mobile %}
-                                    <img class="d-none d-sm-block img-fluid" src="{{ request.festival.banner.get_absolute_url }}" {% if request.festival.banner.map %}usemap="#banner-map"{% endif %} width="{{ request.festival.banner.image.width }}" height="{{ request.festival.banner.image.height }}" />
-                                    <img class="d-block d-sm-none img-fluid" src="{{ request.festival.banner_mobile.get_absolute_url }}" {% if request.festival.banner_mobile.map %}usemap="#banner-mobile-map"{% endif %} width="{{ request.festival.banner_mobile.image.width }}" height="{{ request.festival.banner_mobile.image.height }}"/>
-                                {% else %}
-                                    <img class="img-fluid" src="{{ request.festival.banner.get_absolute_url }}" {% if request.festival.banner.map %}usemap="#banner-map"{% endif %} width="{{ request.festival.banner.image.width }}" height="{{ request.festival.banner.image.height }}"/>
-                                {% endif %}
-                            </a>
-                            {% if request.festival.banner.map %}
-                                <map name="banner-map">
-                                    {{ request.festival.banner.map | safe }}
-                                </map>
+                    <div id="tf-banner" class="mb-1">
+                        <a href="{% if request.festival.is_archived %}#{% else %}{% url 'home' %}{% endif %}">
+                            {% if request.festival.banner_mobile %}
+                                <img class="d-none d-sm-block img-fluid" src="{{ request.festival.banner.get_absolute_url }}" {% if request.festival.banner.map %}usemap="#banner-map"{% endif %} width="{{ request.festival.banner.image.width }}" height="{{ request.festival.banner.image.height }}" />
+                                <img class="d-block d-sm-none img-fluid" src="{{ request.festival.banner_mobile.get_absolute_url }}" {% if request.festival.banner_mobile.map %}usemap="#banner-mobile-map"{% endif %} width="{{ request.festival.banner_mobile.image.width }}" height="{{ request.festival.banner_mobile.image.height }}"/>
+                            {% else %}
+                                <img class="img-fluid" src="{{ request.festival.banner.get_absolute_url }}" {% if request.festival.banner.map %}usemap="#banner-map"{% endif %} width="{{ request.festival.banner.image.width }}" height="{{ request.festival.banner.image.height }}"/>
                             {% endif %}
-                            {% if request.festival.banner_mobile.map %}
-                                <map name="banner-mobile-map">
-                                    {{ request.festival.banner_mobile.map | safe }}
-                                </map>
-                            {% endif %}
-                        </div>
-                    {% endif %}
+                        </a>
+                        {% if request.festival.banner.map %}
+                            <map name="banner-map">
+                                {{ request.festival.banner.map | safe }}
+                            </map>
+                        {% endif %}
+                        {% if request.festival.banner_mobile.map %}
+                            <map name="banner-mobile-map">
+                                {{ request.festival.banner_mobile.map | safe }}
+                            </map>
+                        {% endif %}
+                    </div>
                 {% endblock %}
                 
-                {% if request.site.info.navigator %}
-                    {% include request.site.info.navigator %}
-                {% else %}
-                    <div id="tf-navigator" class="mb-2">
-                        <nav class="navbar navbar-expand-md navbar-dark py-1">
-                            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapse" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-                                <span class="navbar-toggler-icon"></span>
-                            </button>
-                            <div id="navbar-collapse" class="collapse navbar-collapse">
-                                <ul class="navbar-nav mr-auto">
-                                    {% for nav in request.festival.navigators.all %}
-                                        <li class="nav-item"><a class="nav-link" href="{{ nav.href }}">{{ nav.label }}</a></li>
-                                    {% endfor %}
-                                </ul>
-                                <ul class="navbar-nav">
-                                    {% if not user.is_authenticated and not request.festival.is_archived %}
-                                        <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">login/register</a></li>
-                                    {% elif user.is_system_admin or not request.festival.is_archived %}
-                                        <li class="nav-item dropdown">
-                                            <a id="navbar-myaccount-link"class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">my account</a>
-                                            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbar-myaccount-link">
-                                                <a class="dropdown-item" href="#">{{ user.email }}</a>
+                <div id="tf-navigator" class="mb-2">
+                    <nav class="navbar navbar-expand-md navbar-dark py-1">
+                        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapse" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                            <span class="navbar-toggler-icon"></span>
+                        </button>
+                        <div id="navbar-collapse" class="collapse navbar-collapse">
+                            <ul class="navbar-nav mr-auto">
+                                {% for nav in request.festival.navigators.all %}
+                                    <li class="nav-item"><a class="nav-link" href="{{ nav.href }}">{{ nav.label }}</a></li>
+                                {% endfor %}
+                            </ul>
+                            <ul class="navbar-nav">
+                                {% if not user.is_authenticated and not request.festival.is_archived %}
+                                    <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">login/register</a></li>
+                                {% elif user.is_system_admin or not request.festival.is_archived %}
+                                    <li class="nav-item dropdown">
+                                        <a id="navbar-myaccount-link"class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">my account</a>
+                                        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbar-myaccount-link">
+                                            <a class="dropdown-item" href="#">{{ user.email }}</a>
+                                            <div class="dropdown-divider"></div>
+                                            <a class="dropdown-item" href="{% url 'tickets:myaccount' %}">tickets and efringers</a>
+                                            {% if user.is_volunteer or user.is_venue or user.is_boxoffice %}
                                                 <div class="dropdown-divider"></div>
-                                                <a class="dropdown-item" href="{% url 'tickets:myaccount' %}">tickets and efringers</a>
-                                                {% if user.is_volunteer or user.is_venue or user.is_boxoffice %}
-                                                    <div class="dropdown-divider"></div>
-                                                    {% if user.is_volunteer %}
-                                                        <a class="dropdown-item" href="{% url 'volunteers:shift_list' %}">volunteer</a>
-                                                    {% endif %}
-                                                    {% if user.is_venue %}
-                                                        <a class="dropdown-item" href="{% url 'venue:select' %}">venue</a>
-                                                    {% endif %}
-                                                    {% if user.is_boxoffice %}
-                                                        <a class="dropdown-item" href="{% url 'boxoffice:select' %}">box office</a>
-                                                    {% endif %}
+                                                {% if user.is_volunteer %}
+                                                    <a class="dropdown-item" href="{% url 'volunteers:shift_list' %}">volunteer</a>
                                                 {% endif %}
-                                                {% if user.is_admin %}
-                                                    <div class="dropdown-divider"></div>
-                                                    <a class="dropdown-item" href="{% url 'festival:admin' %}">festival admin</a>
-                                                    <a class="dropdown-item" href="{% url 'volunteers:admin_home' %}">volunteer admin</a>
-                                                    {% if user.is_site_admin %}
-                                                        <a class="dropdown-item" href="#">site admin</a>
-                                                    {% endif %}
-                                                    {% if user.is_system_admin %}
-                                                        <a class="dropdown-item" href="/admin">system admin</a>
-                                                    {% endif %}
+                                                {% if user.is_venue %}
+                                                    <a class="dropdown-item" href="{% url 'venue:select' %}">venue</a>
                                                 {% endif %}
+                                                {% if user.is_boxoffice %}
+                                                    <a class="dropdown-item" href="{% url 'boxoffice:select' %}">box office</a>
+                                                {% endif %}
+                                            {% endif %}
+                                            {% if user.is_admin %}
                                                 <div class="dropdown-divider"></div>
-                                                {% if user.is_boxoffice or user.is_venue %}
-                                                    {% if request.festival.name == 'TEST' %}
-                                                        <a class="dropdown-item" href="{% url 'festival:switch' %}">return to live site</a>
-                                                    {% else %}
-                                                        <a class="dropdown-item" href="{% url 'festival:switch_name' 'TEST' %}">switch to test site</a>
-                                                    {% endif %}
+                                                <a class="dropdown-item" href="{% url 'festival:admin' %}">festival admin</a>
+                                                <a class="dropdown-item" href="{% url 'volunteers:admin_home' %}">volunteer admin</a>
+                                                {% if user.is_site_admin %}
+                                                    <a class="dropdown-item" href="#">site admin</a>
                                                 {% endif %}
-                                                {% if user.is_superuser %}
-                                                    <a class="dropdown-item" href="{% url 'core:debug' %}">debug</a>
+                                                {% if user.is_system_admin %}
+                                                    <a class="dropdown-item" href="/admin">system admin</a>
                                                 {% endif %}
-                                                <a class="dropdown-item" href="{% url 'password_change' %}">change password</a>
-                                                <a class="dropdown-item" href="{% url 'logout' %}">logout</a>
-                                            </div>
-                                        </li>
-                                    {% endif %}
-                                </ul>
-                            </div>
-                        </nav>
-                    </div>    
-                {% endif %}
-
-                {% if request.site.info.header %}
-                    {% include request.site.info.header %}
-                {% else %}
-                    <div id="tf-header">
-                        <h3 id="tf-page-title">
-                            <div class="float-right mb-2">
-                                <a href="https://www.facebook.com/TheatrefestND/"><img src="{% static 'facebook.png' %}"/></a>
-                                <a href="https://twitter.com/@theatrefestND"><img src="{% static 'twitter.png' %}"/></a>
-                                <a href="https://www.instagram.com/theatrefestND"><img src="{% static 'instagram.png' %}"/></a>
-                            </div>
-                            {% block pagetitle %}{% endblock %}
-                        </h3>
-                        <div class="clearfix"></div>
-                        {% if breadcrumbs %}
-                            <nav aria-label="breadcrumb">
-                                <ol class="breadcrumb">
-                                    {% for breadcrumb in breadcrumbs %}
-                                        {% if breadcrumb.url %}
-                                            <li class="breadcrumb-item"><a href="{{ breadcrumb.url }}">{{ breadcrumb.text }}</a></li>
-                                        {% else %}
-                                            <li class="breadcrumb-item active">{{ breadcrumb.text }}</li>
-                                        {% endif %}
-                                    {% endfor %}
-                                </ol>
-                            </nav>
-                        {% endif %}
-                        <div id="tf-alerts">
-                            {% for msg in messages %}
-                                <div class="{{ msg.tags }} alert-dismissible" role="alert">
-                                    {{ msg }}
-                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                                </div>
-                            {% endfor %}
-                            {% if request.user.is_authenticated and not request.festival.is_archived and not request.user.basket.is_empty %}
-                                {% block basket %}
-                                    <div class="alert alert-info">
-                                        <a class="btn btn-primary pull-right" style="margin-top: -7px;" href="{% url 'tickets:checkout' %}">Go to Checkout</a>
-                                        <i class="fa fa-lg fa-shopping-basket" aria-hidden="true"></i>
-                                        <span class="d-none d-sm-inline">
-                                            &nbsp;&nbsp;Tickets: {{ request.user.basket.ticket_count }}
-                                            &nbsp;&nbsp;eFringers: {{ request.user.basket.fringer_count }}
-                                        </span>
-                                        <span class="d-inline d-sm-none">
-                                            &nbsp;&nbsp;Items: {{ request.user.basket.total_count }}
-                                        </span>
-                                        <span class="d-none d-md-inline">
-                                            &nbsp;&nbsp;Cost: &#163;{{ request.user.basket.total_cost }}
-                                        </span>
-                                    </div>
-                                {% endblock %}
-                            {% endif %}
+                                            {% endif %}
+                                            <div class="dropdown-divider"></div>
+                                            {% if user.is_boxoffice or user.is_venue %}
+                                                {% if request.festival.name == 'TEST' %}
+                                                    <a class="dropdown-item" href="{% url 'festival:switch' %}">return to live site</a>
+                                                {% else %}
+                                                    <a class="dropdown-item" href="{% url 'festival:switch_name' 'TEST' %}">switch to test site</a>
+                                                {% endif %}
+                                            {% endif %}
+                                            {% if user.is_superuser %}
+                                                <a class="dropdown-item" href="{% url 'core:debug' %}">debug</a>
+                                            {% endif %}
+                                            <a class="dropdown-item" href="{% url 'password_change' %}">change password</a>
+                                            <a class="dropdown-item" href="{% url 'logout' %}">logout</a>
+                                        </div>
+                                    </li>
+                                {% endif %}
+                            </ul>
                         </div>
+                    </nav>
+                </div>    
+
+                <div id="tf-header">
+                    <h3 id="tf-page-title">
+                        <div class="float-right mb-2">
+                            <a href="https://www.facebook.com/TheatrefestND/"><img src="{% static 'facebook.png' %}"/></a>
+                            <a href="https://twitter.com/@theatrefestND"><img src="{% static 'twitter.png' %}"/></a>
+                            <a href="https://www.instagram.com/theatrefestND"><img src="{% static 'instagram.png' %}"/></a>
+                        </div>
+                        {% block pagetitle %}{% endblock %}
+                    </h3>
+                    <div class="clearfix"></div>
+                    {% if breadcrumbs %}
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                {% for breadcrumb in breadcrumbs %}
+                                    {% if breadcrumb.url %}
+                                        <li class="breadcrumb-item"><a href="{{ breadcrumb.url }}">{{ breadcrumb.text }}</a></li>
+                                    {% else %}
+                                        <li class="breadcrumb-item active">{{ breadcrumb.text }}</li>
+                                    {% endif %}
+                                {% endfor %}
+                            </ol>
+                        </nav>
+                    {% endif %}
+                    <div id="tf-alerts">
+                        {% for msg in messages %}
+                            <div class="{{ msg.tags }} alert-dismissible" role="alert">
+                                {{ msg }}
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                            </div>
+                        {% endfor %}
+                        {% if request.user.is_authenticated and not request.festival.is_archived and not request.user.basket.is_empty %}
+                            {% block basket %}
+                                <div class="alert alert-info">
+                                    <a class="btn btn-primary pull-right" style="margin-top: -7px;" href="{% url 'tickets:checkout' %}">Go to Checkout</a>
+                                    <i class="fa fa-lg fa-shopping-basket" aria-hidden="true"></i>
+                                    <span class="d-none d-sm-inline">
+                                        &nbsp;&nbsp;Tickets: {{ request.user.basket.ticket_count }}
+                                        &nbsp;&nbsp;eFringers: {{ request.user.basket.fringer_count }}
+                                    </span>
+                                    <span class="d-inline d-sm-none">
+                                        &nbsp;&nbsp;Items: {{ request.user.basket.total_count }}
+                                    </span>
+                                    <span class="d-none d-md-inline">
+                                        &nbsp;&nbsp;Cost: &#163;{{ request.user.basket.total_cost }}
+                                    </span>
+                                </div>
+                            {% endblock %}
+                        {% endif %}
                     </div>
-                {% endif %}
+                </div>
 
                 <div id="tf-content">
                     {% block content %}{% endblock %}
                 </div>
 
-                {% if request.site.info.footer %}
-                    {% include request.site.info.footer %}
-                {% else %}
-                    <div id="tf-footer">
-                    </div>
-                {% endif %}
+                <div id="tf-footer">
+                </div>
 
             </div>
         </div>

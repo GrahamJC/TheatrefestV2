@@ -74,9 +74,9 @@ def switch(request, name=None):
     if name:
         festival = get_object_or_404(Festival, name__iexact=name)
     else:
-        festival = request.site.info.festival
+        festival = get_object_or_404(Festival, name__iexact=settings.DEFAULT_FESTIVAL)
     logger.info(f"Switch session to {festival.name}.")
-    user = get_object_or_404(User, site_id=request.site.id, festival_id=festival.id, email=request.user.email)
+    user = get_object_or_404(User, festival_id=festival.id, email=request.user.email)
 
     # Logout as current user out and login as matching user in new festival
     logout(request)

@@ -4,7 +4,6 @@ from datetime import date
 from django.core.mail import send_mail
 from django.utils.functional import cached_property
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
-from django.contrib.sites.models import Site
 from django.db import models
 
 from .utils import get_image_filename
@@ -75,45 +74,33 @@ class Festival(TimeStampedModel):
         return Document.objects.filter(festival=self, name='PrivacyPolicy').first()
 
 
-class SiteInfo(TimeStampedModel):
-
-    site = models.OneToOneField(Site, on_delete=models.CASCADE, related_name='info')
-    festival = models.ForeignKey(Festival, on_delete=models.PROTECT, related_name='festival')
-    stylesheet = models.CharField(max_length=64, blank = True, default = '')
-    banner = models.CharField(max_length=64, blank = True, default = '')
-    navigator = models.CharField(max_length=64, blank = True, default = '')
-    header = models.CharField(max_length=64, blank = True, default = '')
-    footer = models.CharField(max_length=64, blank = True, default = '')
-
-
 class UserManager(BaseUserManager):
 
-    def _create_user(self, site, festival, email, password, **extra_fields):
+    def _create_user(self, festival, email, password, **extra_fields):
         if not email:
             raise ValueError('The Email must be set')
         email = self.normalize_email(email)
-        user = self.model(site=site, festival=festival, email=email, **extra_fields)
+        user = self.model(festival=festival, email=email, **extra_fields)
         user.set_password(password)
         user.save()
         return user
 
-    def create_user(self, site, festival, email, password, **extra_fields):
+    def create_user(self, festival, email, password, **extra_fields):
         extra_fields.setdefault('is_superuser', False)
         extra_fields.setdefault('is_admin', False)
-        return self._create_user(site, festival, email, password, **extra_fields)
+        return self._create_user(festival, email, password, **extra_fields)
 
     def create_superuser(self, email, password, **extra_fields):
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_admin', True)
         return self._create_user(None, None, email, password, **extra_fields)
 
-    def get_by_natural_key(self, site, festival, email):
-        return self.get(site=site, festival=festival, email=email)
+    def get_by_natural_key(self, festival, email):
+        return self.get(festival=festival, email=email)
 
 
 class User(TimeStampedModel, AbstractBaseUser, PermissionsMixin):
 
-    site = models.ForeignKey(Site, null=True, blank=True, on_delete=models.PROTECT, related_name='users')
     festival = models.ForeignKey(Festival, null=True, blank=True, on_delete=models.PROTECT, related_name='users')
     email = models.EmailField(max_length=64)
     first_name = models.CharField(blank=True, default='', max_length=30)
@@ -125,8 +112,7 @@ class User(TimeStampedModel, AbstractBaseUser, PermissionsMixin):
     is_volunteer = models.BooleanField(default=False)
 
     class Meta:
-        #ordering = ('site', 'festival', 'email')
-        unique_together = ('site', 'festival', 'email')
+        unique_together = ('festival', 'email')
 
     USERNAME_FIELD = 'email'
     EMAIL_FIELD = 'email'
@@ -146,12 +132,8 @@ class User(TimeStampedModel, AbstractBaseUser, PermissionsMixin):
         return self.is_admin
 
     @property
-    def is_site_admin(self):
-        return self.is_admin and not self.festival
-
-    @property
     def is_system_admin(self):
-        return self.is_admin and not self.site and not self.festival
+        return self.is_admin and not self.festival
 
     @property
     def is_staff(self):
@@ -164,7 +146,7 @@ class User(TimeStampedModel, AbstractBaseUser, PermissionsMixin):
         return self.first_name
 
     def get_natural_key(self):
-        return [self.site, self.festival, self.email]
+        return [self.festival, self.email]
 
     def clean(self):
         super().clean()

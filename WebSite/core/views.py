@@ -1,4 +1,6 @@
 import dateutil
+import logging
+import logging_tree
 
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model, login
@@ -29,7 +31,6 @@ class OneStepRegistrationView(OneStepViews.RegistrationView):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['site'] = self.request.site
         kwargs['festival'] = self.request.festival
         return kwargs
 
@@ -61,7 +62,6 @@ class TwoStepRegistrationView(TwoStepViews.RegistrationView):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['site'] = self.request.site
         kwargs['festival'] = self.request.festival
         return kwargs
 
@@ -77,7 +77,7 @@ class TwoStepActivationView(TwoStepViews.ActivationView):
 
         User = get_user_model()
         try:
-            user = User.objects.get_by_natural_key(self.request.site, self.request.festival, email)
+            user = User.objects.get_by_natural_key(self.request.festival, email)
             if user.is_active:
                 raise ActivationError(self.ALREADY_ACTIVATED_MESSAGE, code='already_activated')
             return user
@@ -91,7 +91,6 @@ class PasswordResetView(AuthPasswordResetView):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['site'] = self.request.site
         kwargs['festival'] = self.request.festival
         return kwargs
 
@@ -118,6 +117,11 @@ class DebugFormView(FormView):
         if 'time' in self.request.session:
             initial['time'] = dateutil.parser.parse(self.request.session['time']).time()
         return initial
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['log_config'] = logging_tree.format.build_description()
+        return context
 
     def get_form(self):
         form = super().get_form()

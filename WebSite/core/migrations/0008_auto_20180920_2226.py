@@ -7,7 +7,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('sites', '0002_alter_domain_unique'),
+        #('sites', '0002_alter_domain_unique'),
         ('core', '0007_auto_20180919_2137'),
     ]
 

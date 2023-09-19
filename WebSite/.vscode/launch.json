@@ -45,6 +45,20 @@
             "justMyCode": false
         },
         {
+            "name": "Python: Django SSL",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/manage.py",
+            "console": "integratedTerminal",
+            "args": [
+                "runsslserver",
+                "0.0.0.0:8000",
+                "--noreload",
+            ],
+            "django": true,
+            "justMyCode": false
+        },
+        {
             "name": "Python: Flask",
             "type": "python",
             "request": "launch",

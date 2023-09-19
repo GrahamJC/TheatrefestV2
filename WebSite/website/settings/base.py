@@ -45,7 +45,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.sites',
 
     'debug_toolbar',
     'crispy_forms',
@@ -54,6 +53,8 @@ INSTALLED_APPS = [
     'bootstrap_datepicker_plus',
     'django_select2',
 
+    #'sslserver',
+    
     'core.apps.CoreConfig',
     'content.apps.ContentConfig',
     'festival.apps.FestivalConfig',
@@ -135,7 +136,7 @@ CRISPY_TEMPLATE_PACK = 'bootstrap4'
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 # Application settings
-VENUE_SHOW_ALL_PERFORMANCES = False
+DEFAULT_FESTIVAL = 'TF2023'
 VOLUNTEER_CANCEL_SHIFTS = False
 
 # Suppress unwanted system checks

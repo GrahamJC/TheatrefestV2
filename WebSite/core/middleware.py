@@ -2,6 +2,7 @@
 import datetime as dt
 from dateutil.parser import parse
 
+from django.conf import settings
 from django.shortcuts import get_object_or_404
 
 from .models import Festival
@@ -14,12 +15,11 @@ class FestivalMiddleware:
     def __call__(self, request):
 
         # Add festival to request
-        if request.site:
-            festival_id = request.session.get('festival_id', None)
-            if festival_id:
-                request.festival = get_object_or_404(Festival, pk=festival_id)
-            else:
-                request.festival = request.site.info.festival
+        festival_id = request.session.get('festival_id', None)
+        if festival_id:
+            request.festival = get_object_or_404(Festival, pk=festival_id)
+        else:
+            request.festival = get_object_or_404(Festival, name=settings.DEFAULT_FESTIVAL)
         
         # Add curret date/time to request
         date = parse(request.session.get('date', str(dt.datetime.now().date()))).date()

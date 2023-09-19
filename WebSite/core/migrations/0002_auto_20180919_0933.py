@@ -8,7 +8,7 @@ import uuid
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('sites', '0002_alter_domain_unique'),
+        #('sites', '0002_alter_domain_unique'),
         ('core', '0001_initial'),
     ]
 

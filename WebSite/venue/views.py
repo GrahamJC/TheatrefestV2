@@ -146,10 +146,10 @@ def create_sale_form(performance, sale, post_data = None):
     return form
 
 
-def make_square_intent(venue, performance, sale):
+def make_square_intent(request, venue, performance, sale):
     if sale:
         metadata = f'{{ "sale_id": {sale.id}, "venue_id": {venue.id}, "performance_id": {performance.id} }}'
-        callback_url = 'https://81.157.15.65' + reverse('venue:square_callback')
+        callback_url = request.build_absolute_uri(reverse('venue:square_callback'))
         intent = ';'.join([
             'intent:#Intent',
             'package=com.squareup',
@@ -218,7 +218,7 @@ def render_main(request, venue, performance, sale=None, tab=None, open_form=None
         'close_form': close_form,
         'tickets': performance.tickets.order_by('id') if performance else None,
         'available': performance.tickets_available + (sale.tickets.count() if sale else 0) if performance else 0,
-        'square_intent': make_square_intent(venue, performance, sale),
+        'square_intent': make_square_intent(request, venue, performance, sale),
     }
     return render(request, 'venue/main.html', context)
 
@@ -250,7 +250,7 @@ def render_sales(request, performance, sale = None, sale_form = None):
         'sale': sale,
         'sale_form': sale_form,
         'available': performance.tickets_available + (sale.tickets.count() if sale else 0),
-        'square_intent': make_square_intent(venue, performance, sale),
+        'square_intent': make_square_intent(request, venue, performance, sale),
     }
     return render(request, "venue/_main_sales.html", context)
 
