@@ -143,8 +143,8 @@ def festival_summary(request):
     }
 
     # Bucket collections
-    first_performance = ShowPerformance.objects.filter(show__festival = request.festival, show__venue__is_ticketed = False).order_by('date', 'time').first()
-    last_performance = ShowPerformance.objects.filter(show__festival = request.festival, show__venue__is_ticketed = False).order_by('date', 'time').last()
+    first_performance = ShowPerformance.objects.filter(show__festival = request.festival, show__is_ticketed = False).order_by('date', 'time').first()
+    last_performance = ShowPerformance.objects.filter(show__festival = request.festival, show__is_ticketed = False).order_by('date', 'time').last()
     dates = date_list(first_performance.date, last_performance.date)
     types = OrderedDict([
         ('cash', {'title': 'Cash', 'dates': [], 'post': 0, 'total': 0}),
@@ -777,7 +777,7 @@ def venue_summary(request):
         })
 
     # Individual performances
-    for performance in ShowPerformance.objects.filter(show__venue = venue, date = date).order_by('time'):
+    for performance in ShowPerformance.objects.filter(venue = venue, date = date).order_by('time'):
         open = performance.open_checkpoint if performance.has_open_checkpoint else None
         close = performance.close_checkpoint if performance.has_close_checkpoint else None
         if open and close:
@@ -944,7 +944,7 @@ def refunds(request):
 
     # Performances with refunded/cancelled tickets
     performances = []
-    for performance in ShowPerformance.objects.filter(Exists(Ticket.objects.filter(performance_id = OuterRef('id'), refund__completed__isnull = False)), show__festival = request.festival, show__venue__is_ticketed = True).order_by('show__name', 'date', 'time'):
+    for performance in ShowPerformance.objects.filter(Exists(Ticket.objects.filter(performance_id = OuterRef('id'), refund__completed__isnull = False)), show__festival = request.festival, show__is_ticketed = True).order_by('show__name', 'date', 'time'):
         performances.append({
             'show': performance.show.name,
             'date': performance.date,
@@ -1015,7 +1015,7 @@ def _get_show_tickets_by_type(show, ticket_types):
 
 def _get_company_tickets_by_type(company, ticket_types):
 
-    shows = [_get_show_tickets_by_type(s, ticket_types) for s in company.shows.filter(venue__is_ticketed = True).order_by('name')]
+    shows = [_get_show_tickets_by_type(s, ticket_types) for s in company.shows.filter(is_ticketed = True).order_by('name')]
     return {
         'name': company.name,
         'shows': shows,
@@ -1168,7 +1168,7 @@ def company_payment(request):
     if selected_company:
         companies.append(_get_company_tickets_by_type(selected_company, ticket_types))
     else:
-        company_ids = Show.objects.filter(festival = request.festival, venue__is_ticketed = True).values('company_id').distinct()
+        company_ids = Show.objects.filter(festival = request.festival, is_ticketed = True).values('company_id').distinct()
         for company in Company.objects.filter(id__in = company_ids).order_by('name'):
             companies.append(_get_company_tickets_by_type(company, ticket_types))
 
@@ -1232,7 +1232,7 @@ def _get_show_buckets(show):
 
 def _get_company_buckets(company):
 
-    shows = [_get_show_buckets(s) for s in company.shows.filter(venue__is_ticketed = False).order_by('name')]
+    shows = [_get_show_buckets(s) for s in company.shows.filter(is_ticketed = False).order_by('name')]
     return {
         'name': company.name,
         'shows': shows,
@@ -1396,7 +1396,7 @@ def company_buckets(request):
     if selected_company:
         companies.append(_get_company_buckets(selected_company))
     else:
-        company_ids = Show.objects.filter(festival = request.festival, venue__is_ticketed = False).values('company_id').distinct()
+        company_ids = Show.objects.filter(festival = request.festival, is_ticketed = False).values('company_id').distinct()
         for company in Company.objects.filter(id__in = company_ids).order_by('name'):
             companies.append(_get_company_buckets(company))
 

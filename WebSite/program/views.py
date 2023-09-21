@@ -59,14 +59,14 @@ def shows(request, festival_uuid=None):
 
     # If valid add search results to context
     if search.is_valid():
-        shows = Show.objects.filter(festival=festival).select_related('company', 'venue').prefetch_related('genres', 'performances')
+        shows = Show.objects.filter(festival=festival).select_related('company').prefetch_related('genres', 'performances')
         if search.cleaned_data['days']:
             shows = shows.filter(performances__date__in = search.cleaned_data['days'])
         if search.cleaned_data['venues']:
             if '0' in search.cleaned_data['venues']:
-                shows = shows.filter(Q(venue_id__in = search.cleaned_data['venues']) | Q(venue__is_ticketed = False))
+                shows = shows.filter(Q(performances__venue_id__in = search.cleaned_data['venues']) | Q(is_ticketed = False))
             else:
-                shows = shows.filter(venue_id__in = search.cleaned_data['venues'])
+                shows = shows.filter(performances__venue_id__in = search.cleaned_data['venues'])
         if search.cleaned_data['genres']:
             shows = shows.filter(genres__id__in = search.cleaned_data['genres'] )
         shows = shows.order_by(Lower('name'))
@@ -123,7 +123,7 @@ def show(request, show_uuid):
 
 def _add_non_scheduled_performances(festival, day):
     performances = []
-    for performance in ShowPerformance.objects.filter(show__festival=festival, show__venue__is_scheduled=False, date = day['date']).order_by('time').values('time', 'show__uuid', 'show__name', 'show__is_cancelled'):
+    for performance in ShowPerformance.objects.filter(show__festival=festival, venue__is_scheduled=False, date = day['date']).order_by('time').values('time', 'show__uuid', 'show__name', 'show__is_cancelled'):
         performances.append(
             {
                 'show_uuid': performance['show__uuid'],
@@ -148,9 +148,9 @@ def schedule(request, festival_uuid=None):
     # Build the schedule
     days = []
     day = None
-    for performance in ShowPerformance.objects.filter(show__festival=festival, show__venue__is_scheduled=True) \
-                                              .order_by('date', 'show__venue__map_index', 'show__venue__name', 'time') \
-                                              .values('date', 'show__venue__name', 'show__venue__color', 'time', 'show__uuid', 'show__name', 'show__is_cancelled'):
+    for performance in ShowPerformance.objects.filter(show__festival=festival, venue__is_scheduled=True) \
+                                              .order_by('date', 'venue__map_index', 'venue__name', 'time') \
+                                              .values('date', 'venue__name', 'venue__color', 'time', 'show__uuid', 'show__name', 'show__is_cancelled'):
             
         # If the date has changed start a new day
         if day and performance['date'] != day['date']:
@@ -168,13 +168,13 @@ def schedule(request, festival_uuid=None):
             venue = None
 
         # If the venue has changed add it to the page and start a new one
-        if venue and performance['show__venue__name'] != venue['name']:
+        if venue and performance['venue__name'] != venue['name']:
             day['venues'].append(venue)
             venue = None
         if not venue:
             venue = {
-                'name': performance['show__venue__name'],
-                'color': performance['show__venue__color'],
+                'name': performance['venue__name'],
+                'color': performance['venue__color'],
                 'performances': [],
             }
 
@@ -262,7 +262,7 @@ def schedule_pdf(request, festival_uuid=None):
         table_styles.append(('BACKGROUND', (2*i, 0), (2*i + 1, 0), v.color ))
 
     # Days
-    days = ShowPerformance.objects.filter(show__festival=festival, show__is_cancelled=False, show__venue__is_ticketed=True).order_by('date').values('date').distinct()
+    days = ShowPerformance.objects.filter(show__festival=festival, show__is_cancelled=False, show__is_ticketed=True).order_by('date').values('date').distinct()
     day_color = ('#fbe4d5', '#fff2cc', '#e2efd9', '#deeaf6')
     for index, day in enumerate(days):
 
@@ -272,7 +272,7 @@ def schedule_pdf(request, festival_uuid=None):
         table_styles.append(('SPAN', (0, first_row), (-1, first_row)))
 
         # Get performances for each venue
-        venue_performances = [ ShowPerformance.objects.filter(show__venue=v, show__is_cancelled=False, date = day['date']).order_by('time') for v in venues]
+        venue_performances = [ ShowPerformance.objects.filter(venue=v, show__is_cancelled=False, date = day['date']).order_by('time') for v in venues]
         slots = max([len(vp) for vp in venue_performances])
         for i in range(slots):
             slot_data = []
@@ -1099,10 +1099,8 @@ class AdminShowCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         form.helper = FormHelper()
         form.helper.layout = Layout(
             Field('name'),
-            Row(
-                Column('company', css_class='form-group col-md-6 mb-0'),
-                Column('venue', css_class='form-group col-md-6 mb-0'),
-            ),
+            Field('company'),
+            Field('is_ticketed'),
             FormActions(
                 Submit('save', 'Save'),
                 Button('cancel', 'Cancel'),
@@ -1143,10 +1141,8 @@ class AdminShowUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
             Field('name'),
             TabHolder(
                 Tab ('General',
-                    Row(
-                        Column('company', css_class='form-group col-md-6 mb-0'),
-                        Column('venue', css_class='form-group col-md-6 mb-0'),
-                    ),
+                    Field('company'),
+                    Field('is_ticketed'),
                     'image',
                     'listing',
                     'listing_short',
@@ -1246,6 +1242,7 @@ class AdminShowPerformanceCreate(LoginRequiredMixin, SuccessMessageMixin, Create
                 Column('time', css_class='form-group col-md-6 mb-0'),
                 css_class = 'form-row',
             ),
+            Field('venue'),
             FormActions(
                 Submit('save', 'Save'),
                 Button('cancel', 'Cancel'),
@@ -1289,6 +1286,7 @@ class AdminShowPerformanceUpdate(LoginRequiredMixin, SuccessMessageMixin, Update
                 Column('time', css_class='form-group col-md-6 mb-0'),
                 css_class = 'form-row',
             ),
+            Field('venue'),
             Field('notes'),
             FormActions(
                 Submit('save', 'Save'),

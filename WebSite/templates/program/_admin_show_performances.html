@@ -2,14 +2,14 @@
     <thead class="thead-light">
         <tr>
             <th>Date/Time</th>
-            <th>Tickets</th>
+            <th>Venue</th>
         </tr>
     </thead>
     <tbody>
         {% for performance in show.performances.all %}
             <tr>
                 <td><a href="{% url 'program:admin_show_performance_update' show.uuid performance.uuid %}">{{ performance.date }} at {{ performance.time }}</a></td>
-                <td>TBD</td>
+                <td>{{ performance.venue.name }}</td>
             </tr>
         {% endfor %}
     </tbody>

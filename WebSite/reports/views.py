@@ -207,7 +207,7 @@ def ajax_venue_date_performances(request, date = None, venue_id = None):
     date = datetime.datetime.strptime(date, '%Y%m%d') if date else None
     venue_id = int(venue_id) if venue_id else None
     if date and venue_id:
-        performances = ShowPerformance.objects.filter(date = date, show__venue_id = venue_id).order_by('time')
+        performances = ShowPerformance.objects.filter(date = date, venue_id = venue_id).order_by('time')
         for performance in performances:
             html += f"<option value=\"{performance.id}\">{performance.time:%I:%M%p}: {performance.show.name}</option>"
     return HttpResponse(html)

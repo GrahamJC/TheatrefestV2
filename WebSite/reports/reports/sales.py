@@ -41,9 +41,9 @@ def admission_lists(request):
     if selected_performance:
         performances = [selected_performance,]
     elif selected_venue:
-        performances = [performance for performance in ShowPerformance.objects.filter(date = selected_date, show__venue = selected_venue).order_by('time')]
+        performances = [performance for performance in ShowPerformance.objects.filter(date = selected_date, venue = selected_venue).order_by('time')]
     else:
-        performances = [performance for performance in ShowPerformance.objects.filter(date = selected_date, show__venue__is_ticketed = True).order_by('show__venue__name', 'time')]
+        performances = [performance for performance in ShowPerformance.objects.filter(date = selected_date, show__is_ticketed = True).order_by('venue__name', 'time')]
 
     # Get tickets for each performance
     admission_lists = []
@@ -95,7 +95,7 @@ def admission_lists(request):
         # Venue and performance
         table = Table(
             (
-                (Paragraph('<para><b>Venue:</b></para>', styles['Normal']), performance.show.venue.name),
+                (Paragraph('<para><b>Venue:</b></para>', styles['Normal']), performance.venue.name),
                 (Paragraph('<para><b>Show:</b></para>', styles['Normal']), performance.show.name),
                 (Paragraph('<para><b>Performance:</b></para>', styles['Normal']), f"{performance.date:%A, %d %B} at {performance.time:%I:%M%p}"),
             ),
@@ -225,7 +225,7 @@ def tickets_by_type(request):
     if selected_show:
         shows.append(_get_show_tickets_by_type(selected_show, ticket_types))
     else:
-        for show in Show.objects.filter(festival = request.festival, venue__is_ticketed = True).order_by('name'):
+        for show in Show.objects.filter(festival = request.festival, is_ticketed = True).order_by('name'):
             shows.append(_get_show_tickets_by_type(show, ticket_types))
 
     # Check for HTML
@@ -346,7 +346,7 @@ def tickets_by_channel(request):
     if selected_show:
         shows.append(_get_show_tickets_by_channel(selected_show, channels))
     else:
-        for show in Show.objects.filter(festival = request.festival, venue__is_ticketed = True).order_by('name'):
+        for show in Show.objects.filter(festival = request.festival, is_ticketed = True).order_by('name'):
             shows.append(_get_show_tickets_by_channel(show, channels))
 
     # Check for HTML
@@ -455,7 +455,7 @@ def audience(request):
     if selected_show:
         shows.append(_get_show_audience(selected_show))
     else:
-        for show in Show.objects.filter(festival = request.festival, venue__is_ticketed = True).order_by('name'):
+        for show in Show.objects.filter(festival = request.festival, is_ticketed = True).order_by('name'):
             shows.append(_get_show_audience(show))
 
     # Check for HTML

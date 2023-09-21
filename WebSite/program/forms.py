@@ -191,7 +191,7 @@ class AdminShowForm(forms.ModelForm):
     class Meta:
         model = Show
         fields = [
-            'name', 'company', 'venue',
+            'name', 'company', 'is_ticketed',
             'image', 'listing', 'listing_short', 'detail',
             'website', 'twitter', 'facebook', 'instagram',
             'genres', 'genre_text', 'has_warnings', 'warnings',
@@ -206,7 +206,6 @@ class AdminShowForm(forms.ModelForm):
         self.festival = festival
         super().__init__(*args, **kwargs)
         self.fields['company'].queryset = Company.objects.filter(festival=self.festival)
-        self.fields['venue'].queryset = Venue.objects.filter(festival=self.festival)
         self.fields['genres'].queryset = Genre.objects.filter(festival=self.festival)
         self.fields['replaced_by'].queryset = Show.objects.filter(festival=self.festival)
         
@@ -225,7 +224,7 @@ class AdminShowPerformanceForm(forms.ModelForm):
     class Meta:
         model = ShowPerformance
         fields = [
-            'date', 'time', 'notes',
+            'date', 'time', 'venue', 'notes',
         ]
         widgets = {
             'date': DatePickerInput(),
@@ -235,6 +234,7 @@ class AdminShowPerformanceForm(forms.ModelForm):
     def __init__(self, show, *args, **kwargs):
         self.show = show
         super().__init__(*args, **kwargs)
+        self.fields['venue'].queryset = Venue.objects.filter(festival=self.show.festival, is_ticketed=self.show.is_ticketed)
 
     # Same check - different error message (to avoid mention of company)
     def validate_unique(self):

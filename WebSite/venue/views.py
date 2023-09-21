@@ -46,7 +46,7 @@ def is_next(performance):
     assert performance
 
     # Check if this is the next performance at the venue
-    return performance == performance.show.venue.get_next_performance(performance.date)
+    return performance == performance.venue.get_next_performance(performance.date)
 
 
 def create_open_form(performance, post_data = None):
@@ -208,7 +208,7 @@ def render_main(request, venue, performance, sale=None, tab=None, open_form=None
         'venue': venue,
         'tab': tab,
         'show': performance.show if performance else None,
-        'performances': ShowPerformance.objects.filter(date = request.now.date(), show__venue = venue, show__is_cancelled = False).order_by('time'),
+        'performances': ShowPerformance.objects.filter(date = request.now.date(), venue = venue, show__is_cancelled = False).order_by('time'),
         'next_performance': venue.get_next_performance(),
         'performance': performance,
         'sales': sales,
@@ -230,7 +230,7 @@ def render_sales(request, performance, sale = None, sale_form = None):
     assert performance.has_open_checkpoint
 
     # Get sales made between open/close checkpoints
-    venue = performance.show.venue
+    venue = performance.venue
     sales = Sale.objects.none()
     if performance.has_close_checkpoint:
         sales = venue.sales.filter(created__gte = performance.open_checkpoint.created, created__lte = performance.close_checkpoint.created).order_by('-id')
@@ -309,7 +309,7 @@ def main_performance(request, venue_uuid, performance_uuid):
     # Get venue and performance
     venue = get_object_or_404(Venue, uuid = venue_uuid)
     performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
-    assert(venue == performance.show.venue)
+    assert(venue == performance.venue)
 
     # Delete any incomplete sales for this venue
     for sale in venue.sales.filter(completed__isnull = True):
@@ -329,7 +329,7 @@ def main_performance_sale(request, venue_uuid, performance_uuid, sale_uuid):
     # Get sale, performance and venue
     venue = get_object_or_404(Venue, uuid = venue_uuid)
     performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
-    assert(venue == performance.show.venue)
+    assert(venue == performance.venue)
     sale = get_object_or_404(Sale, uuid = sale_uuid)
 
     # Render page
@@ -346,7 +346,7 @@ def performance_open(request, performance_uuid):
     performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
     assert not performance.has_open_checkpoint
     assert not performance.has_close_checkpoint
-    venue = performance.show.venue
+    venue = performance.venue
 
     # Process open form
     open_form = create_open_form(performance, request.POST)
@@ -382,7 +382,7 @@ def checkpoint_update_open(request, checkpoint_uuid):
     assert venue
     performance = checkpoint.open_performance
     assert performance
-    assert performance.show.venue == venue
+    assert performance.venue == venue
 
     # Process checkpoint form
     open_form = create_open_form(performance, request.POST)
@@ -409,7 +409,7 @@ def performance_close(request, performance_uuid):
     performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
     assert performance.has_open_checkpoint
     assert not performance.has_close_checkpoint
-    venue = performance.show.venue
+    venue = performance.venue
 
     # Process close form
     close_form = create_close_form(performance, request.POST)
@@ -449,7 +449,7 @@ def checkpoint_update_close(request, checkpoint_uuid):
     assert venue
     performance = checkpoint.close_performance
     assert performance
-    assert performance.show.venue == venue
+    assert performance.venue == venue
 
     # Process checkpoint form
     close_form = create_close_form(performance, request.POST)
@@ -493,7 +493,7 @@ def sale_select(request, performance_uuid, sale_uuid):
     # Get performance, venue and sale
     performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
     assert performance.has_open_checkpoint
-    venue = performance.show.venue
+    venue = performance.venue
     sale = get_object_or_404(Sale, uuid = sale_uuid)
     assert sale.venue == venue
 
@@ -511,7 +511,7 @@ def sale_start(request, performance_uuid):
     performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
     assert performance.has_open_checkpoint
     assert not performance.has_close_checkpoint
-    venue = performance.show.venue
+    venue = performance.venue
 
     # Create new sale
     sale = Sale(
@@ -536,7 +536,7 @@ def sale_update(request, performance_uuid, sale_uuid):
     performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
     assert performance.has_open_checkpoint
     assert not performance.has_close_checkpoint
-    venue = performance.show.venue
+    venue = performance.venue
     sale = get_object_or_404(Sale, uuid = sale_uuid)
     assert sale.venue == venue
 
@@ -620,7 +620,7 @@ def sale_complete(request, performance_uuid, sale_uuid):
     performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
     assert performance.has_open_checkpoint
     assert not performance.has_close_checkpoint
-    venue = performance.show.venue
+    venue = performance.venue
     sale = get_object_or_404(Sale, uuid = sale_uuid)
     assert sale.venue == venue
     assert not sale.completed
@@ -652,7 +652,7 @@ def sale_cancel(request, performance_uuid, sale_uuid):
     performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
     assert performance.has_open_checkpoint
     assert not performance.has_close_checkpoint
-    venue = performance.show.venue
+    venue = performance.venue
     sale = get_object_or_404(Sale, uuid = sale_uuid)
     assert sale.venue == venue
     assert not sale.completed
@@ -688,7 +688,7 @@ def tickets(request, performance_uuid, format):
     performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
     assert performance.has_open_checkpoint
     assert format == 'html' or format == 'pdf'
-    venue = performance.show.venue
+    venue = performance.venue
 
     # Get tickets
     venue_tickets = performance.tickets.filter(sale__completed__isnull = False, sale__venue = venue, refund__isnull = True).order_by('id')

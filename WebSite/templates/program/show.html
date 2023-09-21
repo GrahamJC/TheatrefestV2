@@ -29,12 +29,12 @@
                     {% endif %}
                 </div>
                 <div class="tf-info2">
-                    <h6><a class="tf-venue-name" style="{% if show.venue.color %}color: {{ show.venue.color }}{% endif %}" href="{% url 'program:venue' show.venue.uuid %}">{{ show.venue.name }}</a></h6>
-                    {% if show.performances.all %}
+                    {% for vp in show.get_venue_performances %}
+                        <h6><a class="tf-venue-name" style="{% if vp.venue.color %}color: {{ vp.venue.color }}{% endif %}" href="{% url 'program:venue' vp.venue.uuid %}">{{ vp.venue.name }}</a></h6>
                         <div class="tf-performances pl-2 mb-1">
-                            {% for performance in show.performances.all %}
+                            {% for performance in vp.performances %}
                                 <p class="m-0">
-                                    {% if sales_open and not show.festival.is_archived and show.venue.is_ticketed and not show.is_suspended %}
+                                    {% if sales_open and not show.festival.is_archived and vp.venue.is_ticketed and not show.is_suspended %}
                                         <a href="{% url 'tickets:buy' performance.uuid %}">{{ performance.date | date:'D' }} at {{ performance.time | time:'H:i'}}</a>
                                     {% else %}
                                         {{ performance.date | date:'D' }} at {{ performance.time | time:'H:i'}}
@@ -42,40 +42,38 @@
                                 </p>
                             {% endfor %}
                         </div>
-                        {% if not show.festival.is_archived %}
-                            <div class="tf-ticket-status">
-                                {% if not show.venue.is_ticketed %}
-                                    <p>
-                                        This is a pay-what-you-will-show.
-                                        There are no tickets but there will be a bucket-collection.
-                                    </p>
-                                {% elif sales_closed %}
-                                    <p>Online ticket sales are now closed.</p>
-                                {% elif sales_open %}
-                                    {% if show.is_suspended %}
-                                        <p>Online ticket sales for this show are temporarily unavailable.</p>
-                                    {% else %}
-                                        <p>Select a performance to buy tickets online.</p>
-                                    {% endif %}
-                                {% elif sales_open_date %}
-                                    <p>Online ticket sales will open on {{ sales_open_date | date:'M d' }}.</p>
-                                {% else %}
-                                    <p>Online ticket sales are not yet open.</p>
-                                {% endif %}
+                        {% if vp.venue.sponsor %}
+                            <div class="tf-sponsor-name text-left" style="{% if vp.venue.sponsor.background %}background-color: {{ vp.venue.sponsor.background }};{% endif %}">
+                                <a href="{{ vp.venue.sponsor.url }}" target="_blank"  style="{% if vp.venue.sponsor.color %}color: {{ vp.venue.sponsor.color }};{% endif %}">
+                                    {% if vp.venue.sponsor.image %}<img class="m-0" style="height: 45px;" src="{{ vp.venue.sponsor.image.url }}" />{% endif %}
+                                </a>
                             </div>
-                            {% if not show.venue.is_ticketed %}
-                                <p>
-                                    You can also make cash or card donations at the central box office or <a href="{% url 'tickets:payw' show.uuid %}">donate an eFringer credit</a> if you have one available.
-                                </p>
-                            {% endif %}
                         {% endif %}
-                    {% endif %}
+                    {% endfor %}
                 </div>
-                {% if show.venue.sponsor %}
-                    <div class="tf-sponsor-name text-left" style="{% if show.venue.sponsor.background %}background-color: {{ show.venue.sponsor.background }};{% endif %}">
-                        <a href="{{ show.venue.sponsor.url }}" target="_blank"  style="{% if show.venue.sponsor.color %}color: {{ show.venue.sponsor.color }};{% endif %}">
-                            {% if show.venue.sponsor.image %}<img class="m-0" style="height: 45px;" src="{{ show.venue.sponsor.image.url }}" />{% endif %}
-                        </a>
+                {% if not show.festival.is_archived %}
+                    <div class="tf-ticket-status">
+                        {% if not show.is_ticketed %}
+                            <p>
+                                This is a pay-what-you-will-show.
+                                There are no tickets but there will be a bucket-collection.
+                            </p>
+                        <p>
+                            You can also make cash or card donations at the central box office or <a href="{% url 'tickets:payw' show.uuid %}">donate an eFringer credit</a> if you have one available.
+                        </p>
+                        {% elif sales_closed %}
+                            <p>Online ticket sales are now closed.</p>
+                        {% elif sales_open %}
+                            {% if show.is_suspended %}
+                                <p>Online ticket sales for this show are temporarily unavailable.</p>
+                            {% else %}
+                                <p>Select a performance to buy tickets online.</p>
+                            {% endif %}
+                        {% elif sales_open_date %}
+                            <p>Online ticket sales will open on {{ sales_open_date | date:'M d' }}.</p>
+                        {% else %}
+                            <p>Online ticket sales are not yet open.</p>
+                        {% endif %}
                     </div>
                 {% endif %}
             </div>

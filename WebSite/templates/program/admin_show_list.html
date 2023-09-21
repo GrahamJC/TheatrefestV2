@@ -10,7 +10,7 @@
             <tr>
                 <th>Name</th>
                 <th>Company</th>
-                <th>Venue</th>
+                <th>Venue(s)</th>
             </tr>
         </thead>
         <tbody>
@@ -18,7 +18,7 @@
                 <tr>
                     <td><a href="{% url 'program:admin_show_update' show.uuid %}">{{ show.name }}</a></td>
                     <td>{{ show.company.name }}</td>
-                    <td>{{ show.venue.name }}</td>
+                    <td>{% for venue in show.performance_venues %}{{ venue.name }}<br/>{% endfor %}</td>
                 </tr>
             {%endfor %}
         </tbody>

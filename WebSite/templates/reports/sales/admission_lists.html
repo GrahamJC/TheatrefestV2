@@ -1,6 +1,6 @@
 {% for list in admission_lists %}
 
-    <h4>{{ list.performance.show.venue.name }}</h4>
+    <h4>{{ list.performance.venue.name }}</h4>
     <h6>{{ list.performance.show.name }}</h6>
     <h6>{{ list.performance.date | date:'l, j F' }} at {{ list.performance.time | time:'h:ia' }}</h6>
 

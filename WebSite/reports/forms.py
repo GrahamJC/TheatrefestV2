@@ -44,7 +44,7 @@ class SelectVenueForm(forms.Form):
             is_required = 'date' in required
             self.fields['date'].required = is_required
             choices = [('', 'Select date' if is_required else 'All dates')]
-            for date in ShowPerformance.objects.filter(show__festival = self.festival, show__venue__is_ticketed = True).values('date').order_by('date').distinct():
+            for date in ShowPerformance.objects.filter(show__festival = self.festival, show__is_ticketed = True).values('date').order_by('date').distinct():
                 choices.append((f"{date['date']:%Y%m%d}", f"{date['date']:%A, %d %B}"))
             self.fields['date'].choices = choices
 
@@ -102,7 +102,7 @@ class SelectTicketsForm(forms.Form):
             is_required = 'show' in required
             self.fields['show'].required = is_required
             choices = [('', 'Select show' if required else 'All shows')]
-            for show in Show.objects.filter(festival = self.festival, venue__is_ticketed = True).order_by('name'):
+            for show in Show.objects.filter(festival = self.festival, is_ticketed = True).order_by('name'):
                 choices.append((show.id, show.name))
             self.fields['show'].choices = choices
 
@@ -123,7 +123,7 @@ class SelectAdmissionForm(forms.Form):
         super().__init__(*args, **kwargs)
 
         # Date
-        dates = ShowPerformance.objects.filter(show__festival = self.festival, show__venue__is_ticketed = True).values('date').order_by('date').distinct()
+        dates = ShowPerformance.objects.filter(show__festival = self.festival, show__is_ticketed = True).values('date').order_by('date').distinct()
         choices = [('', 'Select date')]
         for date in dates:
             choices.append((f"{date['date']:%Y%m%d}", f"{date['date']:%A, %d %B}"))
@@ -143,7 +143,7 @@ class SelectAdmissionForm(forms.Form):
         if self.data and self.data['date'] and self.data['venue']:
             date = datetime.datetime.strptime(self.data['date'], '%Y%m%d')
             venue_id = int(self.data['venue'])
-            for performance in ShowPerformance.objects.filter(date = date, show__venue_id = venue_id).order_by('time'):
+            for performance in ShowPerformance.objects.filter(date = date, venue_id = venue_id).order_by('time'):
                 choices.append((performance.id, f"{performance.time:%I:%M%p}: {performance.show.name}"))
         self.fields['performance'].choices = choices
 
@@ -165,7 +165,7 @@ class SelectTicketedCompanyForm(forms.Form):
             is_required = 'company' in required
             self.fields['company'].required = is_required
             choices = [('', 'Select company' if required else 'All companies')]
-            company_ids = Show.objects.filter(festival = self.festival, venue__is_ticketed = True).values('company_id').distinct()
+            company_ids = Show.objects.filter(festival = self.festival, is_ticketed = True).values('company_id').distinct()
             for company in Company.objects.filter(id__in = company_ids).order_by('name'):
                 choices.append((company.id, company.name))
             self.fields['company'].choices = choices
@@ -188,7 +188,7 @@ class SelectAltSpaceCompanyForm(forms.Form):
             is_required = 'company' in required
             self.fields['company'].required = is_required
             choices = [('', 'Select company' if required else 'All companies')]
-            company_ids = Show.objects.filter(festival = self.festival, venue__is_ticketed = False).values('company_id').distinct()
+            company_ids = Show.objects.filter(festival = self.festival, is_ticketed = False).values('company_id').distinct()
             for company in Company.objects.filter(id__in = company_ids).order_by('name'):
                 choices.append((company.id, company.name))
             self.fields['company'].choices = choices
@@ -211,6 +211,6 @@ class SelectAudienceForm(forms.Form):
             is_required = 'show' in required
             self.fields['show'].required = is_required
             choices = [('', 'Select show' if required else 'All shows')]
-            for show in Show.objects.filter(festival = self.festival, venue__is_ticketed = True).order_by('name'):
+            for show in Show.objects.filter(festival = self.festival, is_ticketed = True).order_by('name'):
                 choices.append((show.id, show.name))
             self.fields['show'].choices = choices

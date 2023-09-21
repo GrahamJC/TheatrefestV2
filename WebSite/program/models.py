@@ -93,8 +93,12 @@ class Venue(TimeStampedModel):
         return f'{self.festival.name}/{self.name}' if self.festival else self.name
 
     @property
+    def shows(self):
+        return Show.objects.filter(performances__venue_id=self.id).distinct().order_by('name')
+    
+    @property
     def can_delete(self):
-        return self.shows.count() == 0
+        return self.performances.count() == 0
 
     @property
     def sponsor(self):
@@ -102,21 +106,21 @@ class Venue(TimeStampedModel):
 
     def get_first_performance(self, date = None):
         if date:
-            return ShowPerformance.objects.filter(date = date, show__venue = self, show__is_cancelled = False).order_by('time').first()
+            return ShowPerformance.objects.filter(date = date, venue = self, show__is_cancelled = False).order_by('time').first()
         else:
-            return ShowPerformance.objects.filter(show__venue = self, show__is_cancelled = False).order_by('date', 'time').first()
+            return ShowPerformance.objects.filter(venue = self, show__is_cancelled = False).order_by('date', 'time').first()
 
     def get_next_performance(self, date = None):
         if date:
-            return ShowPerformance.objects.filter(date = date, show__venue = self, show__is_cancelled = False, close_checkpoint = None).order_by('time').first()
+            return ShowPerformance.objects.filter(date = date, venue = self, show__is_cancelled = False, close_checkpoint = None).order_by('time').first()
         else:
-            return ShowPerformance.objects.filter(show__venue = self, show__is_cancelled = False, close_checkpoint = None).order_by('date', 'time').first()
+            return ShowPerformance.objects.filter(venue = self, show__is_cancelled = False, close_checkpoint = None).order_by('date', 'time').first()
 
     def get_last_performance(self, date = None):
         if date:
-            return ShowPerformance.objects.filter(date = date, show__venue = self, show__is_cancelled = False).order_by('time').first()
+            return ShowPerformance.objects.filter(date = date, venue = self, show__is_cancelled = False).order_by('time').first()
         else:
-            return ShowPerformance.objects.filter(show__venue = self, show__is_cancelled = False).order_by('date', 'time').first()
+            return ShowPerformance.objects.filter(venue = self, show__is_cancelled = False).order_by('date', 'time').first()
 
 
 class VenueContact(TimeStampedModel):
@@ -193,7 +197,7 @@ class Show(TimeStampedModel):
     festival = models.ForeignKey(Festival, on_delete=models.PROTECT, related_name='shows')
     name = models.CharField(max_length = 64)
     company = models.ForeignKey(Company, on_delete = models.PROTECT, related_name = 'shows')
-    venue = models.ForeignKey(Venue, on_delete = models.PROTECT, related_name = 'shows')
+    #venue = models.ForeignKey(Venue, on_delete = models.PROTECT, related_name = 'shows')
     image = models.ImageField(upload_to = get_image_filename, blank = True, default = '')
     listing = models.TextField(blank = True, default = '')
     listing_short = models.TextField(blank = True, default = '')
@@ -207,6 +211,7 @@ class Show(TimeStampedModel):
     has_warnings = models.BooleanField(blank = True, default = False)
     age_range = models.CharField(max_length = 16, blank = True, default = '')
     duration = models.PositiveIntegerField(null = True, blank = True)
+    is_ticketed = models.BooleanField(blank = True, default = False)
     is_suspended = models.BooleanField(blank = True, default = False)
     is_cancelled = models.BooleanField(blank = True, default = False)
     replaced_by = models.OneToOneField('self', on_delete = models.SET_NULL, related_name = 'replacement_for', blank = True, null = True)
@@ -217,20 +222,16 @@ class Show(TimeStampedModel):
         ordering = ('festival', 'name')
 
     def __str__(self):
-        return f'{self.festival.name}/{self.name}' if self.festival else self.name
+        return f'{self.festival.name}/{self.name}'
 
     @property
     def can_delete(self):
         return True
 
     @property
-    def is_ticketed(self):
-        return self.venue.is_ticketed
-
-    @property
     def is_online_tickets_open(self):
         return (
-            self.venue.is_ticketed
+            self.is_ticketed
             and not (self.is_suspended or self.is_cancelled)
             and self.festival.is_online_tickets_open
         )
@@ -245,6 +246,29 @@ class Show(TimeStampedModel):
         dates = list(set(dates))
         dates.sort()
         return dates
+
+    @cached_property
+    def performance_venues(self):
+        return Venue.objects.filter(performances__show=self).distinct()
+
+    def get_venue_dates(self):
+        # Return performance dates by venue as a dictionary to support the show listing pages
+        venues = []
+        for venue in self.performance_venues:
+            dates = [p.date for p in self.performances.filter(venue=venue)]
+            dates = list(set(dates))
+            dates.sort()
+            venues.append({'venue': venue, 'dates': dates})
+        return venues
+
+    def get_venue_performances(self):
+        # Return performances by venue as a dictionary to support the show listing pages
+        venues = []
+        for venue in self.performance_venues:
+            performances = self.performances.filter(venue=venue).order_by('date', 'time')
+            venues.append({'venue': venue, 'performances': performances})
+        return venues
+
 
 class ShowImage(TimeStampedModel):
 
@@ -269,6 +293,7 @@ class ShowPerformance(TimeStampedModel):
     show = models.ForeignKey(Show, on_delete = models.CASCADE, related_name = 'performances')
     date = models.DateField()
     time = models.TimeField()
+    venue = models.ForeignKey(Venue, on_delete = models.CASCADE, related_name = 'performances')
     audience = models.IntegerField(blank = True, default = 0)
     notes = models.TextField(blank = True, default = '')
 
@@ -305,7 +330,7 @@ class ShowPerformance(TimeStampedModel):
 
     @property
     def tickets_available(self):
-        available = self.show.venue.capacity - self.tickets_sold + self.tickets_refunded if self.show.venue.capacity else 0
+        available = self.venue.capacity - self.tickets_sold + self.tickets_refunded if self.venue.capacity else 0
         return available if available > 0 else 0
 
     @property
