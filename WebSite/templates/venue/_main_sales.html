@@ -68,8 +68,8 @@
                                 {% for ticket in performance.tickets %}
                                     <div class="row">
                                         <div class="col-1"></div>
-                                        <div class="col-2">{{ ticket.id }}</div>
-                                        <div class="col-7">{{ ticket.description }}</div>
+                                        <div class="col-3">{{ ticket.id }}</div>
+                                        <div class="col-6">{{ ticket.description }}</div>
                                         <div class="col-2 text-right">{% if ticket.cost %}&#163;{{ ticket.cost }}{% endif %}</div>
                                     </div>
                                 {% endfor %}

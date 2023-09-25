@@ -1,0 +1,39 @@
+﻿{% extends "base.html" %}
+{% load i18n %}
+
+{% block pagetitle %}Ticket Types{% endblock %}
+
+{% block content %}
+
+    <table class="table">
+        <thead class="thead-light">
+            <tr>
+                <th>Name</th>
+                <th>Online</th>
+                <th>Boxoffice</th>
+                <th>Venue</th>
+                <th>Price</th>
+                <th>Payment</th>
+                <th>SeqNo</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tt in tickettypes %}
+                <tr>
+                    <td><a href="{% url 'festival:admin_tickettype_update' tt.uuid %}">{{ tt.name }}</a></td>
+                    <td>{% if tt.is_online %}Yes{% else %}No{% endif %}</td>
+                    <td>{% if tt.is_boxoffice %}Yes{% else %}No{% endif %}</td>
+                    <td>{% if tt.is_venue %}Yes{% else %}No{% endif %}</td>
+                    <td>&#163;{{ tt.price }}</td>
+                    <td>&#163;{{ tt.payment }}</td>
+                    <td>{{ tt.seqno }}</td>
+                </tr>
+            {%endfor %}
+        </tbody>
+    </table>
+
+    <div class="row">
+        <div class="col-12"><a href="{% url 'festival:admin_tickettype_create' %}" class="btn btn-primary">Add Ticket Type</a></div>
+    </div>
+
+{% endblock %}

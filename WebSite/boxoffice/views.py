@@ -29,7 +29,7 @@ from dal.autocomplete import Select2QuerySetView
 
 from core.models import User
 from program.models import Show, ShowPerformance
-from tickets.models import BoxOffice, Sale, Refund, TicketType, Ticket, PayAsYouWill, Fringer, Checkpoint
+from tickets.models import BoxOffice, Sale, Refund, TicketType, Ticket, PayAsYouWill, FringerType, Fringer, Checkpoint
 
 from .forms import CheckpointForm, SaleTicketsForm, SalePAYWForm, SaleExtrasForm, SaleCompleteForm, SaleEMailForm, RefundStartForm, TicketSearchForm
 
@@ -72,7 +72,7 @@ def create_sale_tickets_form(festival, sale, performance, post_data = None):
 
     # Get ticket types
     ticket_types = []
-    for ticket_type in sale.festival.ticket_types.order_by('seqno'):
+    for ticket_type in sale.festival.ticket_types.filter(is_boxoffice=True).order_by('seqno'):
         ticket_types.append(ticket_type)
 
     # Create form
@@ -471,7 +471,7 @@ def sale_tickets_add(request, sale_uuid, performance_uuid):
 
         # Check if there are sufficient tickets
         requested_tickets = form.ticket_count
-        available_tickets = performance.tickets_available
+        available_tickets = performance.tickets_available()
         if requested_tickets <= available_tickets:
 
             # Add tickets
@@ -483,9 +483,7 @@ def sale_tickets_add(request, sale_uuid, performance_uuid):
                             sale = sale,
                             user = sale.customer_user,
                             performance = performance,
-                            description = ticket_type.name,
-                            cost = ticket_type.price,
-                            payment = ticket_type.payment,
+                            type = ticket_type,
                         )
                         ticket.save()
                         logger.info(f"{ticket_type.name} ticket {ticket.id} for {performance.show.name} on {performance.date} at {performance.time} added to sale {sale.id}")
@@ -655,9 +653,7 @@ def sale_extras_update(request, sale_uuid):
                 fringer.delete()
             while (sale.fringers.count() or 0) < fringers:
                 fringer = Fringer(
-                    description = f'{request.festival.fringer_shows} shows for £{request.festival.fringer_price:.0f}',
-                    shows = request.festival.fringer_shows,
-                    cost = request.festival.fringer_price,
+                    type = request.festival.paper_fringer_type,
                     sale = sale,
                 )
                 fringer.save()

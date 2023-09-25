@@ -8,7 +8,7 @@ from bootstrap_datepicker_plus.widgets import DatePickerInput
 from core.models import User, Festival
 from content.models import Page, PageImage, Navigator
 from program.models import Venue
-from tickets.models import BoxOffice
+from tickets.models import BoxOffice, TicketType, FringerType
 
 class PageForm(forms.ModelForm):
 
@@ -99,7 +99,7 @@ class AdminSaleListForm(forms.Form):
         self.fields['venue'] = forms.ModelChoiceField(Venue.objects.filter(festival = festival, is_ticketed = True), required = False)
 
 
-class AdminSetupForm(forms.ModelForm):
+class AdminFestivalForm(forms.ModelForm):
 
     class Meta:
         model = Festival
@@ -109,8 +109,6 @@ class AdminSetupForm(forms.ModelForm):
             'boxoffice_open',
             'boxoffice_close',
             'button_price',
-            'fringer_price',
-            'fringer_shows',
             'volunteer_comps',
         ]
         widgets = {
@@ -119,3 +117,50 @@ class AdminSetupForm(forms.ModelForm):
             'boxoffice_open': DatePickerInput,
             'boxoffice_close': DatePickerInput,
         }
+
+class AdminTicketTypeForm(forms.ModelForm):
+
+    class Meta:
+        model = TicketType
+        fields = [
+            'seqno','name',
+            'price', 'payment',
+            'is_online', 'is_boxoffice', 'is_venue',
+        ]
+
+    def __init__(self, festival, *args, **kwargs):
+        self.festival = festival
+        super().__init__(*args, **kwargs)
+
+    def validate_unique(self):
+        exclude = self._get_validation_exclusions()
+        exclude.remove('festival')
+        self.instance.festival = self.festival
+        try:
+            self.instance.validate_unique(exclude)
+        except ValidationError:
+            self._update_errors(ValidationError({'name': 'A ticket type with that name already exists'}))
+
+class AdminFringerTypeForm(forms.ModelForm):
+
+    class Meta:
+        model = FringerType
+        fields = [
+            'name',
+            'price', 'shows',
+            'is_online',
+            'ticket_type',
+        ]
+
+    def __init__(self, festival, *args, **kwargs):
+        self.festival = festival
+        super().__init__(*args, **kwargs)
+
+    def validate_unique(self):
+        exclude = self._get_validation_exclusions()
+        exclude.remove('festival')
+        self.instance.festival = self.festival
+        try:
+            self.instance.validate_unique(exclude)
+        except ValidationError:
+            self._update_errors(ValidationError({'name': 'A fringer type with that name already exists'}))

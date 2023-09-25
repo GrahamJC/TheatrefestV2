@@ -6,6 +6,7 @@ from core.models import TimeStampedModel, Festival, User
 from core.utils import get_image_filename
 
 from program.models import Venue
+from tickets.models import TicketType
 
 class Role(TimeStampedModel):
 
@@ -44,7 +45,7 @@ class Location(TimeStampedModel):
     
 class Volunteer(TimeStampedModel):
 
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='volunteer')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, related_name='volunteer')
     roles = models.ManyToManyField(Role, related_name = 'volunteers', blank = True)
     is_dbs = models.BooleanField(default=False)
 
@@ -61,7 +62,7 @@ class Volunteer(TimeStampedModel):
 
     @property
     def comps_used(self):
-        return self.user.tickets.filter(description = 'Volunteer', sale__completed__isnull = False).count()
+        return self.user.tickets.filter(type=TicketType.get_volunteer(festival=self.user.festival), sale__completed__isnull = False).count()
 
     @property
     def comps_available(self):

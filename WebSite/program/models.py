@@ -321,25 +321,25 @@ class ShowPerformance(TimeStampedModel):
         return self.show.is_suspended
 
     @property
-    def tickets_sold(self):
-        return self.tickets.filter(basket__isnull = True).count()
-
-    @property
-    def tickets_refunded(self):
-        return self.tickets.filter(refund__isnull = False).count()
-
-    @property
-    def tickets_available(self):
-        available = self.venue.capacity - self.tickets_sold + self.tickets_refunded if self.venue.capacity else 0
-        return available if available > 0 else 0
-
-    @property
     def has_open_checkpoint(self):
         return hasattr(self, 'open_checkpoint')
 
     @property
     def has_close_checkpoint(self):
         return hasattr(self, 'close_checkpoint')
+
+    def tickets_reserved(self):
+        return self.tickets.filter(sale__isnull=False, sale__completed__isnull=True).count()
+
+    def tickets_confirmed(self):
+        return self.tickets.filter(sale__isnull=False, sale__completed__isnull=False, refund__isnull=True).count()
+
+    def tickets_refunded(self):
+        return self.tickets.filter(refund__isnull = False).count()
+
+    def tickets_available(self):
+        available = self.venue.capacity - self.tickets_confirmed() - self.tickets_reserved() if self.venue.capacity else 0
+        return available if available > 0 else 0
 
 
 class ShowReview(TimeStampedModel):

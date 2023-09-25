@@ -66,7 +66,7 @@ class MyAccountView(LoginRequiredMixin, View):
                 'show': performance.show.name,
                 'date' : performance.date,
                 'time': performance.time,
-                'tickets': [{'id': t.id, 'uuid': t.uuid, 'description': t.description, 'cost': t.cost, 'fringer_name': (t.fringer.name if t.fringer else None)} for t in tickets],
+                'tickets': [{'id': t.id, 'uuid': t.uuid, 'description': t.type.name, 'cost': t.type.price, 'fringer_name': (t.fringer.name if t.fringer else None)} for t in tickets],
             }
 
             # Ok to compare naive datetimes since both are local
@@ -76,7 +76,7 @@ class MyAccountView(LoginRequiredMixin, View):
                 performances_past.append(p)
 
         # Volunteer tickets
-        volunteer_tickets =  request.user.tickets.filter(description='Volunteer').order_by('performance__date', 'performance__time', 'performance__show__name')
+        volunteer_tickets =  request.user.tickets.filter(type=request.festival.volunteer_ticket_type).order_by('performance__date', 'performance__time', 'performance__show__name')
 
         # Get online sales status
         sales_closed = request.festival.online_sales_close and (request.now.date() > request.festival.online_sales_close)
@@ -156,16 +156,13 @@ class MyAccountView(LoginRequiredMixin, View):
                 # Create new fringer and add to basket
                 fringer = Fringer(
                     user = request.user,
+                    type = buy_type,
                     name = buy_name if buy_name else buy_type.name,
-                    description = buy_type.description,
-                    shows = buy_type.shows,
-                    cost = buy_type.price,
-                    payment = buy_type.payment,
                     basket = basket,
                 )
                 fringer.save()
-                logger.info(f"eFringer {fringer.name} ({fringer.description}) added to basket")
-                messages.success(request, f"Fringer {fringer.name} ({fringer.description}) added to basket")
+                logger.info(f"eFringer {fringer.name} ({buy_type.name}) added to basket")
+                messages.success(request, f"Fringer {fringer.name} ({buy_type.name}) added to basket")
 
                 # Confirm purchase
                 return redirect(reverse('tickets:myaccount_confirm_fringers'))
@@ -227,7 +224,7 @@ class BuyView(LoginRequiredMixin, View):
         # Volunteer tickets
         if request.user.is_volunteer:
             volunteer_available = request.user.volunteer.comps_available
-            volunteer_used = request.user.tickets.filter(performance=performance, description='Volunteer')
+            volunteer_used = request.user.tickets.filter(performance=performance, type=request.festival.volunteer_ticket_type)
         else:
             volunteer_available = 0
             volunteer_used = True
@@ -269,7 +266,7 @@ class BuyView(LoginRequiredMixin, View):
 
                 # Get total number of tickets being purchased
                 tickets_requested = sum([f.cleaned_data['quantity'] for f in ticket_formset])
-                if (tickets_requested > 0) and (tickets_requested <= performance.tickets_available):
+                if (tickets_requested > 0) and (tickets_requested <= performance.tickets_available()):
 
                     # Process ticket types
                     for form in ticket_formset:
@@ -283,11 +280,9 @@ class BuyView(LoginRequiredMixin, View):
                             for i in range(0, quantity):
                                 ticket = Ticket(
                                     performance = performance,
-                                    description = ticket_type.name,
-                                    cost = ticket_type.price,
+                                    type = ticket_type,
                                     user = request.user,
                                     basket = basket,
-                                    payment = ticket_type.payment,
                                 )
                                 ticket.save()
 
@@ -300,8 +295,9 @@ class BuyView(LoginRequiredMixin, View):
 
                 # Insufficient tickets available
                 else:
-                    logger.info(f"Insufficient tickets ({tickets_requested} requested, {performance.tickets_available} available) for {performance.show.name} on {performance.date} at {performance.time}")
-                    messages.error(request, f"There are only {performance.tickets_available} tickets available for this perfromance.")
+                    available = performance.tickets_available()
+                    logger.info(f"Insufficient tickets ({tickets_requested} requested, {available} available) for {performance.show.name} on {performance.date} at {performance.time}")
+                    messages.error(request, f"There are only {available} tickets available for this perfromance.")
 
             # Reset buy fringer form
             buy_fringer_form = self._create_buy_fringer_form(fringer_types, request.user)
@@ -312,7 +308,7 @@ class BuyView(LoginRequiredMixin, View):
 
             # Check if there are still enough tickets available
             tickets_requested = len(request.POST.getlist('fringer_id'))
-            if (tickets_requested > 0) and (tickets_requested <= performance.tickets_available):
+            if (tickets_requested > 0) and (tickets_requested <= performance.tickets_available()):
 
                 # Create a sale
                 sale = Sale(
@@ -334,11 +330,9 @@ class BuyView(LoginRequiredMixin, View):
                         ticket = Ticket(
                             user = request.user,
                             performance = performance,
-                            description = 'eFringer',
-                            cost = 0,
+                            type = fringer.type.ticket_type,
                             fringer = fringer,
                             sale = sale,
-                            payment = fringer.payment,
                         )
                         ticket.save()
 
@@ -355,8 +349,9 @@ class BuyView(LoginRequiredMixin, View):
 
             # Insufficient tickets available
             else:
-                logger.info(f"Insufficient tickets ({tickets_requested} requested, {performance.tickets_available} available) for {performance.show.name} on {performance.date} at {performance.time}")
-                messages.error(request, f"There are only {performance.tickets_available} tickets available for this perfromance.")
+                available = performance.tickets_available()
+                logger.info(f"Insufficient tickets ({tickets_requested} requested, {available} available) for {performance.show.name} on {performance.date} at {performance.time}")
+                messages.error(request, f"There are only {available} tickets available for this perfromance.")
 
             # Reset ticket formset and buy fringer form
             ticket_formset = self.get_ticket_formset(ticket_types)
@@ -382,10 +377,8 @@ class BuyView(LoginRequiredMixin, View):
                 # Create new fringer and add to basket
                 fringer = Fringer(
                     user = request.user,
+                    type = fringer_type,
                     name = fringer_name,
-                    description = fringer_type.description,
-                    shows = fringer_type.shows,
-                    cost = fringer_type.price,
                     basket = basket,
                 )
                 fringer.save()
@@ -403,7 +396,7 @@ class BuyView(LoginRequiredMixin, View):
         elif action == "UseVolunteer":
 
             # Check if there are still enough tickets available
-            if (performance.tickets_available > 0):
+            if (performance.tickets_available() > 0):
 
                 # Create a sale
                 sale = Sale(
@@ -418,9 +411,7 @@ class BuyView(LoginRequiredMixin, View):
                 ticket = Ticket(
                     user = request.user,
                     performance = performance,
-                    description = 'Volunteer',
-                    cost = 0,
-                    payment = 0,
+                    type = request.festival.volunteer_ticket_type,
                     sale = sale,
                 )
                 ticket.save()
@@ -434,7 +425,7 @@ class BuyView(LoginRequiredMixin, View):
 
             # Insufficient tickets available
             else:
-                logger.info(f"Insufficient tickets (1 requested, {performance.tickets_available} available) for {performance.show.name} on {performance.date} at {performance.time}")
+                logger.info(f"Insufficient tickets (1 requested, {performance.tickets_available()} available) for {performance.show.name} on {performance.date} at {performance.time}")
                 messages.error(request, f"There are no tickets available for this perfromance.")
 
             # Redisplay
@@ -446,7 +437,7 @@ class BuyView(LoginRequiredMixin, View):
         # Volunteer tickets
         if request.user.is_volunteer:
             volunteer_available = request.user.volunteer.comps_available
-            volunteer_used = request.user.tickets.filter(performance=performance, description='Volunteer')
+            volunteer_used = request.user.tickets.filter(performance=performance, type=request.festival.volunteer_ticket_type)
         else:
             volunteer_available = 0
             volunteer_used = True
@@ -597,7 +588,7 @@ class PAYWView(LoginRequiredMixin, View):
                         sale = sale,
                         show = show,
                         fringer = fringer,
-                        amount = fringer.payment,
+                        amount = fringer.ticket_type.payment,
                     )
                     payw.save()
 
@@ -733,9 +724,10 @@ def checkout_stripe(request):
     tickets_available = True
     for p in basket.tickets.values('performance').annotate(count = Count('performance')):
         performance = ShowPerformance.objects.get(pk = p["performance"])
-        if p["count"] > performance.tickets_available:
-            messages.error(request, f"Your basket contains {p['count']} tickets for {performance.show.name} but there are only {performance.tickets_available} tickets available.")
-            logger.info(f"Basket contains {p['count']} tickets for {performance.show.name} but there are only {performance.tickets_available} available")
+        available = performance.tickets_available()
+        if p["count"] > available:
+            messages.error(request, f"Your basket contains {p['count']} tickets for {performance.show.name} but there are only {available} tickets available.")
+            logger.info(f"Basket contains {p['count']} tickets for {performance.show.name} but there are only {available} available")
             tickets_available = False
 
     # If tickets no longer available redisplay checkout with notifications
@@ -996,7 +988,7 @@ class PrintSaleView(LoginRequiredMixin, View):
         if sale.fringers.count():
             tableData = []
             for fringer in sale.fringers.all():
-                tableData.append(("eFringer", fringer.name, fringer.description, f"£{fringer.cost}"))
+                tableData.append(("eFringer", fringer.name, fringer.description, f"£{fringer.price}"))
                 table = Table(
                     tableData,
                     colWidths = (4*cm, 4*cm, 4*cm, 4*cm),
@@ -1083,7 +1075,7 @@ class PrintPerformanceView(LoginRequiredMixin, View):
         tableData.append((Paragraph(f"<para><b>{performance.show.name}</b></para>", styles['Normal']), "", "", ""))
         tableData.append((f"{performance.date:%a, %e %b} at {performance.time:%I:%M %p}", "", "", ""))
         for ticket in request.user.tickets.filter(performance_id = performance.id):
-            tableData.append((f"{ticket.id}", "", ticket.description, f"£{ticket.cost}"))
+            tableData.append((f"{ticket.id}", "", ticket.description, f"£{ticket.price}"))
         table = Table(
             tableData,
             colWidths = (4*cm, 4*cm, 4*cm, 4*cm),

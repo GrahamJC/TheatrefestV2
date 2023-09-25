@@ -27,7 +27,7 @@
                                             <div class="row">
                                                 <div class="col-1"></div>
                                                 <div class="col-3">{{ ticket.description }}</div>
-                                                <div class="col-2 text-right">{% if ticket.cost %}&#163;{{ ticket.cost }}{% endif %}</div>
+                                                <div class="col-2 text-right">{% if ticket.price %}&#163;{{ ticket.price }}{% endif %}</div>
                                                 <div class="col-3"><a href="{% url 'tickets:checkout_remove_ticket' ticket.uuid %}">Remove</a></div>
                                                 <div class="col-3"></div>
                                             </div>
@@ -51,7 +51,7 @@
                                 {% for fringer in basket.fringers.all %}
                                     <tr><td class="row">
                                         <div class="col-12 col-md-8">{{ fringer.name }} ({{ fringer.description }})</div>
-                                        <div class="col-10 col-md-3">&#163;{{ fringer.cost }}</div>
+                                        <div class="col-10 col-md-3">&#163;{{ fringer.price }}</div>
                                         <div class="col-2 col-md-1"><a href="{% url 'tickets:checkout_remove_fringer' fringer.uuid %}"><i class="fa fa-trash"></i></a></div>
                                     </td></tr>
                                 {% endfor %}

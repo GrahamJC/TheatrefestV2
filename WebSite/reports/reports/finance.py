@@ -28,7 +28,7 @@ from reportlab.lib import colors
 import xlsxwriter as xlsx
 
 from program.models import Company, Venue, Show, ShowPerformance
-from tickets.models import BoxOffice, Sale, Refund, Fringer, TicketType, Ticket, Checkpoint, PayAsYouWill, Bucket
+from tickets.models import BoxOffice, Sale, Refund, FringerType, Fringer, TicketType, Ticket, Checkpoint, PayAsYouWill, Bucket
 from volunteers.models import Volunteer
 
 def date_list(from_date, to_date):
@@ -42,12 +42,13 @@ def date_list(from_date, to_date):
 def festival_summary(request):
 
     # General stuff
-    venue_list = [v for v in Venue.objects.filter(festival = request.festival, is_ticketed = True).order_by('name')]
-    boxoffice_list = [bo for bo in BoxOffice.objects.filter(festival = request.festival).order_by('name')]
+    festival = request.festival
+    venue_list = [v for v in Venue.objects.filter(festival=festival, is_ticketed=True).order_by('name')]
+    boxoffice_list = [bo for bo in BoxOffice.objects.filter(festival=festival).order_by('name')]
 
     # Sales by channel
-    dates = date_list(request.festival.boxoffice_open, request.festival.boxoffice_close)
-    online_pre = Sale.objects.filter(festival = request.festival, completed__lt = dates[0], boxoffice__isnull = True, venue__isnull = True).aggregate(Sum('amount'))['amount__sum'] or 0
+    dates = date_list(festival.boxoffice_open, festival.boxoffice_close)
+    online_pre = Sale.objects.filter(festival=festival, completed__lt = dates[0], boxoffice__isnull = True, venue__isnull = True).aggregate(Sum('amount'))['amount__sum'] or 0
     online = {
         'pre': online_pre,
         'dates': [],
@@ -61,7 +62,7 @@ def festival_summary(request):
         'total': online_pre,
     }
     for date in dates:
-        query = Sale.objects.filter(festival = request.festival, completed__date = date)
+        query = Sale.objects.filter(festival = festival, completed__date = date)
         date_total = 0
         date_amount = query.filter(boxoffice__isnull = True, venue__isnull = True).aggregate(Sum('amount'))['amount__sum'] or 0
         online['dates'].append(date_amount)
@@ -92,9 +93,9 @@ def festival_summary(request):
     }
 
     # Sales by type
-    dates = date_list(request.festival.boxoffice_open, request.festival.boxoffice_close)
-    efringers_pre = Fringer.objects.filter(user__isnull = False, sale__festival = request.festival, sale__completed__lt = dates[0]).aggregate(Sum('cost'))['cost__sum'] or 0
-    tickets_pre = Ticket.objects.filter(user__isnull = False, sale__festival = request.festival, sale__completed__lt = dates[0]).aggregate(Sum('cost'))['cost__sum'] or 0
+    dates = date_list(festival.boxoffice_open, festival.boxoffice_close)
+    efringers_pre = Fringer.objects.filter(type__is_online=True, sale__festival=festival, sale__completed__lt=dates[0]).aggregate(Sum('type__price'))['type__price__sum'] or 0
+    tickets_pre = Ticket.objects.filter(sale__festival=festival, sale__completed__lt=dates[0]).aggregate(Sum('type__price'))['type__price__sum'] or 0
     types = OrderedDict([
         ('buttons', {'title': 'Badges', 'pre': 0, 'dates': [], 'total': 0}),
         ('fringers', {'title': 'Paper fringers', 'pre': 0, 'dates': [], 'total': 0}),
@@ -110,27 +111,27 @@ def festival_summary(request):
     }
     for date in dates:
         date_total = 0
-        date_amount = request.festival.button_price * (Sale.objects.filter(festival = request.festival, completed__date = date).aggregate(Sum('buttons'))['buttons__sum'] or 0)
+        date_amount = festival.button_price * (Sale.objects.filter(festival = festival, completed__date = date).aggregate(Sum('buttons'))['buttons__sum'] or 0)
         types['buttons']['dates'].append(date_amount)
         types['buttons']['total'] += date_amount
         date_total += date_amount
-        date_amount = Fringer.objects.filter(user__isnull = True, sale__festival = request.festival, sale__completed__date = date).aggregate(Sum('cost'))['cost__sum'] or 0
+        date_amount = Fringer.objects.filter(type=festival.paper_fringer_type, sale__festival = festival, sale__completed__date = date).aggregate(Sum('type__price'))['type__price__sum'] or 0
         types['fringers']['dates'].append(date_amount)
         types['fringers']['total'] += date_amount
         date_total += date_amount
-        date_amount = Fringer.objects.filter(user__isnull = False, sale__festival = request.festival, sale__completed__date = date).aggregate(Sum('cost'))['cost__sum'] or 0
+        date_amount = Fringer.objects.filter(type__is_online=True, sale__festival = festival, sale__completed__date = date).aggregate(Sum('type__price'))['type__price__sum'] or 0
         types['efringers']['dates'].append(date_amount)
         types['efringers']['total'] += date_amount
         date_total += date_amount
-        date_amount = Ticket.objects.filter(sale__festival = request.festival, sale__completed__date = date).aggregate(Sum('cost'))['cost__sum'] or 0
+        date_amount = Ticket.objects.filter(sale__festival = festival, sale__completed__date = date).aggregate(Sum('type__price'))['type__price__sum'] or 0
         types['tickets']['dates'].append(date_amount)
         types['tickets']['total'] += date_amount
         date_total += date_amount
-        date_amount = PayAsYouWill.objects.filter(sale__festival = request.festival, sale__completed__date = date, fringer_id__isnull = True).aggregate(Sum('amount'))['amount__sum'] or 0
+        date_amount = PayAsYouWill.objects.filter(sale__festival = festival, sale__completed__date = date, fringer_id__isnull = True).aggregate(Sum('amount'))['amount__sum'] or 0
         types['payw']['dates'].append(date_amount)
         types['payw']['total'] += date_amount
         date_total += date_amount
-        date_amount = Sale.objects.filter(festival = request.festival, completed__date = date).aggregate(Sum('donation'))['donation__sum'] or 0
+        date_amount = Sale.objects.filter(festival = festival, completed__date = date).aggregate(Sum('donation'))['donation__sum'] or 0
         types['donations']['dates'].append(date_amount)
         types['donations']['total'] += date_amount
         date_total += date_amount
@@ -143,8 +144,8 @@ def festival_summary(request):
     }
 
     # Bucket collections
-    first_performance = ShowPerformance.objects.filter(show__festival = request.festival, show__is_ticketed = False).order_by('date', 'time').first()
-    last_performance = ShowPerformance.objects.filter(show__festival = request.festival, show__is_ticketed = False).order_by('date', 'time').last()
+    first_performance = ShowPerformance.objects.filter(show__festival = festival, show__is_ticketed = False).order_by('date', 'time').first()
+    last_performance = ShowPerformance.objects.filter(show__festival = festival, show__is_ticketed = False).order_by('date', 'time').last()
     dates = date_list(first_performance.date, last_performance.date)
     types = OrderedDict([
         ('cash', {'title': 'Cash', 'dates': [], 'post': 0, 'total': 0}),
@@ -159,25 +160,25 @@ def festival_summary(request):
     }
     for date in dates:
         date_total = 0
-        date_amount = Bucket.objects.filter(company__festival = request.festival, date = date).aggregate(Sum('cash'))['cash__sum'] or 0
+        date_amount = Bucket.objects.filter(company__festival = festival, date = date).aggregate(Sum('cash'))['cash__sum'] or 0
         types['cash']['dates'].append(date_amount)
         types['cash']['total'] += date_amount
         date_total += date_amount
-        date_amount = 4 * (Bucket.objects.filter(company__festival = request.festival, date = date).aggregate(Sum('fringers'))['fringers__sum'] or 0)
+        date_amount = 4 * (Bucket.objects.filter(company__festival = festival, date = date).aggregate(Sum('fringers'))['fringers__sum'] or 0)
         types['fringers']['dates'].append(date_amount)
         types['fringers']['total'] += date_amount
         date_total += date_amount
-        date_amount = PayAsYouWill.objects.filter(sale__festival = request.festival, sale__completed__date = date, fringer_id__isnull = True).aggregate(Sum('amount'))['amount__sum'] or 0
+        date_amount = PayAsYouWill.objects.filter(sale__festival = festival, sale__completed__date = date, fringer_id__isnull = True).aggregate(Sum('amount'))['amount__sum'] or 0
         types['boxoffice']['dates'].append(date_amount)
         types['boxoffice']['total'] += date_amount
         date_total += date_amount
-        date_amount = PayAsYouWill.objects.filter(sale__festival = request.festival, sale__completed__date = date, fringer_id__isnull = False).aggregate(Sum('amount'))['amount__sum'] or 0
+        date_amount = PayAsYouWill.objects.filter(sale__festival = festival, sale__completed__date = date, fringer_id__isnull = False).aggregate(Sum('amount'))['amount__sum'] or 0
         types['efringers']['dates'].append(date_amount)
         types['efringers']['total'] += date_amount
         date_total += date_amount
         totals['dates'].append(date_total)
         totals['total'] += date_total
-    efringers_post = PayAsYouWill.objects.filter(sale__festival = request.festival, sale__completed__date__gt = dates[-1], fringer_id__isnull = False).aggregate(Sum('amount'))['amount__sum'] or 0
+    efringers_post = PayAsYouWill.objects.filter(sale__festival = festival, sale__completed__date__gt = dates[-1], fringer_id__isnull = False).aggregate(Sum('amount'))['amount__sum'] or 0
     types['efringers']['post'] = efringers_post
     types['efringers']['total'] += efringers_post
     totals['post'] = efringers_post
@@ -198,16 +199,14 @@ def festival_summary(request):
             'total': 0,
         }
     }
-    ticket_types = [tt.name for tt in TicketType.objects.filter(festival = request.festival).order_by('seqno')]
-    ticket_types.append('eFringer')
-    ticket_types.append('Volunteer')
+    ticket_types = TicketType.objects.filter(festival=festival).order_by('seqno')
     for ticket_type in ticket_types:
-        query = Ticket.objects.filter(description = ticket_type, sale__festival = request.festival, sale__completed__isnull = False, refund__isnull = True)
+        query = Ticket.objects.filter(type=ticket_type, sale__festival = festival, sale__completed__isnull = False, refund__isnull = True)
         online = query.filter(sale__venue__isnull = True, sale__boxoffice__isnull = True).count() or 0
         boxoffice = query.filter(sale__boxoffice__isnull = False).count() or 0
         venue = query.filter(sale__venue__isnull = False).count() or 0
         tickets['types'].append({
-            'description': ticket_type,
+            'description': ticket_type.name,
             'online': online,
             'boxoffice': boxoffice,
             'venue': venue,
@@ -219,10 +218,10 @@ def festival_summary(request):
         tickets['totals']['total'] += online + boxoffice + venue
 
     # Paper fringers
-    fringers_sold = Fringer.objects.filter(user__isnull = True, sale__festival = request.festival, sale__completed__isnull = False).count() or 0
+    fringers_sold = Fringer.objects.filter(type=festival.paper_fringer_type, sale__festival = festival, sale__completed__isnull = False).count() or 0
     fringer_total = 6 * fringers_sold
-    fringer_tickets = Ticket.objects.filter(sale__festival = request.festival, sale__completed__isnull = False, refund__isnull = True, description = 'Fringer').count() or 0
-    fringer_buckets = Bucket.objects.filter(company__festival = request.festival).aggregate(Sum('fringers'))['fringers__sum'] or 0
+    fringer_tickets = Ticket.objects.filter(type=festival.paper_fringer_type.ticket_type, sale__festival = festival, sale__completed__isnull = False, refund__isnull = True).count() or 0
+    fringer_buckets = Bucket.objects.filter(company__festival = festival).aggregate(Sum('fringers'))['fringers__sum'] or 0
     fringer_unused = fringer_total - fringer_tickets - fringer_buckets
     fringers = {
         'sold': fringers_sold,
@@ -235,10 +234,10 @@ def festival_summary(request):
     }
 
     # eFringers
-    efringers_sold = Fringer.objects.filter(user__isnull = False, sale__festival = request.festival, sale__completed__isnull = False).count() or 0
-    efringer_total = Fringer.objects.filter(user__isnull = False, sale__festival = request.festival, sale__completed__isnull = False).aggregate(Sum('shows'))['shows__sum'] or 0
-    efringer_tickets = Ticket.objects.filter(sale__festival = request.festival, sale__completed__isnull = False, refund__isnull = True, fringer__isnull = False).count() or 0
-    efringer_buckets = PayAsYouWill.objects.filter(show__festival = request.festival, sale__completed__isnull = False, fringer__isnull = False).count() or 0
+    efringers_sold = Fringer.objects.filter(type__is_online=True, sale__festival = festival, sale__completed__isnull = False).count() or 0
+    efringer_total = Fringer.objects.filter(type__is_online=True, sale__festival = festival, sale__completed__isnull = False).aggregate(Sum('type__shows'))['type__shows__sum'] or 0
+    efringer_tickets = Ticket.objects.filter(fringer__type__is_online=True, sale__festival = festival, sale__completed__isnull = False, refund__isnull = True).count() or 0
+    efringer_buckets = PayAsYouWill.objects.filter(show__festival = festival, sale__completed__isnull = False, fringer__isnull = False).count() or 0
     efringer_unused = efringer_total - efringer_tickets - efringer_buckets
     efringers = {
         'sold':  efringers_sold,
@@ -252,9 +251,9 @@ def festival_summary(request):
 
     # Volunteer tickets
     volunteers_earned = 0
-    for volunteer in Volunteer.objects.filter(user__festival = request.festival):
+    for volunteer in Volunteer.objects.filter(user__festival = festival):
         volunteers_earned += volunteer.comps_earned
-    volunteer_tickets = Ticket.objects.filter(description = 'Volunteer', sale__festival = request.festival, sale__completed__isnull = False, refund__isnull = True).count() or 0
+    volunteer_tickets = Ticket.objects.filter(type=festival.volunteer_ticket_type, sale__festival = festival, sale__completed__isnull = False, refund__isnull = True).count() or 0
     volunteer_unused = volunteers_earned - volunteer_tickets
     volunteers = {
         'earned': volunteers_earned,
@@ -296,8 +295,8 @@ def festival_summary(request):
     story = []
 
     # Sales by channel
-    if request.festival.banner:
-        banner = Image(request.festival.banner.get_absolute_path(), width = 16*cm, height = 4*cm)
+    if festival.banner:
+        banner = Image(festival.banner.get_absolute_path(), width = 16*cm, height = 4*cm)
         banner.hAlign = 'CENTER'
         story.append(banner)
         story.append(Spacer(1, 1*cm))
@@ -357,8 +356,8 @@ def festival_summary(request):
 
     # Sales by type
     story.append(PageBreak())
-    if request.festival.banner:
-        banner = Image(request.festival.banner.get_absolute_path(), width = 16*cm, height = 4*cm)
+    if festival.banner:
+        banner = Image(festival.banner.get_absolute_path(), width = 16*cm, height = 4*cm)
         banner.hAlign = 'CENTER'
         story.append(banner)
         story.append(Spacer(1, 1*cm))
@@ -402,8 +401,8 @@ def festival_summary(request):
 
     # Bucket collections
     story.append(PageBreak())
-    if request.festival.banner:
-        banner = Image(request.festival.banner.get_absolute_path(), width = 16*cm, height = 4*cm)
+    if festival.banner:
+        banner = Image(festival.banner.get_absolute_path(), width = 16*cm, height = 4*cm)
         banner.hAlign = 'CENTER'
         story.append(banner)
         story.append(Spacer(1, 1*cm))
@@ -451,8 +450,8 @@ def festival_summary(request):
 
     # Tickets by type
     story.append(PageBreak())
-    if request.festival.banner:
-        banner = Image(request.festival.banner.get_absolute_path(), width = 16*cm, height = 4*cm)
+    if festival.banner:
+        banner = Image(festival.banner.get_absolute_path(), width = 16*cm, height = 4*cm)
         banner.hAlign = 'CENTER'
         story.append(banner)
         story.append(Spacer(1, 1*cm))
@@ -993,9 +992,9 @@ def _get_performance_tickets_by_type(performance, ticket_types):
     tickets = {}
     payment = 0
     for tt in ticket_types:
-        count = Ticket.objects.filter(performance = performance, sale__completed__isnull = False, refund__isnull = True, description = tt['name']).count()
-        tickets[tt['name']] = count
-        payment += count * tt['payment']
+        count = Ticket.objects.filter(type=tt, performance = performance, sale__completed__isnull = False, refund__isnull = True).count()
+        tickets[tt.name] = count
+        payment += count * tt.payment
     tickets['Total'] = Ticket.objects.filter(performance = performance, sale__completed__isnull = False, refund__isnull = True).count()
     return {
         'date': performance.date,
@@ -1061,7 +1060,7 @@ def company_payment_pdf(request, companies, ticket_types):
             ]
             row = ['']
             for ticket_type in ticket_types:
-                row.append(ticket_type['name'])
+                row.append(ticket_type.name)
             row.append('Payment')
             table_data.append(row)
 
@@ -1069,7 +1068,7 @@ def company_payment_pdf(request, companies, ticket_types):
             for performance in show['performances']:
                 row = [Paragraph(f"<para>{ performance['date']:%a, %b %d } at { performance['time']:%I:%M%p }</para>", styles['Normal'])]
                 for ticket_type in ticket_types:
-                    row.append(performance['tickets'][ticket_type['name']])
+                    row.append(performance['tickets'][ticket_type.name])
                 row.append(f"£{performance['payment']}")
                 table_data.append(row)
             colWidths = [5*cm]
@@ -1093,11 +1092,11 @@ def company_payment_pdf(request, companies, ticket_types):
 
 def get_ticket_payment(company, ticket_types, name):
 
-    ticket_type = next(filter(lambda tt: tt['name'] == name, ticket_types), None)
+    ticket_type = next(filter(lambda tt: tt.name == name, ticket_types), None)
     tickets = 0
     for show in company['shows']:
         for performance in show['performances']:
-            tickets += performance['tickets'][ticket_type['name']] 
+            tickets += performance['tickets'][ticket_type.name] 
     return tickets * ticket_type['payment']
 
 def company_payment_xlsx(request, companies, ticket_types):
@@ -1161,9 +1160,7 @@ def company_payment(request):
         selected_company = Company.objects.get(id = int(request.GET['company']))
 
     # Ticketed venues
-    ticket_types = [{'name': tt.name, 'payment': tt.payment} for tt in TicketType.objects.filter(festival = request.festival).order_by('name')]
-    ticket_types.append({'name': 'eFringer', 'payment': Decimal('4.00')})
-    ticket_types.append({'name': 'Volunteer', 'payment': Decimal('0.00')})
+    ticket_types = TicketType.objects.filter(festival = request.festival).order_by('seqno')
     companies = []
     if selected_company:
         companies.append(_get_company_tickets_by_type(selected_company, ticket_types))

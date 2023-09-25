@@ -32,8 +32,6 @@ class Festival(TimeStampedModel):
     online_sales_close = models.DateField(null=True, blank=True)
     is_archived = models.BooleanField(default=False)
     button_price = models.DecimalField(max_digits = 4, decimal_places = 2, blank = True, default = 0)
-    fringer_price = models.DecimalField(max_digits = 4, decimal_places = 2, blank = True, default = 0)
-    fringer_shows = models.PositiveIntegerField(blank = True, default = 0)
     volunteer_comps = models.PositiveIntegerField(blank = True, default = 0)
     boxoffice_open = models.DateField(null=True, blank=True)
     boxoffice_close = models.DateField(null=True, blank=True)
@@ -73,6 +71,13 @@ class Festival(TimeStampedModel):
         from content.models import Document
         return Document.objects.filter(festival=self, name='PrivacyPolicy').first()
 
+    @cached_property
+    def paper_fringer_type(self):
+        return self.fringer_types.filter(is_online=False)[0]
+
+    @cached_property
+    def volunteer_ticket_type(self):
+        return self.ticket_types.filter(name='Volunteer')[0]
 
 class UserManager(BaseUserManager):
 

@@ -41,7 +41,7 @@ class BuyFringerForm(forms.Form):
         self.user = user
 
         # Create fringer type choices
-        fringer_choices = [(t.id, "{0} shows for £{1:0.2}".format(t.shows, t.price)) for t in fringer_types]
+        fringer_choices = [(ft.id, ft.name) for ft in fringer_types]
 
         # Add fields
         self.fields['type'] = forms.ChoiceField(label = "Type", choices = fringer_choices, initial = [fringer_choices[0][0]])

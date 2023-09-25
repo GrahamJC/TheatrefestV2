@@ -1,0 +1,35 @@
+﻿{% extends "base.html" %}
+{% load i18n %}
+
+{% block pagetitle %}Fringer Types{% endblock %}
+
+{% block content %}
+
+    <table class="table">
+        <thead class="thead-light">
+            <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Price</th>
+                <th>Shows</th>
+                <th>Ticket Type</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ft in fringertypes %}
+                <tr>
+                    <td><a href="{% url 'festival:admin_fringertype_update' ft.uuid %}">{{ ft.name }}</a></td>
+                    <td>{% if ft.is_online %}eFringer{% else %}Paper{% endif %}</td>
+                    <td>&#163;{{ ft.price }}</td>
+                    <td>{{ ft.shows }}</td>
+                    <td>{{ ft.ticket_type.name }}</td>
+                </tr>
+            {%endfor %}
+        </tbody>
+    </table>
+
+    <div class="row">
+        <div class="col-12"><a href="{% url 'festival:admin_fringertype_create' %}" class="btn btn-primary">Add Fringer Type</a></div>
+    </div>
+
+{% endblock %}

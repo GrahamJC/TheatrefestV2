@@ -75,11 +75,11 @@ class Sale(TimeStampedModel):
 
     @property
     def fringer_cost(self):
-        return sum([f.cost for f in self.fringers.all()])
+        return sum([f.price for f in self.fringers.all()])
 
     @property
     def ticket_cost(self):
-        return sum([t.cost for t in self.tickets.all()])
+        return sum([t.price for t in self.tickets.all()])
 
     @property
     def payw_cost(self):
@@ -105,8 +105,8 @@ class Sale(TimeStampedModel):
                 'show': p.show.name,
                 'date' : p.date,
                 'time': p.time,
-                'ticket_cost': sum(t.cost for t in tickets.all()), 
-                'tickets': [{'id': t.id, 'uuid': t.uuid, 'description': f"{t.description}: {t.fringer.name}" if t.fringer else t.description, 'cost': t.cost} for t in tickets],
+                'ticket_cost': sum(t.price for t in tickets.all()), 
+                'tickets': [{'id': t.id, 'uuid': t.uuid, 'description': f"{t.description}: {t.fringer.name}" if t.fringer else t.description, 'cost': t.price} for t in tickets],
             }
             performances.append(performance)
         return performances
@@ -208,11 +208,11 @@ class Basket(TimeStampedModel):
 
     @property
     def ticket_cost(self):
-        return sum([t.cost for t in self.tickets.all()])
+        return sum([t.price for t in self.tickets.all()])
 
     @property
     def fringer_cost(self):
-        return sum([f.cost for f in self.fringers.all()])
+        return sum([f.price for f in self.fringers.all()])
 
     @property
     def total_cost(self):
@@ -230,8 +230,8 @@ class Basket(TimeStampedModel):
                 'show': p.show.name,
                 'date' : p.date,
                 'time': p.time,
-                'ticket_cost': sum(t.cost for t in tickets.filter(performance = p)), 
-                'tickets': [{'id': t.id, 'uuid': t.uuid, 'description': t.description, 'cost': t.cost} for t in tickets],
+                'ticket_cost': sum(t.price for t in tickets), 
+                'tickets': [{'id': t.id, 'uuid': t.uuid, 'description': t.description, 'cost': t.price} for t in tickets],
             }
             performances.append(performance)
         return performances
@@ -240,13 +240,15 @@ class Basket(TimeStampedModel):
         return f'{self.user}'
 
 
-class FringerType(TimeStampedModel):
+class TicketType(TimeStampedModel):
 
-    festival = models.ForeignKey(Festival, on_delete=models.PROTECT, related_name='fringer_types')
+    festival = models.ForeignKey(Festival, on_delete=models.PROTECT, related_name='ticket_types')
     name = models.CharField(max_length = 32)
-    shows = models.PositiveIntegerField(blank = True, default = 0)
+    seqno = models.IntegerField(default = 1)
     price = models.DecimalField(max_digits = 4, decimal_places = 2, blank = True, default = 0)
     is_online = models.BooleanField(default = False)
+    is_boxoffice = models.BooleanField(default = False)
+    is_venue = models.BooleanField(default = False)
     rules = models.TextField(blank = True, default = '')
     payment = models.DecimalField(max_digits = 4, decimal_places = 2, blank = True, default = 0)
 
@@ -258,20 +260,39 @@ class FringerType(TimeStampedModel):
         return f'{self.festival.name}/{self.name}'
 
     @property
-    def description(self):
-        return "{0} shows for £{1:0.2}".format(self.shows, self.price)
+    def can_delete(self):
+        return (self.tickets.count() == 0) and (self.fringer_types.count() == 0)
 
+    def get_volunteer(festival):
+        return TicketType.objects.get(festival_id=festival.id, name='Volunteer')
 
+class FringerType(TimeStampedModel):
+
+    festival = models.ForeignKey(Festival, on_delete=models.PROTECT, related_name='fringer_types')
+    name = models.CharField(max_length = 32)
+    shows = models.PositiveIntegerField(blank = True, default = 0)
+    price = models.DecimalField(max_digits = 4, decimal_places = 2, blank = True, default = 0)
+    is_online = models.BooleanField(default = False)
+    rules = models.TextField(blank = True, default = '')
+    ticket_type = models.ForeignKey(TicketType, on_delete=models.PROTECT, related_name='fringer_types')
+
+    class Meta:
+        unique_together = ('festival', 'name')
+        ordering = ('festival', 'name')
+
+    def __str__(self):
+        return f'{self.festival.name}/{self.name}'
+
+    def can_delete(self):
+        return self.fringers.count() == 0
+    
 class Fringer(TimeStampedModel):
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete = models.PROTECT, null = True, blank = True, related_name = 'fringers')
+    type = models.ForeignKey(FringerType, on_delete = models.PROTECT, related_name = 'fringers')
     name = models.CharField(max_length = 32)
-    description = models.CharField(max_length = 32)
-    shows = models.PositiveIntegerField()
-    cost = models.DecimalField(max_digits = 4, decimal_places = 2)
     basket = models.ForeignKey(Basket, on_delete = models.CASCADE, null = True, blank = True, related_name = 'fringers')
     sale = models.ForeignKey(Sale, on_delete = models.CASCADE, null = True, blank = True, related_name = 'fringers')
-    payment = models.DecimalField(max_digits = 4, decimal_places = 2, blank = True, default = 0)
 
     class Meta:
         #ordering = ['user', 'name']
@@ -286,12 +307,20 @@ class Fringer(TimeStampedModel):
             return f"Fringer({self.id})"
 
     @property
+    def description(self):
+        return self.type.name
+
+    @property
+    def price(self):
+        return self.type.price
+
+    @property
     def used(self):
         return self.tickets.filter(refund = None).count() + self.PAYW_donations.count()
 
     @property
     def available(self):
-        return self.shows - self.used
+        return self.type.shows - self.used
 
     @property
     def valid_tickets(self):
@@ -303,45 +332,16 @@ class Fringer(TimeStampedModel):
     @staticmethod
     def get_available(user, performance = None):
         return [f for f in user.fringers.exclude(sale__completed__isnull = True) if f.is_available(performance)]
-
-
-class TicketType(TimeStampedModel):
-
-    festival = models.ForeignKey(Festival, on_delete=models.PROTECT, related_name='ticket_types')
-    name = models.CharField(max_length = 32)
-    seqno = models.IntegerField(default = 1)
-    price = models.DecimalField(max_digits = 4, decimal_places = 2, blank = True, default = 0)
-    is_online = models.BooleanField(default = False)
-    is_admin = models.BooleanField(default = False)
-    rules = models.TextField(blank = True, default = '')
-    payment = models.DecimalField(max_digits = 4, decimal_places = 2, blank = True, default = 0)
-
-    class Meta:
-        unique_together = ('festival', 'name')
-        ordering = ('festival', 'name')
-
-    def __str__(self):
-        return f'{self.festival.name}/{self.name}'
-
-    @property
-    def description(self):
-        description = self.name
-        if self.price:
-            description += f" (£{self.price})"
-        return description
-
-
+    
 class Ticket(TimeStampedModel):
 
     performance = models.ForeignKey(ShowPerformance, on_delete = models.PROTECT, related_name = 'tickets')
-    description = models.CharField(max_length = 32)
-    cost = models.DecimalField(max_digits = 4, decimal_places = 2)
+    type = models.ForeignKey(TicketType, on_delete = models.PROTECT, related_name = 'tickets', null=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, null = True, on_delete = models.PROTECT, related_name = 'tickets')
     basket = models.ForeignKey(Basket, on_delete = models.CASCADE, null = True, blank = True, related_name = 'tickets')
     fringer = models.ForeignKey(Fringer, on_delete = models.PROTECT, null = True, blank = True, related_name = 'tickets')
     sale = models.ForeignKey(Sale, on_delete = models.CASCADE, null = True, blank = True, related_name = 'tickets')
     refund = models.ForeignKey(Refund, on_delete = models.SET_NULL, null = True, blank = True, related_name = 'tickets')
-    payment = models.DecimalField(max_digits = 4, decimal_places = 2, blank = True, default = 0)
     token_issued = models.BooleanField(default = False)
 
     #class Meta:
@@ -358,6 +358,13 @@ class Ticket(TimeStampedModel):
     def is_cancelled(self):
         return (self.refund != None)
 
+    @property
+    def description(self):
+        return self.type.name
+
+    @property
+    def price(self):
+        return self.type.price
 
 class Checkpoint(TimeStampedModel):
 

@@ -162,7 +162,6 @@ class VolunteerUserForm(forms.ModelForm):
 
     def validate_unique(self):
         exclude = self._get_validation_exclusions()
-        exclude.remove('site')
         exclude.remove('festival')
         try:
             self.instance.validate_unique(exclude)

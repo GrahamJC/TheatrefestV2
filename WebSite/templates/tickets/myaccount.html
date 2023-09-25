@@ -33,7 +33,7 @@
                                             <div id="tf-tickets-show-current-tickets-{{ forloop.counter }}" class="col-12 collapse">
                                                 {% for ticket in performance.tickets %}
                                                     <div class="row">
-                                                        <div class="col-2 text-right">{{ ticket.id }}</div>
+                                                        <div class="col-3 text-right">{{ ticket.id }}</div>
                                                         <div class="col-5">
                                                             {% if ticket.fringer_name %}
                                                                 eFringer: {{ ticket.fringer_name }}
@@ -48,7 +48,7 @@
                                                                 &#163;{{ ticket.cost }}
                                                             {% endif %}
                                                         </div>
-                                                        <div class="col-2"></div>
+                                                        <div class="col-1"></div>
                                                     </div>
                                                 {% endfor %}
                                             </div>

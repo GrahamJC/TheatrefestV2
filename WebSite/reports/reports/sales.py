@@ -194,7 +194,7 @@ def _get_performance_tickets_by_type(performance, ticket_types):
 
     tickets = {}
     for tt in ticket_types:
-        tickets[tt] = Ticket.objects.filter(performance = performance, sale__completed__isnull = False, refund__isnull = True, description = tt).count()
+        tickets[tt.name] = Ticket.objects.filter(type=tt, performance = performance, sale__completed__isnull = False, refund__isnull = True).count()
     tickets['Total'] = Ticket.objects.filter(performance = performance, sale__completed__isnull = False, refund__isnull = True).count()
     return {
         'date': performance.date,
@@ -218,9 +218,7 @@ def tickets_by_type(request):
     selected_show = Show.objects.get(id = int(request.GET['show'])) if request.GET['show'] else None
 
     # Fetch data
-    ticket_types = [tt.name for tt in TicketType.objects.filter(festival = request.festival).order_by('name')]
-    ticket_types.append('eFringer')
-    ticket_types.append('Volunteer')
+    ticket_types = TicketType.objects.filter(festival = request.festival).order_by('seqno')
     shows = []
     if selected_show:
         shows.append(_get_show_tickets_by_type(selected_show, ticket_types))
@@ -275,7 +273,7 @@ def tickets_by_type(request):
         table_styles.append(('ALIGN', (0, 0), (0, 0), 'LEFT'))
         row = ['']
         for ticket_type in ticket_types:
-            row.append(ticket_type)
+            row.append(ticket_type.name)
         row.append('Total')
         table_data.append(row)
 
@@ -283,7 +281,7 @@ def tickets_by_type(request):
         for performance in show['performances']:
             row = [Paragraph(f"<para>{ performance['date']:%a, %b %d } at { performance['time']:%I:%M%p }</para>", styles['Normal'])]
             for ticket_type in ticket_types:
-                row.append(performance['tickets'][ticket_type])
+                row.append(performance['tickets'][ticket_type.name])
             row.append(performance['tickets']['Total'])
             table_data.append(row)
         colWidths = [5*cm]

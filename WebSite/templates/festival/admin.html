@@ -9,12 +9,11 @@
 
         <div class="col">
 
-            <h5>General</h5>
+            <h5>Setup</h5>
             <ul>
-                <li><a href="{% url 'festival:admin_setup' %}">Setup</a></li>
-                <li><a href="{% url 'festival:admin_user_list' %}">List Users</a></li>
-                <li><a href="{% url 'festival:admin_user_email' %}">e-mail Users</a></li>
-                <li><a href="{% url 'festival:admin_sale_list' %}">List Sales</a></li>
+                <li><a href="{% url 'festival:admin_festival' %}">Festival</a></li>
+                <li><a href="{% url 'festival:admin_tickettype_list' %}">Ticket types</a></li>
+                <li><a href="{% url 'festival:admin_fringertype_list' %}">Fringer types</a></li>
             </ul>
 
             <h5>Program</h5>
@@ -37,6 +36,17 @@
         </div>
 
         <div class="col">
+
+            <h5>Users</h5>
+            <ul>
+                <li><a href="{% url 'festival:admin_user_list' %}">List Users</a></li>
+                <li><a href="{% url 'festival:admin_user_email' %}">e-mail Users</a></li>
+            </ul>
+
+            <h5>Sales</h5>
+            <ul>
+                <li><a href="{% url 'festival:admin_sale_list' %}">List Sales</a></li>
+            </ul>
 
             <h5>Reports</h5>
             <ul>

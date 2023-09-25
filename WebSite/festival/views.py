@@ -7,12 +7,14 @@ from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.messages.views import SuccessMessageMixin
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.views import View
+from django.views.generic import ListView, CreateView, UpdateView
 from django.views.decorators.http import require_GET, require_POST
 from django.core.mail import send_mail
 
@@ -22,9 +24,9 @@ from crispy_forms.bootstrap import FormActions, TabHolder, Tab, Div
 
 from core.models import Festival, User
 
-from tickets.models import BoxOffice, Sale
+from tickets.models import BoxOffice, Sale, TicketType, FringerType
 
-from .forms import PasswordResetForm, EMailForm, AdminSaleListForm, AdminSetupForm
+from .forms import PasswordResetForm, EMailForm, AdminSaleListForm, AdminFestivalForm, AdminTicketTypeForm, AdminFringerTypeForm
 
 # Logging
 import logging
@@ -99,10 +101,10 @@ def admin(request):
     return render(request, 'festival/admin.html', context)
 
 
-class AdminSetupView(LoginRequiredMixin, View):
+class AdminFestival(LoginRequiredMixin, View):
 
     def _get_form(self, festival, post_data = None):
-        form = AdminSetupForm(instance=festival, data=post_data)
+        form = AdminFestivalForm(instance=festival, data=post_data)
         helper = FormHelper()
         helper.form_method = 'POST'
         helper.layout = Layout(
@@ -118,11 +120,6 @@ class AdminSetupView(LoginRequiredMixin, View):
             ),
             Row(
                 Column('button_price'),
-                css_class='form-row',
-            ),
-            Row(
-                Column('fringer_price', css_class='col-6'),
-                Column('fringer_shows', css_class='col-6'),
                 css_class='form-row',
             ),
             Row(
@@ -145,11 +142,11 @@ class AdminSetupView(LoginRequiredMixin, View):
             'festival': request.festival,
             'breadcrumbs': [
                 { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
-                { 'text': 'Setup' },
+                { 'text': 'Festival' },
             ],
             'form': form,
         }
-        return render(request, 'festival/admin_setup.html', context)
+        return render(request, 'festival/admin_festival.html', context)
 
     def post(self, request):
 
@@ -162,21 +159,267 @@ class AdminSetupView(LoginRequiredMixin, View):
             festival.boxoffice_open = form.cleaned_data['boxoffice_open']
             festival.boxoffice_close = form.cleaned_data['boxoffice_close']
             festival.button_price = form.cleaned_data['button_price']
-            festival.fringer_price = form.cleaned_data['fringer_price']
-            festival.fringer_shows = form.cleaned_data['fringer_shows']
             festival.volunteer_comps = form.cleaned_data['volunteer_comps']
             festival.save()
 
-        # Render page
-        context = {
-            'festival': request.festival,
-            'breadcrumbs': [
-                { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
-                { 'text': 'Sales' },
-            ],
-            'form': form,
-        }
-        return render(request, 'festival/admin_setup.html', context)
+        # Return to menu
+        messages.success(request, 'Festival updated')
+        return redirect('festival:admin')
+
+class AdminTicketTypeList(LoginRequiredMixin, ListView):
+
+    model = TicketType
+    context_object_name = 'tickettypes'
+    template_name = 'festival/admin_tickettype_list.html'
+
+    def get_queryset(self):
+        return TicketType.objects.filter(festival=self.request.festival).order_by('seqno')
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Ticket Types' },
+        ]
+        return context_data
+
+class AdminTicketTypeCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+
+    model = TicketType
+    form_class = AdminTicketTypeForm
+    context_object_name = 'tickettype'
+    template_name = 'festival/admin_tickettype.html'
+    success_message = 'Ticket type added'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['festival'] = self.request.festival
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Row(
+                Column('seqno', css_class='col-sm-2'),
+                Column('name', css_class='col-sm-10'),
+                css_class='form-row',
+            ),
+            Row(
+                Column('is_online', css_class='col-sm-4'),
+                Column('is_boxoffice', css_class='col-sm-4'),
+                Column('is_venue', css_class='col-sm-4'),
+                css_class='form-row',
+            ),
+            Row(
+                Column('price', css_class='col-sm-6'),
+                Column('payment', css_class='col-sm-6'),
+                css_class='form-row',
+            ),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('cancel', 'Cancel'),
+            ),
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Ticket Types', 'url': reverse('festival:admin_tickettype_list') },
+            { 'text': 'Add' },
+        ]
+        return context_data
+
+    def get_success_url(self):
+        return reverse('festival:admin_tickettype_list')
+
+class AdminTicketTypeUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+
+    model = TicketType
+    form_class = AdminTicketTypeForm
+    slug_field = 'uuid'
+    context_object_name = 'tickettype'
+    template_name = 'festival/admin_tickettype.html'
+    success_message = 'Ticket type updated'
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['festival'] = self.request.festival
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Row(
+                Column('seqno', css_class='col-sm-2'),
+                Column('name', css_class='col-sm-10'),
+                css_class='form-row',
+            ),
+            Row(
+                Column('is_online', css_class='col-sm-4'),
+                Column('is_boxoffice', css_class='col-sm-4'),
+                Column('is_venue', css_class='col-sm-4'),
+                css_class='form-row',
+            ),
+            Row(
+                Column('price', css_class='col-sm-6'),
+                Column('payment', css_class='col-sm-6'),
+                css_class='form-row',
+            ),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('delete', 'Delete'),
+                Button('cancel', 'Cancel'),
+            )
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Ticket Types', 'url': reverse('festival:admin_tickettype_list') },
+            { 'text': 'Update' },
+        ]
+        return context_data
+
+    def get_success_url(self):
+        return reverse('festival:admin_tickettype_list')
+
+
+@login_required
+def admin_tickettype_delete(request, slug):
+
+    # Delete ticket type
+    tickettype = get_object_or_404(TicketType, uuid=slug)
+    tickettype.delete()
+    messages.success(request, 'Ticket type deleted')
+    return redirect('festival:admin_tickettype_list')
+
+class AdminFringerTypeList(LoginRequiredMixin, ListView):
+
+    model = FringerType
+    context_object_name = 'fringertypes'
+    template_name = 'festival/admin_fringertype_list.html'
+
+    def get_queryset(self):
+        return FringerType.objects.filter(festival=self.request.festival).order_by('is_online', 'name')
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Fringer Types' },
+        ]
+        return context_data
+
+class AdminFringerTypeCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+
+    model = FringerType
+    form_class = AdminFringerTypeForm
+    context_object_name = 'fringertype'
+    template_name = 'festival/admin_fringertype.html'
+    success_message = 'Fringer type added'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['festival'] = self.request.festival
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Field('name'),
+            Field('is_online'),
+            Row(
+                Column('price', css_class='col-sm-6'),
+                Column('shows', css_class='col-sm-6'),
+                css_class='form-row',
+            ),
+            Field('ticket_type'),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('cancel', 'Cancel'),
+            ),
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Fringer Types', 'url': reverse('festival:admin_fringertype_list') },
+            { 'text': 'Add' },
+        ]
+        return context_data
+
+    def get_success_url(self):
+        return reverse('festival:admin_fringertype_list')
+
+class AdminFringerTypeUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+
+    model = FringerType
+    form_class = AdminFringerTypeForm
+    slug_field = 'uuid'
+    context_object_name = 'fringertype'
+    template_name = 'festival/admin_fringertype.html'
+    success_message = 'Fringer type updated'
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['festival'] = self.request.festival
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Field('name'),
+            Field('is_online'),
+            Row(
+                Column('price', css_class='col-sm-6'),
+                Column('shows', css_class='col-sm-6'),
+                css_class='form-row',
+            ),
+            Field('ticket_type'),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('delete', 'Delete'),
+                Button('cancel', 'Cancel'),
+            ),
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Fringer Types', 'url': reverse('festival:admin_fringertype_list') },
+            { 'text': 'Update' },
+        ]
+        return context_data
+
+    def get_success_url(self):
+        return reverse('festival:admin_fringertype_list')
+
+@login_required
+def admin_fringertype_delete(request, slug):
+
+    # Delete fringer type
+    fringertype = get_object_or_404(FringerType, uuid=slug)
+    fringertype.delete()
+    messages.success(request, 'Fringer type deleted')
+    return redirect('festival:admin_fringertype_list')
 
 
 @user_passes_test(lambda u: u.is_admin)

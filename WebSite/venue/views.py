@@ -32,7 +32,7 @@ from reportlab.lib import colors
 
 from core.models import User
 from program.models import Show, ShowPerformance, Venue
-from tickets.models import Sale, TicketType, Ticket, Fringer, Checkpoint
+from tickets.models import Sale, TicketType, Ticket, FringerType,  Fringer, Checkpoint
 from .forms import OpenCheckpointForm, SaleForm, CloseCheckpointForm
 
 # Logging
@@ -120,9 +120,9 @@ def create_sale_form(performance, sale, post_data = None):
 
     # Get ticket types and add initial values
     ticket_types = []
-    for ticket_type in sale.festival.ticket_types.order_by('seqno'):
+    for ticket_type in sale.festival.ticket_types.filter(is_venue=True).order_by('seqno'):
         ticket_types.append(ticket_type)
-        initial_data[SaleForm.ticket_field_name(ticket_type)] = sale.tickets.filter(description = ticket_type.name).count()
+        initial_data[SaleForm.ticket_field_name(ticket_type)] = sale.tickets.filter(type=ticket_type).count()
 
     # Create form
     form = SaleForm(ticket_types, data = post_data, initial = initial_data)
@@ -217,7 +217,7 @@ def render_main(request, venue, performance, sale=None, tab=None, open_form=None
         'sale_form': sale_form,
         'close_form': close_form,
         'tickets': performance.tickets.order_by('id') if performance else None,
-        'available': performance.tickets_available + (sale.tickets.count() if sale else 0) if performance else 0,
+        'available': performance.tickets_available() + (sale.tickets.count() if sale else 0) if performance else 0,
         'square_intent': make_square_intent(request, venue, performance, sale),
     }
     return render(request, 'venue/main.html', context)
@@ -249,7 +249,7 @@ def render_sales(request, performance, sale = None, sale_form = None):
         'sales': sales,
         'sale': sale,
         'sale_form': sale_form,
-        'available': performance.tickets_available + (sale.tickets.count() if sale else 0),
+        'available': performance.tickets_available() + (sale.tickets.count() if sale else 0),
         'square_intent': make_square_intent(request, venue, performance, sale),
     }
     return render(request, "venue/_main_sales.html", context)
@@ -546,24 +546,22 @@ def sale_update(request, performance_uuid, sale_uuid):
 
         # Check if there are sufficient tickets
         requested_tickets = sale_form.ticket_count
-        available_tickets = performance.tickets_available + sale.tickets.count()
+        available_tickets = performance.tickets_available() + sale.tickets.count()
         if requested_tickets <= available_tickets:
 
             # Adjust ticket numbers
             for ticket_type in sale_form.ticket_types:
                 quantity = sale_form.cleaned_data[SaleForm.ticket_field_name(ticket_type)]
-                while sale.tickets.filter(description = ticket_type.name).count() > quantity:
-                    ticket = sale.tickets.filter(description = ticket_type.name).last()
+                while sale.tickets.filter(type=ticket_type).count() > quantity:
+                    ticket = sale.tickets.filter(type=ticket_type).last()
                     logger.info(f"{ticket_type.name} ticket {ticket.id} removed from sale {sale.id}")
                     ticket.delete()
-                while sale.tickets.filter(description = ticket_type.name).count() < quantity:
+                while sale.tickets.filter(type=ticket_type).count() < quantity:
                     ticket = Ticket(
                         sale = sale,
                         user = sale.customer_user,
                         performance = performance,
-                        description = ticket_type.name,
-                        cost = ticket_type.price,
-                        payment = ticket_type.payment,
+                        type = ticket_type,
                     )
                     ticket.save()
                     logger.info(f"{ticket_type.name} ticket {ticket.id} added to sale {sale.id}")
@@ -584,9 +582,7 @@ def sale_update(request, performance_uuid, sale_uuid):
                     fringer.delete()
                 while (sale.fringers.count() or 0) < fringers:
                     fringer = Fringer(
-                        description = f'{request.festival.fringer_shows} shows for £{request.festival.fringer_price:.0f}',
-                        shows = request.festival.fringer_shows,
-                        cost = request.festival.fringer_price,
+                        type = request.festival.paper_fringer_type,
                         sale = sale,
                     )
                     fringer.save()
@@ -841,9 +837,6 @@ def ticket_token(request, ticket_uuid):
 
 # Square web callback
 def square_callback(request):
-
-    # http://localhost:8000/venue/square/callback?com.squareup.pos.REQUEST_METADATA=%7B%22venue_id%22:%20229,%20%22performance_id%22:%20898,%20%22sale_id%22:%207480%7D
-    # http://localhost:8000/venue/square/callback?com.squareup.pos.REQUEST_METADATA=%7B%22venue_id%22:%20229,%20%22performance_id%22:%20898,%20%22sale_id%22:%207480%7D&com.squareup.pos.ERROR_CODE=TRANSACTION_CANCELED
 
     # Get parameters
     server_transaction_id = request.GET.get('com.squareup.pos.SERVER_TRANSACTION_ID', None)

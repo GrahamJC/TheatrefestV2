@@ -4,7 +4,7 @@
     <tr>
         <th></th>
         {% for ticket_type in ticket_types %}
-            <th class="text-right">{{ ticket_type }}</th>
+            <th class="text-right">{{ ticket_type.name }}</th>
         {% endfor %}
         <th class="text-right"><strong>Total</strong></th>
     </tr>
@@ -14,7 +14,7 @@
             <tr>
                 <td>&nbsp;&nbsp;&nbsp;&nbsp;{{ performance.date | date:'l, F j' }} at {{ performance.time | time:'g:ia' }}</td>
                 {% for ticket_type in ticket_types %}
-                    <td class="text-right">{{ performance.tickets | lookup:ticket_type }}</td>
+                    <td class="text-right">{{ performance.tickets | lookup:ticket_type.name }}</td>
                 {% endfor %}
                 <td class="text-right"><strong>{{ performance.tickets | lookup:'Total' }}</strong></td>
             </tr>
