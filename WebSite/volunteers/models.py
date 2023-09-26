@@ -62,7 +62,7 @@ class Volunteer(TimeStampedModel):
 
     @property
     def comps_used(self):
-        return self.user.tickets.filter(type=TicketType.get_volunteer(festival=self.user.festival), sale__completed__isnull = False).count()
+        return self.user.tickets.filter(type=self.user.festival.volunteer_ticket_type, sale__completed__isnull = False).count()
 
     @property
     def comps_available(self):

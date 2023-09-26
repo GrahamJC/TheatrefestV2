@@ -85,7 +85,7 @@ class AdminShiftSearchForm(forms.Form):
         role_choices.extend([(r.id, r.description) for r in Role.objects.filter(festival = festival).order_by('description')])
         self.fields['role'] = forms.ChoiceField(choices = role_choices, required = False)
         volunteer_choices = [('0', 'All volunteers')]
-        volunteer_choices.extend([(v.id, f"{ v.user.last_name }, { v.user.first_name }") for v in Volunteer.objects.filter(user__festival = festival).order_by('user__last_name', 'user__first_name')])
+        volunteer_choices.extend([(v.user_id, f"{ v.user.last_name }, { v.user.first_name }") for v in Volunteer.objects.filter(user__festival = festival).order_by('user__last_name', 'user__first_name')])
         self.fields['volunteer'] = forms.ChoiceField(choices = volunteer_choices, required = False)
 
 class AdminShiftForm(forms.ModelForm):
