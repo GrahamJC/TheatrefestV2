@@ -1,9 +1,10 @@
 # pylint: disable=missing-docstring
-import datetime as dt
+from datetime import datetime
 from dateutil.parser import parse
 
 from django.conf import settings
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 
 from .models import Festival
 
@@ -22,9 +23,9 @@ class FestivalMiddleware:
             request.festival = get_object_or_404(Festival, name=settings.DEFAULT_FESTIVAL)
         
         # Add curret date/time to request
-        date = parse(request.session.get('date', str(dt.datetime.now().date()))).date()
-        time = parse(request.session.get('time', str(dt.datetime.now().time()))).time()
-        request.now = dt.datetime.combine(date, time)
+        date = parse(request.session.get('date', str(timezone.now().date()))).date()
+        time = parse(request.session.get('time', str(timezone.now().time()))).time()
+        request.now = datetime.combine(date, time)
 
         # Process request
         response = self.get_response(request)

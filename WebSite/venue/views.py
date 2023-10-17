@@ -1,4 +1,3 @@
-import datetime
 import json
 
 from decimal import Decimal
@@ -139,7 +138,6 @@ def create_sale_form(performance, sale, post_data = None):
         HTML('<h5>Other</h5>'),
         'buttons',
         'fringers',        
-        #Button('update', 'Add/Update Sale', css_class = 'btn-primary',  onclick = f"saleUpdate()"),
     )
 
     # Return form
@@ -610,38 +608,6 @@ def sale_update(request, performance_uuid, sale_uuid):
 @login_required
 @user_passes_test(lambda u: u.is_venue or u.is_admin)
 @transaction.atomic
-def sale_complete(request, performance_uuid, sale_uuid):
-
-    # Get performance, venue and sale
-    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
-    assert performance.has_open_checkpoint
-    assert not performance.has_close_checkpoint
-    venue = performance.venue
-    sale = get_object_or_404(Sale, uuid = sale_uuid)
-    assert sale.venue == venue
-    assert not sale.completed
-
-    # Mark tokens issued for tickets
-    for ticket in sale.tickets.all():
-        ticket.token_issued = True
-        ticket.save()
-        
-    # Complete the sale
-    sale.amount = sale.total_cost
-    sale.transaction_type = Sale.TRANSACTION_TYPE_SQUAREUP
-    sale.transaction_fee = 0
-    sale.completed = request.now
-    sale.save()
-    logger.info("Sale %s completed", sale)
-
-    # Render sales tab content
-    return  render_sales(request, performance)
-
-
-@require_GET
-@login_required
-@user_passes_test(lambda u: u.is_venue or u.is_admin)
-@transaction.atomic
 def sale_cancel(request, performance_uuid, sale_uuid):
 
     # Get performance, venue and sale
@@ -866,7 +832,7 @@ def square_callback(request):
         sale.amount = sale.total_cost
         sale.transaction_type = Sale.TRANSACTION_TYPE_SQUAREUP
         sale.transaction_fee = 0
-        sale.completed = request.now
+        sale.completed = timezone.now()
         sale.save()
         logger.info("Sale %s completed", sale)
         sale = None

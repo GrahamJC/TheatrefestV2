@@ -1,5 +1,6 @@
 import datetime
 import uuid
+import json
 from decimal import Decimal
 
 from django.conf import settings
@@ -27,6 +28,8 @@ from crispy_forms.bootstrap import FormActions, TabHolder, Tab, Div
 
 from dal.autocomplete import Select2QuerySetView
 
+from django_htmx.http import HttpResponseClientRedirect
+
 from core.models import User
 from program.models import Show, ShowPerformance
 from tickets.models import BoxOffice, Sale, Refund, TicketType, Ticket, PayAsYouWill, FringerType, Fringer, Checkpoint
@@ -37,31 +40,106 @@ from .forms import CheckpointForm, SaleTicketsForm, SalePAYWForm, SaleExtrasForm
 import logging
 logger = logging.getLogger(__name__)
 
+# Square interface
+def get_square_intent(request, boxoffice, sale):
+    if sale:
+        metadata = f'{{ "boxoffice_id": {boxoffice.id}, "sale_id": {sale.id} }}'
+        callback_url = request.build_absolute_uri(reverse('boxoffice:square_callback'))
+        intent = ';'.join([
+            'intent:#Intent',
+            'package=com.squareup',
+            'action=com.squareup.pos.action.CHARGE',
+            f'S.com.squareup.pos.WEB_CALLBACK_URI={callback_url}',
+            f'S.com.squareup.pos.CLIENT_ID={settings.SQUARE_APPLICATION_ID}',
+            f'S.com.squareup.pos.API_VERSION={settings.SQUARE_API_VERSION}',
+            f'i.com.squareup.pos.TOTAL_AMOUNT={sale.total_cost_pence}',
+            f'S.com.squareup.pos.CURRENCY_CODE={settings.SQUARE_CURRENCY_CODE}',
+            'S.com.squareup.pos.TENDER_TYPES=com.squareup.pos.TENDER_CARD',
+            f'S.com.squareup.pos.NOTE={sale.id}',
+            f'S.com.squareup.pos.REQUEST_METADATA={metadata}',
+            'end'
+        ])
+    else:
+        intent = ''
+    return intent
+
+@require_GET
+def square_callback(request):
+
+    # Get parameters
+    server_transaction_id = request.GET.get('com.squareup.pos.SERVER_TRANSACTION_ID', None)
+    client_transaction_id = request.GET.get('com.squareup.pos.CLIENT_TRANSACTION_ID', None)
+    request_metadata = request.GET.get('com.squareup.pos.REQUEST_METADATA', None)
+    error_code = request.GET.get('com.squareup.pos.ERROR_CODE', None)
+    error_description = request.GET.get('com.squareup.pos.ERROR_DESCRIPTION', None)
+
+    # Parse meta-data
+    metadata = json.loads(request_metadata)
+    boxoffice = get_object_or_404(BoxOffice, pk=metadata['boxoffice_id'])
+    sale = get_object_or_404(Sale, pk=metadata['sale_id'])
+
+    # Check for errors
+    if error_code:
+
+        # Reset payment type
+        sale.amount = 0
+        sale.transaction_type = None
+        sale.transaction_fee = 0
+        sale.save()
+        logger.info(f"Square callback error (sale {sale.id}): {error_description}")
+        if error_code == 'com.squareup.pos.ERROR_TRANSACTION_CANCELED':
+            messages.warning(request, "Card payment cancelled")
+        else:
+            messages.error(request, f"Card payment failed: {error_description}")
+    
+        # Display main page with the sale still selected
+        return redirect(reverse('boxoffice:main_sale', args=[boxoffice.uuid, sale.uuid]))
+
+    # Complete the sale and send a receipt (if we have an e-mail address)
+    sale.completed = timezone.now()
+    sale.save()
+    logger.info(f"Sale {sale.id} completed")
+    messages.success(request, "Card payment accepted")
+    if sale.customer:
+        email_receipt(sale, sale.customer)
+    return redirect(reverse('boxoffice:main', args=[boxoffice.uuid]))
+
 # Helpers
-def get_sales(boxoffice):
+def get_sales(boxoffice, date):
 
     # Get last checkpoint for today
-    checkpoint = Checkpoint.objects.filter(boxoffice = boxoffice, created__date = timezone.now().date()).order_by('created').last()
+    checkpoint = Checkpoint.objects.filter(boxoffice = boxoffice, created__date = date).order_by('created').last()
     if not checkpoint:
         return Sale.objects.none()
 
     # Get sales since last checkpoint
     return boxoffice.sales.filter(created__gte = checkpoint.created).order_by('-id')
 
-def get_refunds(boxoffice):
+def get_refunds(boxoffice, date):
 
     # Get last checkpoint for today
-    checkpoint = Checkpoint.objects.filter(boxoffice = boxoffice, created__date = timezone.now().date()).order_by('created').last()
+    checkpoint = Checkpoint.objects.filter(boxoffice = boxoffice, created__date = date).order_by('created').last()
     if not checkpoint:
         return Refund.objects.none()
 
     # Get refunds since last checkpoint
     return boxoffice.refunds.filter(created__gte = checkpoint.created).order_by('-id')
 
-def get_checkpoints(boxoffice):
+def get_checkpoints(boxoffice, date):
 
     # Get today's checkpoints
-    return boxoffice.checkpoints.filter(created__date = timezone.now().date()).order_by('-created')
+    return boxoffice.checkpoints.filter(created__date = date).order_by('-created')
+
+def email_receipt(sale, email):
+
+    context = {
+        'festival': sale.festival,
+        'buttons': sale.buttons,
+        'fringers': sale.fringers.count(),
+        'tickets': sale.tickets.order_by('performance__date', 'performance__time', 'performance__show__name')
+    }
+    body = render_to_string('boxoffice/sale_email.txt', context)
+    send_mail('Tickets for ' + sale.festival.title, body, settings.DEFAULT_FROM_EMAIL, [email])
 
 def create_sale_tickets_form(festival, sale, performance, post_data = None):
 
@@ -86,7 +164,6 @@ def create_sale_tickets_form(festival, sale, performance, post_data = None):
     form.helper.field_class = 'col-6'
     form.helper.layout = Layout(
         *(Field(form.ticket_field_name(tt)) for tt in form.ticket_types),
-        Button('add', 'Add', css_class = 'btn-primary',  onclick = 'saleAddTickets()'),
     )
 
     # Return form
@@ -109,7 +186,6 @@ def create_sale_payw_form(sale, show, post_data = None):
     form.helper.field_class = 'col-6'
     form.helper.layout = Layout(
         Field('amount'),
-        Button('add', 'Add', css_class = 'btn-primary',  onclick = 'saleAddPAYW()'),
     )
 
     # Return form
@@ -119,6 +195,10 @@ def create_sale_extras_form(sale, post_data = None):
 
     # Validate parameters
     assert sale
+
+    # Don't create form if sale has been completed or payment type has been selected
+    if sale.completed or sale.transaction_type:
+        return None
 
     # Get initial values from sale
     initial_data = {
@@ -140,7 +220,6 @@ def create_sale_extras_form(sale, post_data = None):
         Field('buttons'),
         Field('fringers'),
         Field('donation'),
-        Button('add', 'Add/Update', css_class = 'btn-primary',  onclick = 'saleUpdateExtras()'),
     )
 
     # Return form
@@ -151,25 +230,19 @@ def create_sale_complete_form(sale, post_data = None):
     # Validate parameters
     assert sale
 
+    # Don't create form if sale has been completed or payment type has been selected
+    if sale.completed or sale.transaction_type:
+        return None
+
     # Create form
     form = SaleCompleteForm(sale, data = post_data)
 
     # Add crispy form helper
     form.helper = FormHelper()
     form.helper.form_id = 'sale-complete-form'
-    if sale.tickets.count() > 0:
-        form.helper.layout = Layout(
-            Field('email'),
-            Field('type'),
-            Button('Complete', 'Complete', css_class = 'btn-primary', onclick = 'saleComplete()'),
-            Button('cancel', 'Cancel', css_class = 'btn-secondary', onclick = 'saleCancel()'),
-        )
-    else:
-        form.helper.layout = Layout(
-            Field('type'),
-            Button('Complete', 'Complete', css_class = 'btn-primary', onclick = 'saleComplete()'),
-            Button('cancel', 'Cancel', css_class = 'btn-secondary', onclick = 'saleCancel()'),
-        )
+    form.helper.layout = Layout(
+        Field('email'),
+    )
 
     # Return form
     return form
@@ -188,8 +261,6 @@ def create_sale_email_form(sale, post_data = None):
     form.helper.form_id = 'sale-email-form'
     form.helper.layout = Layout(
         Field('email'),
-        Button('send', 'Send', css_class = 'btn-primary', onclick = 'saleEMailSend()'),
-        Button('close', 'Close', css_class = 'btn-secondary',  data_dismiss = 'modal'),
     )
 
     # Return form
@@ -206,7 +277,6 @@ def create_refund_start_form(post_data = None):
     form.helper.layout = Layout(
         Field('customer'),
         Field('reason'),
-        Button('start', 'Start', css_class = 'btn-primary',  onclick = 'refundStart()'),
     )
 
     # Return form
@@ -231,8 +301,6 @@ def create_checkpoint_form(boxoffice, checkpoint, post_data = None):
             Field('buttons'),
             Field('fringers'),
             Field('notes'),
-            Button('update', 'Update', css_class = 'btn-primary', onclick = 'checkpointUpdate()'),
-            Button('cancel', 'Cancel', css_class = 'btn-secondary', onclick = 'checkpointCancel()'),
         )
     else:
         form.helper.layout = Layout(
@@ -240,7 +308,6 @@ def create_checkpoint_form(boxoffice, checkpoint, post_data = None):
             Field('buttons'),
             Field('fringers'),
             Field('notes'),
-            Submit('add', 'Add Checkpoint'),
         )
         
     # Return form
@@ -257,27 +324,38 @@ def create_ticket_search_form(boxoffice, post_data = None):
     form.helper.form_id = 'ticket-search-form'
     form.helper.layout = Layout(
         Field('email'),
-        Button('search', 'Search', css_class = 'btn-primary',  onclick = 'ticketsSearch()'),
     )
 
     # Return form
     return form
 
-def render_main(request, boxoffice, tab = None, checkpoint_form = None):
+def render_main(request, boxoffice, tab, sale=None):
 
     # Render main page
-    today = datetime.datetime.today()
-    report_dates = [today - datetime.timedelta(days = n) for n in range(1, 14)]
     context = {
+        # General
         'boxoffice': boxoffice,
-        'tab': tab or 'sales',
-        'sale': None,
-        'sales': get_sales(boxoffice),
+        'tab': tab,
+        # Sales tab
+        'sale': sale,
+        'accordion': 'tickets',
+        'shows': Show.objects.filter(festival = request.festival, is_cancelled = False, is_ticketed = True) if sale else None,
+        'selected_show': None,
+        'performances': None,
+        'selected_performance': None,
+        'sale_tickets_form': None,
+        'shows_payw': Show.objects.filter(festival = request.festival, is_cancelled = False, is_ticketed = False) if sale else None,
+        'sale_extras_form': create_sale_extras_form(sale) if sale else None,
+        'sale_complete_form': create_sale_complete_form(sale) if sale else None,
+        'sales': get_sales(boxoffice, timezone.now().date()),
+        # Refunds tab
         'refund_start_form': create_refund_start_form(),
         'refund': None,
-        'refunds': get_refunds(boxoffice),
-        'checkpoint_form': checkpoint_form or create_checkpoint_form(boxoffice, None),
-        'checkpoints': get_checkpoints(boxoffice),
+        'refunds': get_refunds(boxoffice, timezone.now().date()),
+        # Checkpoints tab
+        'checkpoint_form': create_checkpoint_form(boxoffice, None),
+        'checkpoints': get_checkpoints(boxoffice, timezone.now().date()),
+        # Tickets tab
         'ticket_search_form': create_ticket_search_form(boxoffice),
         'tickets': None,
     }
@@ -313,14 +391,15 @@ def render_sale(request, boxoffice, sale = None, accordion='tickets', show = Non
             'selected_show_payw': show_payw,
             'sale_payw_form': payw_form or create_sale_payw_form(sale, show_payw) if show_payw else None,
             'sale_extras_form': extras_form or create_sale_extras_form(sale),
-            'sale_complete_form': complete_form or create_sale_complete_form(sale),
+            'sale_complete_form': (complete_form or create_sale_complete_form(sale)),
             'sale_email_form': create_sale_email_form(sale),
-            'sales': get_sales(boxoffice),
+            'sales': get_sales(boxoffice, timezone.now().date()),
+            'square_intent': get_square_intent(request, boxoffice, sale) if not sale.completed and sale.transaction_type == Sale.TRANSACTION_TYPE_SQUAREUP else None,
         }
     else:
         context = {
             'boxoffice': boxoffice,
-            'sales': get_sales(boxoffice),
+            'sales': get_sales(boxoffice, timezone.now().date()),
         }
     return render(request, 'boxoffice/_main_sales.html', context)
 
@@ -344,23 +423,23 @@ def render_refund(request, boxoffice, refund = None, show = None, performance = 
             'performances': show.performances.order_by('date', 'time') if show else None,
             'selected_performance': performance,
             'refund_tickets': refund_tickets,
-            'refunds': get_refunds(boxoffice),
+            'refunds': get_refunds(boxoffice, timezone.now().date()),
         }
     else:
         context = {
             'boxoffice': boxoffice,
             'refund_start_form': start_form or create_refund_start_form(),
-            'refunds': get_refunds(boxoffice),
+            'refunds': get_refunds(boxoffice, timezone.now().date()),
         }
     return render(request, 'boxoffice/_main_refunds.html', context)
 
-def render_checkpoint(request, boxoffice, checkpoint, checkpoint_form = None):
+def render_checkpoint(request, boxoffice, checkpoint, checkpoint_form=None):
 
     # Render checkpoint tab content
     context = {
         'boxoffice': boxoffice,
         'checkpoint_form': checkpoint_form or create_checkpoint_form(boxoffice, checkpoint),
-        'checkpoints': get_checkpoints(boxoffice),
+        'checkpoints': get_checkpoints(boxoffice, timezone.now().date()),
         'checkpoint': checkpoint,
     }
     return render(request, 'boxoffice/_main_checkpoints.html', context)
@@ -386,7 +465,7 @@ def select(request):
     
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
 @login_required
-def main(request, boxoffice_uuid, tab = None):
+def main(request, boxoffice_uuid, tab='sales'):
 
     # Get box office
     boxoffice = get_object_or_404(BoxOffice, uuid = boxoffice_uuid)
@@ -401,6 +480,17 @@ def main(request, boxoffice_uuid, tab = None):
 
     # Render main page
     return render_main(request, boxoffice, tab)
+    
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+@login_required
+def main_sale(request, boxoffice_uuid, sale_uuid):
+
+    # Get box office and sale
+    boxoffice = get_object_or_404(BoxOffice, uuid = boxoffice_uuid)
+    sale = get_object_or_404(Sale, uuid = sale_uuid)
+
+    # Render main page
+    return render_main(request, boxoffice, 'sales', sale)
     
 # AJAX sale support
 @require_GET
@@ -426,15 +516,17 @@ def sale_start(request, boxoffice_uuid):
 @require_GET
 @login_required
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
-def sale_show_select(request, sale_uuid, show_uuid = None):
+def sale_show_select(request, sale_uuid):
 
     # Get sale, box office and show
     sale = get_object_or_404(Sale, uuid = sale_uuid)
     boxoffice = sale.boxoffice
     assert boxoffice
-    show = None
-    if show_uuid != uuid.UUID('00000000-0000-0000-0000-000000000000'):
+    show_uuid = request.GET['ShowUUID']
+    if show_uuid:
         show = get_object_or_404(Show, uuid = show_uuid)
+    else:
+        show = None
 
     # Render sales tab content
     return render_sale(request, boxoffice, sale, accordion='tickets', show = show)
@@ -442,16 +534,22 @@ def sale_show_select(request, sale_uuid, show_uuid = None):
 @require_GET
 @login_required
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
-def sale_performance_select(request, sale_uuid, performance_uuid):
+def sale_performance_select(request, sale_uuid, show_uuid):
 
     # Get sale, box office, show and performance
     sale = get_object_or_404(Sale, uuid = sale_uuid)
     boxoffice = sale.boxoffice
     assert boxoffice
-    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+    show = get_object_or_404(Show, uuid = show_uuid)
+    performance_uuid = request.GET['PerformanceUUID']
+    if performance_uuid:
+        performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+        assert (show == performance.show)
+    else:
+        performance = None
 
     # Render sales tab content
-    return render_sale(request, boxoffice, sale, accordion='tickets', show = performance.show, performance = performance)
+    return render_sale(request, boxoffice, sale, accordion='tickets', show = show, performance = performance)
 
 @require_POST
 @login_required
@@ -558,15 +656,17 @@ def sale_remove_ticket(request, sale_uuid, ticket_uuid):
 @require_GET
 @login_required
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
-def sale_show_select_payw(request, sale_uuid, show_uuid = None):
+def sale_show_select_payw(request, sale_uuid):
 
     # Get sale, box office and show
     sale = get_object_or_404(Sale, uuid = sale_uuid)
     boxoffice = sale.boxoffice
     assert boxoffice
-    show = None
+    show_uuid = request.GET['ShowUUID']
     if show_uuid != uuid.UUID('00000000-0000-0000-0000-000000000000'):
         show = get_object_or_404(Show, uuid = show_uuid)
+    else:
+        show = None
 
     # Render sales tab content
     return render_sale(request, boxoffice, sale, accordion='payw', show_payw = show)
@@ -678,38 +778,69 @@ def sale_extras_update(request, sale_uuid):
     # Render sales tab content
     return  render_sale(request, boxoffice, sale = sale, accordion='extras', extras_form = form)
 
-@require_POST
-@login_required
-@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
 @transaction.atomic
-def sale_complete(request, sale_uuid):
+def sale_payment(request, sale_uuid, payment_type):
 
-    #Get sale
+    # Get sale
     sale = get_object_or_404(Sale, uuid = sale_uuid)
     if sale.completed:
-        logger.error(f"Attempt to complete sale {sale.id} which is already completed")
-
+        logger.error(f"Attempt to accept payment for sale {sale.id} which is already completed")
+    
     else:
         # Process form
         form = create_sale_complete_form(sale, request.POST)
         if form.is_valid():
 
-            # Complete sale
-            email = form.cleaned_data['email']
-            type = form.cleaned_data['type']
-            sale.customer = email
-            sale.transaction_type = Sale.TRANSACTION_TYPE_SQUAREUP if type == 'SquareUp' else Sale.TRANSACTION_TYPE_CASH
-            sale.transaction_fee = 0
+            # Update sale
+            sale.customer = form.cleaned_data['email']
             sale.amount = sale.total_cost
-            sale.completed = timezone.now()
+            sale.transaction_type = payment_type
+            sale.transaction_fee = 0
             sale.save()
-            logger.info(f"Sale {sale.id} completed")
 
-            # Reset form
-            form = None
+            # Prompt to complete sale once payment received
+            logger.info(f"Payment type {payment_type} selected for for sale {sale.id}")
+            return render_sale(request, sale.boxoffice, sale)
 
-    # Render updated sales
+    # Form has errors
     return render_sale(request, sale.boxoffice, sale, complete_form = form)
+
+@require_POST
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+def sale_payment_cash(request, sale_uuid):
+    return sale_payment(request, sale_uuid, Sale.TRANSACTION_TYPE_CASH)
+
+@require_POST
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+def sale_payment_card(request, sale_uuid):
+    return sale_payment(request, sale_uuid, Sale.TRANSACTION_TYPE_SQUAREUP)
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+@transaction.atomic
+def sale_complete(request, sale_uuid):
+
+    # Get sale
+    sale = get_object_or_404(Sale, uuid = sale_uuid)
+    if sale.completed:
+        logger.error(f"Attempt to complete sale {sale.id} which is already completed")
+
+    else:
+        # Complete sale
+        sale.completed = timezone.now()
+        sale.save()
+        logger.info(f"Sale {sale.id} completed")
+        messages.success(request, 'Sale completed')
+
+        # Send a receipt (if we have an e-mail address)
+        if sale.customer:
+            email_receipt(sale, sale.customer)
+
+    # Ready for new sale
+    return render_sale(request, sale.boxoffice, None)
 
 @require_GET
 @login_required
@@ -720,11 +851,17 @@ def sale_cancel(request, sale_uuid):
     boxoffice = sale.boxoffice
     if sale.completed:
         logger.error(f"Attempt to cancel sale {sale.id} which is already completed")
+    elif sale.transaction_type:
+        logger.info(f"Sale {sale.id} payment type reset")
+        sale.amount = 0
+        sale.transaction_type = None
+        sale.transaction_fee = 0
+        sale.save()
     else:
         logger.info(f"Sale {sale.id} cancelled")
         sale.delete()
         sale = None
-    return render_sale(request, boxoffice, None)
+    return render_sale(request, boxoffice, sale)
 
 @require_GET
 @login_required
@@ -754,19 +891,11 @@ def sale_email(request, sale_uuid):
     # Process form
     form = create_sale_email_form(sale, request.POST)
     if form.is_valid():
-        email = form.cleaned_data['email']
-        context = {
-            'festival': request.festival,
-            'buttons': sale.buttons,
-            'fringers': sale.fringers.count(),
-            'tickets': sale.tickets.order_by('performance__date', 'performance__time', 'performance__show__name')
-        }
-        body = render_to_string('boxoffice/sale_email.txt', context)
-        send_mail('Tickets for ' + request.festival.title, body, settings.DEFAULT_FROM_EMAIL, [email])
-        return HttpResponse('<div class="alert alert-success">e-mail sent.</div>')
+        email_receipt(sale, form.cleaned_data['email'])
+        return HttpResponse('<div id=sale-email-status" class="alert alert-success">e-mail sent.</div>')
 
     # Return status
-    return HttpResponse('<div class="alert alert-danger">Invalid e-mail address.</div>')
+    return HttpResponse('<div id=sale-email-status" class="alert alert-danger">Invalid e-mail address.</div>')
 
 # Refunds
 @require_POST
@@ -799,15 +928,17 @@ def refund_start(request, boxoffice_uuid):
 @require_GET
 @login_required
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
-def refund_show_select(request, refund_uuid, show_uuid = None):
+def refund_show_select(request, refund_uuid):
 
     # Get refund, box office and show
     refund = get_object_or_404(Refund, uuid = refund_uuid)
     boxoffice = refund.boxoffice
     assert boxoffice
-    show = None
-    if show_uuid != uuid.UUID('00000000-0000-0000-0000-000000000000'):
+    show_uuid = request.GET['ShowUUID']
+    if show_uuid:
         show = get_object_or_404(Show, uuid = show_uuid)
+    else:
+        show = None
 
     # Render refunds tab content
     return render_refund(request, boxoffice, refund, show = show)
@@ -815,16 +946,22 @@ def refund_show_select(request, refund_uuid, show_uuid = None):
 @require_GET
 @login_required
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
-def refund_performance_select(request, refund_uuid, performance_uuid):
+def refund_performance_select(request, refund_uuid, show_uuid):
 
     # Get refund, box office, show and performance
     refund = get_object_or_404(Refund, uuid = refund_uuid)
     boxoffice = refund.boxoffice
     assert boxoffice
-    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+    show = get_object_or_404(Show, uuid = show_uuid)
+    performance_uuid = request.GET['PerformanceUUID']
+    if performance_uuid:
+        performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+        assert(show == performance.show)
+    else:
+        performance = None
 
     # Render refunds tab content
-    return render_refund(request, boxoffice, refund, show = performance.show, performance = performance)
+    return render_refund(request, boxoffice, refund, show = show, performance = performance)
 
 @require_GET
 @login_required
@@ -918,7 +1055,7 @@ def checkpoint_add(request, boxoffice_uuid):
     form = create_checkpoint_form(boxoffice, None, request.POST)
     if form.is_valid():
 
-        # Create checkpoint
+        # Add checkpoint
         checkpoint = Checkpoint(
             user = request.user,
             boxoffice = boxoffice,
@@ -929,13 +1066,14 @@ def checkpoint_add(request, boxoffice_uuid):
         )
         checkpoint.save()
         logger.info(f"Boxoffice {boxoffice.name} checkpoint {checkpoint.id} added")
-        messages.success(request, "Checkpoint added")
 
-        # Clear form
-        form = None
+        # If this is the first checkpoint for the day re-render the whole page to allow entry of sales
+        if get_checkpoints(boxoffice, timezone.now().date()).count() == 1:
+            return HttpResponseClientRedirect(reverse('boxoffice:main', args = [boxoffice.uuid]))
+        return render_checkpoint(request, boxoffice, None)
 
-    # Render main page and go to sales (unless there was an error)
-    return render_main(request, boxoffice, 'checkpoints' if form else 'sales', form)
+    # Render errors
+    return render_checkpoint(request, boxoffice, checkpoint, checkpoint_form=form)
 
 
 @require_GET
@@ -948,7 +1086,7 @@ def checkpoint_select(request, checkpoint_uuid):
     boxoffice = checkpoint.boxoffice
     assert boxoffice
 
-    # Render checkpoint tab content
+    # Render selected checkpoint
     return render_checkpoint(request, boxoffice, checkpoint)
 
 
@@ -967,15 +1105,17 @@ def checkpoint_update(request, checkpoint_uuid):
     form = create_checkpoint_form(boxoffice, checkpoint, request.POST)
     if form.is_valid():
 
-        # Update checkpoint
+        # Update checkpoint and clear
         checkpoint.notes = form.cleaned_data['notes']
         checkpoint.save()
         logger.info(f"Boxoffice {boxoffice.name} checkpoint {checkpoint.id} updated")
-        checkpoint = None
-        form = None
 
-    # Render checkpoint tab content
-    return render_checkpoint(request, boxoffice, checkpoint, checkpoint_form = form)
+        # Render checkpoint list
+        return render_checkpoint(request, boxoffice, None)
+
+    # Render form errors
+    return render_checkpoint(request, boxoffice, checkpoint, checkpoint_form=form)
+
 
 @require_GET
 @login_required
@@ -987,8 +1127,9 @@ def checkpoint_cancel(request, checkpoint_uuid):
     boxoffice = checkpoint.boxoffice
     assert boxoffice
 
-    # Render checkpoint tab content
+    # Render checkpoint list
     return render_checkpoint(request, boxoffice, None)
+
 
 @require_POST
 @login_required

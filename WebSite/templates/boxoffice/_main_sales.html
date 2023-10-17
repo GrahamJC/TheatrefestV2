@@ -9,7 +9,14 @@
     }
 </style>
 
-<div class="row">
+{% for msg in messages %}
+<div class="{{ msg.tags }} alert-dismissible" role="alert">
+    {{ msg }}
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+</div>
+{% endfor %}
+
+<div class="row" hx-target="#sales-tab-content">
     {% if not sale %}
         <div class="col-6">
             <div class="card mb-2">
@@ -18,7 +25,7 @@
                     <div class="alert alert-info">
                         <p>To start a new sale click Start.</p>
                     </div>
-                    <button class="btn btn-primary" onclick="saleStart()">Start</button>
+                    <button class="btn btn-primary" hx-get="{% url 'boxoffice:sale_start' boxoffice.uuid %}">Start</button>
                 </div>
             </div>
         </div>
@@ -37,7 +44,7 @@
                         <tbody>
                             {% for sale in sales %}
                                 <tr>
-                                    <td><a href="#" onclick="updateSalesTab('{% url "boxoffice:sale_select" sale.uuid %}')">{{ sale.id }}</a></td>
+                                    <td><button class="btn btn-link" hx-get="{% url 'boxoffice:sale_select' sale.uuid %}">{{ sale.id }}</button></td>
                                     <td>{{ sale.customer }}</td>
                                     <td>&#163;{{ sale.amount }}</td>
                                 </tr>
@@ -49,100 +56,134 @@
         </div>
     {% else %}
         <div class="col-6">
-            <div id="sale-accordion" class="accordion">
+            {% if sale.completed  %}
                 <div class="card">
-                    <div id="sale-tickets-head" class="card-header">
-                        <button class="btn btn-link btn-block text-left {% if accordion != 'tickets' %}collapsed{% endif %}" type="button" data-toggle="collapse" data-target="#sale-tickets-body" aria-expanded="true" aria-controls="sale-tickets-body">Tickets</button>
-                        {% if selected_performance %}<div class="float-right">Available: {{ selected_performance.tickets_available }}</div>{% endif %}
+                    <h6 class="card-header">Completed Sale</h6>
+                    <div class="card-body">
+                        <p>Completed sales cannot be updated.</p>
                     </div>
-                    <div id="sale-tickets-body" class="collapse {% if accordion == 'tickets' %}show{% endif %}" data-parent="#sale-accordion" aria-labelledby="sale-tickets-head">
-                        <div class="card-body">
-                            <div class="row form-group">
-                                <label class="col-4 form-control-label">Show</label>
-                                <div class="col-8">
-                                    <select id="sale-show-select" class="form-control" onchange="saleSelectShow(this.value)">
-                                        <option value="" {% if not selected_show %}selected{%endif %}>-- Select show --</option>
-                                        {% for s in shows %}
-                                            <option value="{{ s.uuid }}" {% if s == selected_show %}selected{% endif %}>{{ s.name }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                            </div>
-                            {% if performances %}
+                </div>
+            {% elif sale_complete_form %}
+                <div id="sale-accordion" class="accordion">
+                    <div class="card">
+                        <div id="sale-tickets-head" class="card-header">
+                            <button class="btn btn-link btn-block text-left {% if accordion != 'tickets' %}collapsed{% endif %}" type="button" data-toggle="collapse" data-target="#sale-tickets-body" aria-expanded="true" aria-controls="sale-tickets-body">Tickets</button>
+                            {% if selected_performance %}<div class="float-right">Available: {{ selected_performance.tickets_available }}</div>{% endif %}
+                        </div>
+                        <div id="sale-tickets-body" class="collapse {% if accordion == 'tickets' %}show{% endif %}" data-parent="#sale-accordion" aria-labelledby="sale-tickets-head">
+                            <div class="card-body">
                                 <div class="row form-group">
-                                    <label class="col-4 form-control-label">Performance</label>
+                                    <label class="col-4 form-control-label">Show</label>
                                     <div class="col-8">
-                                        <select id="sale-performance-select" class="form-control" onchange="saleSelectPerformance(this.value)">
-                                            <option value="" {% if not selected_performance %}selected{%endif %}>-- Select performance --</option>
-                                            {% for p in performances %}
-                                                <option value="{{ p.uuid }}" {% if p == selected_performance %}selected{% endif %}>{{ p.date | date:'D, j M' }} at {{ p.time | time:'h:ip' }}</option>
+                                        <select id="sale-show-select" class="form-control" name="ShowUUID" hx-get="{% url 'boxoffice:sale_show_select' sale.uuid %}">
+                                            <option value="" {% if not selected_show %}selected{%endif %}>-- Select show --</option>
+                                            {% for s in shows %}
+                                                <option value="{{ s.uuid }}" {% if s == selected_show %}selected{% endif %}>{{ s.name }}</option>
                                             {% endfor %}
                                         </select>
                                     </div>
                                 </div>
-                            {% endif %}
-                            {% if all_sales_closed %}
-                                <div class="alert alert-info">
-                                    Sales for this performance are now closed.
-                                </div>
-                            {% elif boxoffice_sales_closed %}
-                                <div class="alert alert-info">
-                                    Box office and online sales for this performance are now closed and tickets can only be purchased at the venue.
-                                </div>
-                            {% elif sale_tickets_form %}
-                                {% crispy sale_tickets_form %}
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                <div class="card">
-                    <div id="sale-payw-head" class="card-header">
-                        <button class="btn btn-link btn-block text-left {% if accordion != 'payw' %}collapsed{% endif %}" type="button" data-toggle="collapse" data-target="#sale-payw-body" aria-expanded="true" aria-controls="sale-payw-body">Pay as You Will</button>
-                    </div>
-                    <div id="sale-payw-body" class="collapse {% if accordion == 'payw' %}show{% endif %}" data-parent="#sale-accordion" aria-labelledby="sale-payw-head">
-                        <div class="card-body">
-                            <div class="row form-group">
-                                <label class="col-4 form-control-label">Show</label>
-                                <div class="col-8">
-                                    <select id="sale-show-select-payw" class="form-control" onchange="saleSelectShowPAYW(this.value)">
-                                        <option value="" {% if not selected_show_payw %}selected{%endif %}>-- Select show --</option>
-                                        {% for s in shows_payw %}
-                                            <option value="{{ s.uuid }}" {% if s == selected_show_payw %}selected{% endif %}>{{ s.name }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
+                                {% if performances %}
+                                    <div class="row form-group">
+                                        <label class="col-4 form-control-label">Performance</label>
+                                        <div class="col-8">
+                                            <select id="sale-performance-select" class="form-control" name="PerformanceUUID" hx-get="{% url 'boxoffice:sale_performance_select' sale.uuid selected_show.uuid %}">
+                                                <option value="" {% if not selected_performance %}selected{%endif %}>-- Select performance --</option>
+                                                {% for p in performances %}
+                                                    <option value="{{ p.uuid }}" {% if p == selected_performance %}selected{% endif %}>{{ p.date | date:'D, j M' }} at {{ p.time | time:'h:ip' }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                                {% if all_sales_closed %}
+                                    <div class="alert alert-info">
+                                        Sales for this performance are now closed.
+                                    </div>
+                                {% elif boxoffice_sales_closed %}
+                                    <div class="alert alert-info">
+                                        Box office and online sales for this performance are now closed and tickets can only be purchased at the venue.
+                                    </div>
+                                {% elif sale_tickets_form %}
+                                    {% crispy sale_tickets_form %}
+                                    <button class="btn btn-primary" hx-post="{% url 'boxoffice:sale_tickets_add' sale.uuid selected_performance.uuid %}" hx-include="#sale-tickets-form">Add Tickets</button>
+                                {% endif %}
                             </div>
-                            {% if sale_payw_form %}
-                                {% crispy sale_payw_form %}
-                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div id="sale-payw-head" class="card-header">
+                            <button class="btn btn-link btn-block text-left {% if accordion != 'payw' %}collapsed{% endif %}" type="button" data-toggle="collapse" data-target="#sale-payw-body" aria-expanded="true" aria-controls="sale-payw-body">Pay as You Will</button>
+                        </div>
+                        <div id="sale-payw-body" class="collapse {% if accordion == 'payw' %}show{% endif %}" data-parent="#sale-accordion" aria-labelledby="sale-payw-head">
+                            <div class="card-body">
+                                <div class="row form-group">
+                                    <label class="col-4 form-control-label">Show</label>
+                                    <div class="col-8">
+                                        <select id="sale-show-select-payw" class="form-control" name="ShowUUID" hx-get="{% url 'boxoffice:sale_show_select_payw' sale.uuid %}">
+                                            <option value="" {% if not selected_show_payw %}selected{%endif %}>-- Select show --</option>
+                                            {% for s in shows_payw %}
+                                                <option value="{{ s.uuid }}" {% if s == selected_show_payw %}selected{% endif %}>{{ s.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                {% if sale_payw_form %}
+                                    {% crispy sale_payw_form %}
+                                    <button class="btn btn-primary" hx-post="{% url 'boxoffice:sale_payw_add' sale.uuid selected_show_payw.uuid %}" hx-include="#sale-payw-form">Add</button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div id="sale-extras-head" class="card-header">
+                            <button class="btn btn-link btn-block text-left {% if accordion != 'extras' %}collapsed{% endif %}" type="button" data-toggle="collapse" data-target="#sale-extras-body" aria-expanded="true" aria-controls="sale-extras-body">Other (Badges etc)</button>
+                        </div>
+                        <div id="sale-extras-body" class="collapse {% if accordion == 'extras' %}show{% endif %}" data-parent="#sale-accordion" aria-labelledby="sale-extras-head">
+                            <div class="card-body">
+                                {% crispy sale_extras_form %}
+                                <button class="btn btn-primary" hx-post="{% url 'boxoffice:sale_extras_update' sale.uuid %}" hx-include="#sale-extras-form">Add/Update</button>
+                            </div>
                         </div>
                     </div>
                 </div>
+            {% elif sale.is_cash %}
                 <div class="card">
-                    <div id="sale-extras-head" class="card-header">
-                        <button class="btn btn-link btn-block text-left {% if accordion != 'extras' %}collapsed{% endif %}" type="button" data-toggle="collapse" data-target="#sale-extras-body" aria-expanded="true" aria-controls="sale-extras-body">Other (Badges etc)</button>
-                    </div>
-                    <div id="sale-extras-body" class="collapse {% if accordion == 'extras' %}show{% endif %}" data-parent="#sale-accordion" aria-labelledby="sale-extras-head">
-                        <div class="card-body">
-                            {% crispy sale_extras_form %}
-                        </div>
+                    <h6 class="card-header">Cash Payment</h6>
+                    <div class="card-body">
+                        <p>Tickets will only be issued once payment has been received.</p>
                     </div>
                 </div>
-            </div>
+            {% else %}
+                <div class="card">
+                    <h6 class="card-header">Card Payment</h6>
+                    <div class="card-body">
+                        <p>You should not see this page - you should have been taken directly to the card payment app (SquareUp) to take the payment.</p>
+                    </div>
+                </div>
+            {% endif %}
         </div>
         <div class="col-6">
             <div class="card">
                 <h6 class="card-header">Sale: {{ sale.id }}</h6>
                 <div class="card-body">
                     {% if sale.completed %}
-                        <div class="alert alert-success">
-                            <p>This sale is now complete but you can still make changes to correct mistakes.</p>
+                        <div class="alert alert-info">
+                            <p>This sale is complete and cannot be changed.</p>
                             <p>Select Close to begin a new sale.</p>
+                        </div>
+                    {% elif sale_complete_form %}
+                        <div class="alert alert-info">
+                            <p>Once all items have been added select the payment type to complete the sale. A receipt will be sent automatically if an e-mail address is provided.</p>
+                            {% if sale.tickets.count > 0 %}<p><b>An e-mail address is required when purchasing tickets to identify the ticket holder at the venue and to notify them if the show is cancelled.</b></p>{% endif %}
+                        </div>
+                    {% elif sale.is_cash %}
+                        <div class="alert alert-info">
+                            <p>Select Complete when payment has been received or Cancel if you want to update the sale or change the payment type.</p>
                         </div>
                     {% else %}
                         <div class="alert alert-info">
-                            <p>The sale should not be completed until payment has been received.</p>
-                            {% if sale.tickets.count > 0 %}<p>An e-mail address is required when purchasing tickets to identify the ticket holder at the venue and to notify them if the show is cancelled.</p>{% endif %}
+                            <p>Select Complete when payment has been received or Cancel if you want to update the sale or change the payment type.</p>
                         </div>
                     {% endif %}
                     {% if sale.buttons %}
@@ -153,7 +194,7 @@
                     {% endif %}
                     {% if sale.fringers.count > 0 %}
                         <div class="row mb-2">
-                            <div class="col-9"><strong>{{ sale.fringers.count }} x Paper fringers ({{ sale.festival.fringer_shows }} shows for &#163;{{ sale.festival.fringer_price | floatformat:0 }})</strong></div>
+                            <div class="col-9"><strong>{{ sale.fringers.count }} x Paper fringers ({{ sale.festival.paper_fringer_type.shows }} shows for &#163;{{ sale.festival.paper_fringer_type.price | floatformat:0 }})</strong></div>
                             <div class="col-3 text-right">&#163;{{ sale.fringer_cost }}</div>
                         </div>
                     {% endif %}
@@ -170,7 +211,7 @@
                             <div class="col-6">{{ performance.date | date:'D, j M' }} at {{ performance.time | time:'h:ia' }}</div>
                             <div class="col-3"><a href="#tf-boxoffice-sale-tickets-{{ forloop.counter }}" data-toggle="collapse">{{ performance.tickets | length }} Tickets</a></div>
                             <div class="col-3 text-right">
-                                <a href="#" onclick="updateSalesTab('{% url "boxoffice:sale_remove_performance" sale.uuid performance.uuid %}')">Remove</a>
+                                <button class="btn btn-link" hx-get="{% url 'boxoffice:sale_remove_performance' sale.uuid performance.uuid %}">Remove</button>
                             </div>
                             <div id="tf-boxoffice-sale-tickets-{{ forloop.counter }}" class="col-12 collapse">
                                 {% for ticket in performance.tickets %}
@@ -179,7 +220,7 @@
                                         <div class="col-6">{{ ticket.description }}</div>
                                         <div class="col-2 text-right">{% if ticket.cost %}&#163;{{ ticket.cost }}{% endif %}</div>
                                         <div class="col-3">
-                                            <a href="#" onclick="updateSalesTab('{% url "boxoffice:sale_remove_ticket" sale.uuid ticket.uuid %}')">Remove</a>
+                                            <button class="btn btn-link" hx-get="{% url 'boxoffice:sale_remove_ticket' sale.uuid ticket.uuid %}">Remove</button>
                                         </div>
                                     </div>
                                 {% endfor %}
@@ -192,7 +233,7 @@
                             <div class="col-3 text-right">&#163;{{ payw.amount | floatformat:'2' }}</div>
                             <div class="col-9">Pay as You Will donation</div>
                             <div class="col-3 text-right">
-                                <a href="#" onclick="updateSalesTab('{% url "boxoffice:sale_payw_remove" sale.uuid payw.uuid %}')">Remove</a>
+                                <button class="btn btn-link" hx-get="{% url 'boxoffice:sale_payw_remove' sale.uuid payw.uuid %}">Remove</button>
                             </div>
                         </div>
                     {% endfor %}
@@ -210,12 +251,26 @@
                         <div class="col-12">
                             {% if sale.completed %}
                                 <button class="btn btn-primary" data-toggle="modal" data-target="#sale-email-modal">E-mail</button>
-                                <a class="btn btn-primary" href="{% url 'reports:sale_pdf' sale.uuid %}" target="_blank">PDF</a>
                                 <div class="float-right">
-                                    <a class="btn btn-secondary" href="#" onclick="updateSalesTab('{% url "boxoffice:sale_close" sale.uuid %}')">Close</a>
+                                    <buton class="btn btn-secondary" hx-get="{% url 'boxoffice:sale_close' sale.uuid %}">Close</button>
+                                </div>
+                            {% elif sale_complete_form %}
+                                {% crispy sale_complete_form %}
+                                <button class="btn btn-primary" hx-post="{% url 'boxoffice:sale_payment_cash' sale.uuid %}" hx-include="#sale-complete-form">Cash</button>
+                                <button class="btn btn-primary" hx-post="{% url 'boxoffice:sale_payment_card' sale.uuid %}" hx-include="#sale-complete-form">Card</button>
+                                <div class="float-right">
+                                    <button class="btn btn-secondary" hx-get="{% url 'boxoffice:sale_cancel' sale.uuid %}">Cancel</button>
+                                </div>
+                            {% elif sale.is_cash %}
+                                <button class="btn btn-primary" hx-get="{% url 'boxoffice:sale_complete' sale.uuid %}">Complete</button>
+                                <div class="float-right">
+                                    <button class="btn btn-secondary" hx-get="{% url 'boxoffice:sale_cancel' sale.uuid %}">Cancel</button>
                                 </div>
                             {% else %}
-                                {% crispy sale_complete_form %}
+                                <button class="btn btn-primary" onclick="squareUpComplete()">Complete</button>
+                                <div class="float-right">
+                                    <button class="btn btn-secondary" onclick="squareUpCancel()">Cancel</button>
+                                </div>
                             {% endif %}
                         </div>
                     </div>
@@ -239,6 +294,10 @@
                     <div id="sale-email-status"></div>
                     {% crispy sale_email_form %}
                 </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" hx-post="{% url 'boxoffice:sale_email' sale.uuid %}" hx-include="#sale-email-form" hx-target="#sale-email-status" hx-swap="innerHTML">Send</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                </div>
             </div>
         </div>
     </div>
@@ -246,85 +305,34 @@
 
 <script language="javascript">
 
-    {% if not sale %}
+    // The following are used for testing only
+    function squareUpComplete() {
+        var metadata = "{ \"sale_id\": {{sale.id}}, \"boxoffice_id\": {{boxoffice.id}} }";
+        var url =
+            "{% url 'boxoffice:square_callback' %}" +
+            "?com.squareup.pos.SERVER_TRANSACTION_ID=" +
+            "&com.squareup.pos.CLIENT_TRANSACTION_ID=" +
+            "&com.squareup.pos.REQUEST_METADATA=" + metadata +
+            "&com.squareup.pos.ERROR_CODE=" +
+            "&com.squareup.pos.ERROR_DESCVRIPTION=";
+        window.location = url;
+    }
 
-        function saleStart() {
-            updateSalesTab('{% url "boxoffice:sale_start" boxoffice.uuid %}');
-        }
+    function squareUpCancel() {
+        var metadata = "{ \"sale_id\": {{sale.id}}, \"boxoffice_id\": {{boxoffice.id}} }";
+        var url =
+            "{% url 'boxoffice:square_callback' %}" +
+            "?com.squareup.pos.SERVER_TRANSACTION_ID=" +
+            "&com.squareup.pos.CLIENT_TRANSACTION_ID=" +
+            "&com.squareup.pos.REQUEST_METADATA=" + metadata +
+            "&com.squareup.pos.ERROR_CODE=com.squareup.pos.ERROR_TRANSACTION_CANCELED" +
+            "&com.squareup.pos.ERROR_DESCVRIPTION=";
+        window.location = url;
+    }
 
-    {% else %}
-
-        function saleSelectShow(showUuid) {
-            url = '{% url "boxoffice:sale_show_select" sale.uuid "00000000-0000-0000-0000-000000000000" %}';
-            if (showUuid) {
-                url = url.replace('00000000-0000-0000-0000-000000000000', showUuid);
-            }
-            updateSalesTab(url);
-        }
-
-        {% if selected_show %}
-            function saleSelectPerformance(performanceUuid) {
-                if (performanceUuid) {
-                    url = '{% url "boxoffice:sale_performance_select" sale.uuid "00000000-0000-0000-0000-000000000000" %}';
-                    url = url.replace('00000000-0000-0000-0000-000000000000', performanceUuid);
-                    updateSalesTab(url);
-                }
-                else {
-                    saleSelectShow('{{ selected_show.uuid }}');
-                }
-            }
-        {% endif %}
-
-        {% if sale_tickets_form %}
-            function saleAddTickets() {
-                var postData = $('#sale-tickets-form').serializeArray();
-                updateSalesTab('{% url "boxoffice:sale_tickets_add" sale.uuid selected_performance.uuid %}', postData);
-            }
-        {% endif %}
-
-        function saleSelectShowPAYW(showUuid) {
-            url = '{% url "boxoffice:sale_show_select_payw" sale.uuid "00000000-0000-0000-0000-000000000000" %}';
-            if (showUuid) {
-                url = url.replace('00000000-0000-0000-0000-000000000000', showUuid);
-            }
-            updateSalesTab(url);
-        }
-
-        {% if sale_payw_form %}
-            function saleAddPAYW() {
-                var postData = $('#sale-payw-form').serializeArray();
-                updateSalesTab('{% url "boxoffice:sale_payw_add" sale.uuid selected_show_payw.uuid %}', postData);
-            }
-        {% endif %}
-
-        {% if sale_extras_form %}
-            function saleUpdateExtras() {
-                var postData = $('#sale-extras-form').serializeArray();
-                updateSalesTab('{% url "boxoffice:sale_extras_update" sale.uuid %}', postData);
-            }
-        {% endif %}
-
-        {% if sale_complete_form %}
-            function saleComplete() {
-                var postData = $('#sale-complete-form').serializeArray();
-                updateSalesTab('{% url "boxoffice:sale_complete" sale.uuid %}', postData);
-            }
-
-            function saleCancel() {
-                updateSalesTab('{% url "boxoffice:sale_cancel" sale.uuid %}');
-            }
-        {% endif %}
-
-        function saleEMailSend() {
-            var data = $('#sale-email-form').serializeArray();
-            var url = '{% url "boxoffice:sale_email" sale.uuid %}'
-            $('#sale-email-status').load(url, data, function(response, status, xhr) {
-                if (status != 'success') {
-                    $('#sale-email-status').html('<div class="alert alert-danger">Sorry but there was an error. Please try again.</div>');
-                }
-            });
-        }
-
+    // If ready to accept card payment switch to the SquareUp POS app
+    {% if square_intent %}
+        window.location = '{{square_intent|safe}}';
     {% endif %}
 
 </script>

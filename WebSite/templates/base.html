@@ -1,4 +1,5 @@
 {% load static %}
+{% load django_htmx %}
 
 <!DOCTYPE html>
 
@@ -22,6 +23,7 @@
         <script src="{%static 'jquery.rwdImageMaps.min.js' %}" ></script>
         <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
         <script src="https://unpkg.com/htmx.org@1.9.3"></script>
+        {% django_htmx_script %}
     {% endblock %}
     <title>{% block title %}{{ request.festival.title }}{% endblock %}</title>
 </head>
@@ -144,12 +146,14 @@
                         </nav>
                     {% endif %}
                     <div id="tf-alerts">
-                        {% for msg in messages %}
-                            <div class="{{ msg.tags }} alert-dismissible" role="alert">
-                                {{ msg }}
-                                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                            </div>
-                        {% endfor %}
+                        {% block messages %}
+                            {% for msg in messages %}
+                                <div class="{{ msg.tags }} alert-dismissible" role="alert">
+                                    {{ msg }}
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                </div>
+                            {% endfor %}
+                        {% endblock %}
                         {% if request.user.is_authenticated and not request.festival.is_archived and not request.user.basket.is_empty %}
                             {% block basket %}
                                 <div class="alert alert-info">

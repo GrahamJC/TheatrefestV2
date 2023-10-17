@@ -100,7 +100,6 @@
                                         <a class="btn btn-secondary" hx-get="{% url 'venue:sale_new' performance.uuid %}" hx-target="#sales-tab-content" hx-swap="innerHTML">Close</a>
                                     </div>
                                 {% else %}
-                                    <!-- <a class="btn btn-primary" href="#" hx-get="{% url 'venue:sale_complete' performance.uuid sale.uuid %}" hx-target="#sales-tab-content" hx-swap="innerHTML">Complete</a> -->
                                     <a class="btn btn-primary" href="{{square_intent}}">Card Payment</a>
                                     <div class="float-right">
                                         <a class="btn btn-secondary" hx-get="{% url 'venue:sale_cancel' performance.uuid sale.uuid %}" hx-target="#sales-tab-content" hx-swap="innerHTML">Cancel</a>

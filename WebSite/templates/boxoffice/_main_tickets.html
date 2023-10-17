@@ -1,12 +1,13 @@
 {% load crispy_forms_tags %}
 {% load widget_tweaks %}
 
-<div class="row">
+<div class="row" hx-target="#tickets-tab-content">
     <div class="col-12">
         <div class="card">
             <h6 class="card-header">Search for Tickets</h6>
             <div class="card-body">
                 {% crispy ticket_search_form %}
+                <button class="btn btn-primary" hx-post="{% url 'boxoffice:tickets_search' boxoffice.uuid %}" hx-include="#ticket-search-form">Search</button>
             </div>
         </div>
 
@@ -42,12 +43,3 @@
 
     </div>
 </div>
-
-<script language="javascript">
-
-    function ticketsSearch() {
-        var postData = $('#ticket-search-form').serializeArray();
-        updateTicketsTab('{% url "boxoffice:tickets_search" boxoffice.uuid %}', postData);
-    }
-
-</script>

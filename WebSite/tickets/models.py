@@ -94,6 +94,10 @@ class Sale(TimeStampedModel):
         return int(self.total_cost * 100)
 
     @property
+    def is_cash(self):
+        return self.transaction_type == Sale.TRANSACTION_TYPE_CASH
+    
+    @property
     def ticket_performances(self):
         performances = []
         for ticket in self.tickets.values('performance_id').distinct():
@@ -150,7 +154,7 @@ class Refund(TimeStampedModel):
 
     @property
     def ticket_cost(self):
-        return sum([t.cost for t in self.tickets.all()])
+        return sum([t.price for t in self.tickets.all()])
 
     @property
     def total_cost(self):
@@ -168,8 +172,8 @@ class Refund(TimeStampedModel):
                 'show': p.show.name,
                 'date' : p.date,
                 'time': p.time,
-                'ticket_cost': sum(t.cost for t in tickets.all()), 
-                'tickets': [{'id': t.id, 'uuid': t.uuid, 'description': t.description, 'cost': t.cost} for t in tickets],
+                'ticket_cost': sum(t.price for t in tickets.all()), 
+                'tickets': [{'id': t.id, 'uuid': t.uuid, 'description': t.description, 'cost': t.price} for t in tickets],
             }
             performances.append(performance)
         return performances

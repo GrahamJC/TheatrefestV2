@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'widget_tweaks',
     'bootstrap_datepicker_plus',
     'django_select2',
+    'django_htmx',
 
     #'sslserver',
     
@@ -78,6 +79,7 @@ MIDDLEWARE = [
 
     'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django_requestlogging.middleware.LogSetupMiddleware',
+    'django_htmx.middleware.HtmxMiddleware',
 
     'core.middleware.FestivalMiddleware',
 ]

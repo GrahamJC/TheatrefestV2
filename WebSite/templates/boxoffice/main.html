@@ -2,7 +2,9 @@
 
 {% block pagetitle %}Box Office: {{ boxoffice.name }}{% endblock %}
 
+<!-- Suppress banner and messages (which are shown on tabs where needed) -->
 {% block banner %}{% endblock %}
+{% block messages %}{% endblock %}
 
 {% block content %}
 
@@ -48,59 +50,5 @@
         </div>
     
     </div>
-
-{% endblock %}
-
-{% block body-script %}
-
-    <script language="javascript">
-
-        function updateSalesTab(url, data) {
-            $('#tf-alerts').empty();
-            $('body').css({ 'cursor': 'wait' });
-            $('#sales-tab-content').load(url, data, function(response, status, xhr) {
-                if (status != 'success') {
-                    $('#tf-alerts').append('<div class="alert alert-danger"><a class="close" data-dismiss="alert">x</a><span>Sorry but there was an error. Please try again.</span></div>');
-                }
-                $('body').css({ 'cursor': 'default' });
-            });
-        }
-
-        {% if request.user.is_admin %}
-            function updateRefundsTab(url, data) {
-                $('#tf-alerts').empty();
-                $('body').css({ 'cursor': 'wait' });
-                $('#refunds-tab-content').load(url, data, function(response, status, xhr) {
-                    if (status != 'success') {
-                        $('#tf-alerts').append('<div class="alert alert-danger"><a class="close" data-dismiss="alert">x</a><span>Sorry but there was an error. Please try again.</span></div>');
-                    }
-                    $('body').css({ 'cursor': 'default' });
-                });
-            }
-        {% endif %}
-        
-        function updateCheckpointsTab(url, data) {
-            $('#tf-alerts').empty();
-            $('body').css({ 'cursor': 'wait' });
-            $('#checkpoints-tab-content').load(url, data, function(response, status, xhr) {
-                if (status != 'success') {
-                    $('#tf-alerts').append('<div class="alert alert-danger"><a class="close" data-dismiss="alert">x</a><span>Sorry but there was an error. Please try again.</span></div>');
-                }
-                $('body').css({ 'cursor': 'default' });
-            });
-        }
-        
-        function updateTicketsTab(url, data) {
-            $('#tf-alerts').empty();
-            $('body').css({ 'cursor': 'wait' });
-            $('#tickets-tab-content').load(url, data, function(response, status, xhr) {
-                if (status != 'success') {
-                    $('#tf-alerts').append('<div class="alert alert-danger"><a class="close" data-dismiss="alert">x</a><span>Sorry but there was an error. Please try again.</span></div>');
-                }
-                $('body').css({ 'cursor': 'default' });
-            });
-        }
-
-    </script>
 
 {% endblock %}

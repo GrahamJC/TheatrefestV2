@@ -1,13 +1,21 @@
 {% load crispy_forms_tags %}
 {% load widget_tweaks %}
 
-<div class="row">
+<div class="row" hx-target="#checkpoints-tab-content" hx-indicator="">
 
     <div class="col-6">
         <div class="card">
             <h6 class="card-header">{% if checkpoint %}Update Checkpoint: {{ checkpoint.created | time:'h:ia' }}{% else %}Add Checkpoint{% endif %}</h6>
             <div class="card-body">
                 {% crispy checkpoint_form %}
+                <div class="float-right">
+                    {% if checkpoint %}
+                        <button class="btn btn-primary" hx-post="{% url 'boxoffice:checkpoint_update' checkpoint.uuid %}" hx-include="#checkpoint-form">Update</button>
+                        <button class="btn btn-secondary" hx-get="{% url 'boxoffice:checkpoint_cancel' checkpoint.uuid %}">Cancel</button>
+                    {% else %}
+                        <button class="btn btn-primary" hx-post="{% url 'boxoffice:checkpoint_add' boxoffice.uuid %}" hx-include="#checkpoint-form">Add</button>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
@@ -33,7 +41,7 @@
                     <tbody>
                         {% for checkpoint in checkpoints %}
                             <tr>
-                                <td><a href="#" onclick="updateCheckpointsTab('{% url "boxoffice:checkpoint_select" checkpoint.uuid %}')">{{ checkpoint.created | time:'h:i a' }}</a></td>
+                                <td><button class="btn btn-link" hx-get="{% url 'boxoffice:checkpoint_select' checkpoint.uuid %}">{{ checkpoint.created | time:'h:i a' }}</button></td>
                                 <td class="text-right">&#163;{{ checkpoint.cash }}</td>
                                 <td class="text-right">{{ checkpoint.buttons }}</td>
                                 <td class="text-right">{{ checkpoint.fringers }}</td>
@@ -46,21 +54,3 @@
     </div>
 
 </div>
-
-
-<script language="javascript">
-
-    {% if checkpoint %}
-
-        function checkpointUpdate() {
-            var postData = $('#checkpoint-form').serializeArray();
-            updateCheckpointsTab('{% url "boxoffice:checkpoint_update" checkpoint.uuid %}', postData);
-        }
-
-        function checkpointCancel() {
-            updateCheckpointsTab('{% url "boxoffice:checkpoint_cancel" checkpoint.uuid %}');
-        }
-
-    {% endif %}
-
-</script>
