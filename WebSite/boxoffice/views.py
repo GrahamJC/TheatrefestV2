@@ -1,4 +1,3 @@
-import datetime
 import uuid
 import json
 from decimal import Decimal
@@ -20,8 +19,6 @@ from django.template.loader import render_to_string
 from django.views.decorators.http import require_GET, require_POST
 from django.utils import timezone
 
-import arrow
-
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Field, Fieldset, HTML, Submit, Button, Row, Column
 from crispy_forms.bootstrap import FormActions, TabHolder, Tab, Div
@@ -34,7 +31,7 @@ from core.models import User
 from program.models import Show, ShowPerformance
 from tickets.models import BoxOffice, Sale, Refund, TicketType, Ticket, PayAsYouWill, FringerType, Fringer, Checkpoint
 
-from .forms import CheckpointForm, SaleTicketsForm, SalePAYWForm, SaleExtrasForm, SaleCompleteForm, SaleEMailForm, RefundStartForm, TicketSearchForm
+from .forms import CheckpointForm, SaleTicketsForm, SalePAYWForm, SaleExtrasForm, SaleForm, SaleEMailForm, RefundStartForm, TicketSearchForm
 
 # Logging
 import logging
@@ -42,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 # Square interface
 def get_square_intent(request, boxoffice, sale):
-    if sale:
+    if sale and not sale.completed and sale.transaction_type == Sale.TRANSACTION_TYPE_SQUAREUP:
         metadata = f'{{ "boxoffice_id": {boxoffice.id}, "sale_id": {sale.id} }}'
         callback_url = request.build_absolute_uri(reverse('boxoffice:square_callback'))
         intent = ';'.join([
@@ -148,6 +145,10 @@ def create_sale_tickets_form(festival, sale, performance, post_data = None):
     assert sale
     assert performance
 
+    # Don't create form if sale is completed or transaction type has been selected
+    if sale.completed or sale.transaction_type:
+        return None
+
     # Get ticket types
     ticket_types = []
     for ticket_type in sale.festival.ticket_types.filter(is_boxoffice=True).order_by('seqno'):
@@ -174,6 +175,10 @@ def create_sale_payw_form(sale, show, post_data = None):
     # Validate parameters
     assert sale
     assert show
+
+    # Don't create form if sale is completed or transaction type has been selected
+    if sale.completed or sale.transaction_type:
+        return None
 
     # Create form
     form = SalePAYWForm(data = post_data)
@@ -225,21 +230,22 @@ def create_sale_extras_form(sale, post_data = None):
     # Return form
     return form
 
-def create_sale_complete_form(sale, post_data = None):
+def create_sale_form(sale, post_data = None):
 
     # Validate parameters
     assert sale
 
-    # Don't create form if sale has been completed or payment type has been selected
-    if sale.completed or sale.transaction_type:
+    # Don't create form if sale has not been completed but paym,ent type has been selected
+    if not sale.completed and sale.transaction_type:
         return None
-
+    
     # Create form
-    form = SaleCompleteForm(sale, data = post_data)
+    initial_data = { 'email': sale.customer } if sale else None
+    form = SaleForm(sale, initial=initial_data, data=post_data)
 
     # Add crispy form helper
     form.helper = FormHelper()
-    form.helper.form_id = 'sale-complete-form'
+    form.helper.form_id = 'sale-form'
     form.helper.layout = Layout(
         Field('email'),
     )
@@ -289,26 +295,15 @@ def create_checkpoint_form(boxoffice, checkpoint, post_data = None):
 
     # Add crispy form helper
     form.helper = FormHelper()
-    if not checkpoint:
-        form.helper.form_action = reverse('boxoffice:checkpoint_add', args = [boxoffice.uuid])
     form.helper.form_id = 'checkpoint-form'
-    form.helper.form_class = 'form-horizontal'
-    form.helper.label_class = 'col-3'
-    form.helper.field_class = 'col-9'
-    if checkpoint:
-        form.helper.layout = Layout(
-            Field('cash'),
-            Field('buttons'),
-            Field('fringers'),
-            Field('notes'),
-        )
-    else:
-        form.helper.layout = Layout(
-            Field('cash'),
-            Field('buttons'),
-            Field('fringers'),
-            Field('notes'),
-        )
+    form.helper.layout = Layout(
+        Row(
+            Column('cash', css_class='form-group col-md-4 mb-0'),
+            Column('buttons', css_class='form-group col-md-4 mb-0'),
+            Column('fringers', css_class='form-group col-md-4 mb-0'),
+        ),
+        Field('notes'),
+    )
         
     # Return form
     return form
@@ -320,7 +315,6 @@ def create_ticket_search_form(boxoffice, post_data = None):
 
     # Add crispy forms helper
     form.helper = FormHelper()
-    form.helper.form_action = reverse('boxoffice:tickets_search', args = [boxoffice.uuid])
     form.helper.form_id = 'ticket-search-form'
     form.helper.layout = Layout(
         Field('email'),
@@ -346,8 +340,9 @@ def render_main(request, boxoffice, tab, sale=None):
         'sale_tickets_form': None,
         'shows_payw': Show.objects.filter(festival = request.festival, is_cancelled = False, is_ticketed = False) if sale else None,
         'sale_extras_form': create_sale_extras_form(sale) if sale else None,
-        'sale_complete_form': create_sale_complete_form(sale) if sale else None,
+        'sale_form': create_sale_form(sale) if sale else None,
         'sales': get_sales(boxoffice, timezone.now().date()),
+        'square_intent': get_square_intent(request, boxoffice, sale),
         # Refunds tab
         'refund_start_form': create_refund_start_form(),
         'refund': None,
@@ -361,7 +356,7 @@ def render_main(request, boxoffice, tab, sale=None):
     }
     return render(request, 'boxoffice/main.html', context)
 
-def render_sale(request, boxoffice, sale = None, accordion='tickets', show = None, performance = None, tickets_form = None, show_payw = None, payw_form = None, extras_form = None, complete_form = None):
+def render_sale(request, boxoffice, sale = None, accordion='tickets', show = None, performance = None, tickets_form = None, show_payw = None, payw_form = None, extras_form = None, sale_form = None):
 
     # Show and performance must match
     assert not performance or show == performance.show
@@ -378,6 +373,7 @@ def render_sale(request, boxoffice, sale = None, accordion='tickets', show = Non
             all_sales_closed = performance.has_close_checkpoint
         context = {
             'boxoffice': boxoffice,
+            'tab': 'sales',
             'sale': sale,
             'accordion': accordion,
             'shows': Show.objects.filter(festival = request.festival, is_cancelled = False, is_ticketed = True),
@@ -391,14 +387,15 @@ def render_sale(request, boxoffice, sale = None, accordion='tickets', show = Non
             'selected_show_payw': show_payw,
             'sale_payw_form': payw_form or create_sale_payw_form(sale, show_payw) if show_payw else None,
             'sale_extras_form': extras_form or create_sale_extras_form(sale),
-            'sale_complete_form': (complete_form or create_sale_complete_form(sale)),
+            'sale_form': (sale_form or create_sale_form(sale)),
             'sale_email_form': create_sale_email_form(sale),
             'sales': get_sales(boxoffice, timezone.now().date()),
-            'square_intent': get_square_intent(request, boxoffice, sale) if not sale.completed and sale.transaction_type == Sale.TRANSACTION_TYPE_SQUAREUP else None,
+            'square_intent': get_square_intent(request, boxoffice, sale),
         }
     else:
         context = {
             'boxoffice': boxoffice,
+            'tab': 'sales',
             'sales': get_sales(boxoffice, timezone.now().date()),
         }
     return render(request, 'boxoffice/_main_sales.html', context)
@@ -417,6 +414,7 @@ def render_refund(request, boxoffice, refund = None, show = None, performance = 
             refund_tickets = performance.tickets.filter(sale__completed__isnull = False, refund__isnull = True).order_by('id')
         context = {
             'boxoffice': boxoffice,
+            'tab': 'refunds',
             'refund': refund,
             'shows': Show.objects.filter(festival = request.festival, is_ticketed = True),
             'selected_show': show,
@@ -428,6 +426,7 @@ def render_refund(request, boxoffice, refund = None, show = None, performance = 
     else:
         context = {
             'boxoffice': boxoffice,
+            'tab': 'refunds',
             'refund_start_form': start_form or create_refund_start_form(),
             'refunds': get_refunds(boxoffice, timezone.now().date()),
         }
@@ -438,6 +437,7 @@ def render_checkpoint(request, boxoffice, checkpoint, checkpoint_form=None):
     # Render checkpoint tab content
     context = {
         'boxoffice': boxoffice,
+        'tab': 'checkpoints',
         'checkpoint_form': checkpoint_form or create_checkpoint_form(boxoffice, checkpoint),
         'checkpoints': get_checkpoints(boxoffice, timezone.now().date()),
         'checkpoint': checkpoint,
@@ -449,6 +449,7 @@ def render_tickets(request, boxoffice, search_form = None, tickets=None):
     # Render tickets tab content
     context = {
         'boxoffice': boxoffice,
+        'tab': 'tickets',
         'ticket_search_form': search_form or create_ticket_search_form(boxoffice),
         'tickets': tickets,
     }
@@ -783,27 +784,25 @@ def sale_payment(request, sale_uuid, payment_type):
 
     # Get sale
     sale = get_object_or_404(Sale, uuid = sale_uuid)
-    if sale.completed:
-        logger.error(f"Attempt to accept payment for sale {sale.id} which is already completed")
-    
-    else:
-        # Process form
-        form = create_sale_complete_form(sale, request.POST)
-        if form.is_valid():
+    assert not sale.completed
 
-            # Update sale
-            sale.customer = form.cleaned_data['email']
-            sale.amount = sale.total_cost
-            sale.transaction_type = payment_type
-            sale.transaction_fee = 0
-            sale.save()
+    # Process form
+    form = create_sale_form(sale, request.POST)
+    if form.is_valid():
 
-            # Prompt to complete sale once payment received
-            logger.info(f"Payment type {payment_type} selected for for sale {sale.id}")
-            return render_sale(request, sale.boxoffice, sale)
+        # Update sale
+        sale.customer = form.cleaned_data['email']
+        sale.amount = sale.total_cost
+        sale.transaction_type = payment_type
+        sale.transaction_fee = 0
+        sale.save()
+        logger.info(f"Payment type {payment_type} selected for for sale {sale.id}")
 
-    # Form has errors
-    return render_sale(request, sale.boxoffice, sale, complete_form = form)
+        # Clear form
+        form = None
+
+    # Render sale
+    return render_sale(request, sale.boxoffice, sale, sale_form=form)
 
 @require_POST
 @login_required
@@ -861,15 +860,8 @@ def sale_cancel(request, sale_uuid):
         logger.info(f"Sale {sale.id} cancelled")
         sale.delete()
         sale = None
+        messages.warning(request, 'Sale cancelled')
     return render_sale(request, boxoffice, sale)
-
-@require_GET
-@login_required
-@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
-@transaction.atomic
-def sale_close(request, sale_uuid):
-    sale = get_object_or_404(Sale, uuid = sale_uuid)
-    return render_sale(request, sale.boxoffice, None)
 
 @require_GET
 @login_required
@@ -878,6 +870,37 @@ def sale_close(request, sale_uuid):
 def sale_select(request, sale_uuid):
     sale = get_object_or_404(Sale, uuid = sale_uuid)
     return render_sale(request, sale.boxoffice, sale)
+
+@require_POST
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+@transaction.atomic
+def sale_update(request, sale_uuid):
+
+    # Get sale
+    sale = get_object_or_404(Sale, uuid = sale_uuid)
+    assert sale.completed
+
+    # Process form
+    form = create_sale_form(sale, request.POST)
+    if form.is_valid():
+
+        # Update sale
+        sale.save()
+        logger.info(f'Sale {sale.id} updated')
+        messages.success(request, 'Sale updated')
+        form = None
+
+    # Render sale
+    return render_sale(request, sale.boxoffice, sale, sale_form=form)
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+@transaction.atomic
+def sale_close(request, sale_uuid):
+    sale = get_object_or_404(Sale, uuid = sale_uuid)
+    return render_sale(request, sale.boxoffice, None)
 
 @require_POST
 @login_required
@@ -1066,6 +1089,7 @@ def checkpoint_add(request, boxoffice_uuid):
         )
         checkpoint.save()
         logger.info(f"Boxoffice {boxoffice.name} checkpoint {checkpoint.id} added")
+        messages.success(request, 'Checkpoint added')
 
         # If this is the first checkpoint for the day re-render the whole page to allow entry of sales
         if get_checkpoints(boxoffice, timezone.now().date()).count() == 1:

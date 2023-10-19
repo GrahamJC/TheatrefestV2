@@ -17,11 +17,13 @@ urlpatterns = [
     path('checkpoint/<uuid:checkpoint_uuid>/update_open', views.checkpoint_update_open, name = 'checkpoint_update_open'),
     path('checkpoint/<uuid:checkpoint_uuid>/update_close', views.checkpoint_update_close, name = 'checkpoint_update_close'),
     # Sale API
-    path('performance/<uuid:performance_uuid>/sale/new', views.sale_new, name = 'sale_new'),
-    path('performance/<uuid:performance_uuid>/sale/<uuid:sale_uuid>', views.sale_select, name = 'sale_select'),
+    path('performance/<uuid:performance_uuid>/sale/<uuid:sale_uuid>/select', views.sale_select, name = 'sale_select'),
+    path('performance/<uuid:performance_uuid>/sale/<uuid:sale_uuid>/close', views.sale_close, name = 'sale_close'),
     path('performance/<uuid:performance_uuid>/sale/start', views.sale_start, name = 'sale_start'),
-    path('performance/<uuid:performance_uuid>/sale/<uuid:sale_uuid>/update', views.sale_update, name = 'sale_update'),
+    path('performance/<uuid:performance_uuid>/sale/<uuid:sale_uuid>/items', views.sale_items, name = 'sale_items'),
+    path('performance/<uuid:performance_uuid>/sale/<uuid:sale_uuid>/payment/card', views.sale_payment_card, name = 'sale_payment_card'),
     path('performance/<uuid:performance_uuid>/sale/<uuid:sale_uuid>/cancel', views.sale_cancel, name = 'sale_cancel'),
+    path('performance/<uuid:performance_uuid>/sale/<uuid:sale_uuid>/update', views.sale_update, name = 'sale_update'),
     # Tickets API
     path('performance/<uuid:performance_uuid>/tickets/<str:format>', views.tickets, name = 'tickets'),
     path('ticket/<uuid:ticket_uuid>/token', views.ticket_token, name = 'ticket_token'),

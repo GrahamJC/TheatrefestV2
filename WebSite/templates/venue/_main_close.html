@@ -1,5 +1,14 @@
 {% load crispy_forms_tags %}
 
+{% if tab == 'close' %}
+    {% for msg in messages %}
+        <div class="{{ msg.tags }} alert-dismissible" role="alert">
+            {{ msg }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        </div>
+    {% endfor %}
+{% endif %}
+
 <div class="row">
     <div class="col-12 col-md-6 mb-2">
         <div class="card">
@@ -7,6 +16,11 @@
             <div class="card-body">
                 {% if close_form %}
                     {% crispy close_form %}
+                    {% if performance.has_close_checkpoint %}
+                        <button class="btn btn-primary" hx-post="{% url 'venue:checkpoint_update_close' performance.close_checkpoint.uuid %}" hx-include="#close-form">Update</button>
+                    {% else %}
+                        <button class="btn btn-primary" hx-post="{% url 'venue:performance_close' performance.uuid %}" hx-include="#close-form">Close</button>
+                    {% endif %}
                 {% endif %}
             </div>
         </div>

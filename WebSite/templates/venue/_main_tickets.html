@@ -1,7 +1,16 @@
-<div class="card">
+{% if tab == 'tickets' %}
+    {% for msg in messages %}
+        <div class="{{ msg.tags }} alert-dismissible" role="alert">
+            {{ msg }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        </div>
+    {% endfor %}
+{% endif %}
+
+<div class="card" hx-target="#tickets-tab-content">
 
     <div class="card-header">
-        <a class="btn btn-primary float-right" href="#" onclick="updateTicketsTab('{% url 'venue:tickets' performance.uuid 'html' %}')">Refresh</a>
+        <button class="btn btn-primary float-right" hx-get="{% url 'venue:tickets' performance.uuid 'html' %}">Refresh</button>
         <a class="btn btn-primary float-right mr-2" href="{% url 'venue:tickets' performance.uuid 'pdf' %}" target="_blank">Print</a>
         <h4>Tickets</h4>
     </div>
@@ -23,7 +32,7 @@
                     <td>{% if ticket.user %} {{ ticket.user.username }} {%else%} {{ ticket.sale.customer }} {% endif %}</td>
                     <td>{{ ticket.description }}</td>
                     <td>{% if ticket.sale.boxoffice %}Box Office{% else %}Online{% endif %}</td>
-                    <td><input id="token_{{ ticket.uuid }}" type="checkbox" onclick="toggle_token('{{ ticket.uuid }}')" {% if ticket.token_issued %}checked{% endif %} /></td>
+                    <td><input id="token-{{ ticket.uuid }}" type="checkbox" name="Issued" hx-get="{% url 'venue:ticket_token' ticket.uuid %}" hx-target="this" hx-swap="OuterHTML" {% if ticket.token_issued %}checked{% endif %}/></td>
                 </tr>
             {% endfor %}
         </table>
@@ -43,7 +52,7 @@
                     <td>{% if ticket.user %} {{ ticket.user.username }} {%else%} {{ ticket.sale.customer }} {% endif %}</td>
                     <td>{{ ticket.description }}</td>
                     <td>Venue</td>
-                    <td><input id="token_{{ ticket.uuid }}" type="checkbox" onclick="toggle_token('{{ ticket.uuid }}')" {% if ticket.token_issued %}checked{% endif %} /></td>
+                    <td><input id="token-{{ ticket.uuid }}" type="checkbox" name="Issued" hx-get="{% url 'venue:ticket_token' ticket.uuid %}" hx-target="this" hx-swap="OuterHTML" {% if ticket.token_issued %}checked{% endif %}/></td>
                 </tr>
             {% endfor %}
         </table>
@@ -71,29 +80,3 @@
     </div>
 
 </div>
-
-<script language="javascript">
-
-    function toggle_token(ticket_uuid) {
-        $.ajax({
-            url: '{% url 'venue:ticket_token' '00000000-0000-0000-0000-000000000000' %}'.replace('00000000-0000-0000-0000-000000000000', ticket_uuid),
-            beforeSend: function () {
-                $('body').css({
-                    'cursor': 'wait'
-                });
-            },
-            complete: function () {
-                $('body').css({
-                    'cursor': 'default'
-                });
-            },
-            success: function(response) {
-                $('#token_' + ticket_uuid).prop('checked', response.token_issued);
-            },
-            error: function(response) {
-                $('#tf-alerts').append('<div class="alert alert-error"><a class="close" data-dismiss="alert">x</a><span>Sorry but there was an error. Please try again.</span></div>');
-            }
-        });
-    }
-
-</script>

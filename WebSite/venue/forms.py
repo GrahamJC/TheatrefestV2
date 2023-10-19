@@ -23,7 +23,7 @@ class OpenCheckpointForm(forms.Form):
             self.fields['fringers'].disabled = True
 
 
-class SaleForm(forms.Form):
+class SaleItemsForm(forms.Form):
 
     buttons = forms.IntegerField(label = 'Badges', required = True, initial = 0, min_value = 0, widget = forms.NumberInput(attrs = { 'style': 'width: 75px' }))
     fringers = forms.IntegerField(label = 'Paper fringers (buy)', required = True, initial = 0, min_value = 0, widget = forms.NumberInput(attrs = { 'style': 'width: 75px' }))
@@ -47,6 +47,9 @@ class SaleForm(forms.Form):
         )
 
 
+class SaleForm(forms.Form):
+
+    pass
 class CloseCheckpointForm(forms.Form):
 
     buttons = forms.IntegerField(label = 'Badges', required = True, widget = forms.NumberInput(attrs = { 'style': 'width: 75px' }))

@@ -1,6 +1,15 @@
 {% load crispy_forms_tags %}
 {% load widget_tweaks %}
 
+{% if tab == 'checkpoints' %}
+    {% for msg in messages %}
+        <div class="{{ msg.tags }} alert-dismissible" role="alert">
+            {{ msg }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        </div>
+    {% endfor %}
+{% endif %}
+
 <div class="row" hx-target="#checkpoints-tab-content" hx-indicator="">
 
     <div class="col-6">

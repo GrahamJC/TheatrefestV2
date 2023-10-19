@@ -3,6 +3,7 @@
 
 {% block pagetitle %}Venue: {{ venue.name }}{% endblock %}
 {% block banner %}{% endblock %}
+{% block messages %}{% endblock %}
 
 {% block content %}
 
@@ -27,7 +28,7 @@
             {% if performance.has_open_checkpoint %}
                 <a id="open-tab" class="nav-item nav-link {% if tab == 'open' or not tab %}active{% endif %}" href="#open-tab-content" data-toggle="tab">Open</a>
                 <a id="sales-tab" class="nav-item nav-link {% if tab == 'sales' %}active{% endif %}" href="#sales-tab-content" data-toggle="tab">Sales</a>
-                <a id="tickets-tab" class="nav-item nav-link {% if tab == 'tickets' %}active{% endif %}" href="#tickets-tab-content" data-toggle="tab">Tickets</a>
+                <a id="tickets-tab" class="nav-item nav-link {% if tab == 'tickets' %}active{% endif %}" href="#tickets-tab-content" data-toggle="tab" hx-get="{% url 'venue:tickets' performance.uuid 'html' %}" hx-target="#tickets-tab-content">Tickets</a>
                 <a id="close-tab" class="nav-item nav-link {% if tab == 'close' %}active{% endif %}" href="#close-tab-content" data-toggle="tab">Close</a>
             {% else %}
                 <a class="nav-item nav-link {% if tab == 'open' or not tab %}active{% endif %}" href="#open-tab-content" data-toggle="tab">Open</a>
@@ -35,7 +36,7 @@
                 <a class="nav-item nav-link disabled" href="#">Tickets</a>
                 <a class="nav-item nav-link disabled" href="#">Close</a>
             {% endif %}
-            <a id="info-tab" class="nav-item nav-link {% if tab == 'info' %}active{% endif %}" href="#info-tab-content" data-toggle="tab">Information</a>
+            <a id="info-tab" class="nav-item nav-link {% if tab == 'info' %}active{% endif %}" href="#info-tab-content" data-toggle="tab" hx-get="{% url 'venue:performance_info' performance.uuid %}" hx-target="#info-tab-content">Information</a>
         </div>
 
         <div class="tab-content">
@@ -86,44 +87,7 @@
                 var uuid = $('#select-performance').val();
                 location.href = '{% url 'venue:main_performance' venue.uuid '00000000-0000-0000-0000-000000000000' %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
             });
-            {% if performance %}
-                $('#tickets-tab').on('show.bs.tab', function(e) { updateTicketsTab('{% url 'venue:tickets' performance.uuid 'html' %}') });
-                $('#info-tab').on('show.bs.tab', function(e) { updateInfoTab('{% url 'venue:performance_info' performance.uuid %}') });
-            {% endif %}
         });
-
-        function updateSalesTab(url, data) {
-            $('#tf-alerts').empty();
-            $('body').css({ 'cursor': 'wait' });
-            $('#sales-tab-content').load(url, data, function(response, status, xhr) {
-                if (status != 'success') {
-                    $('#tf-alerts').append('<div class="alert alert-danger"><a class="close" data-dismiss="alert">x</a><span>Sorry but there was an error. Please try again.</span></div>');
-                }
-                $('body').css({ 'cursor': 'default' });
-            });
-        }
-
-        function updateTicketsTab(url, data) {
-            $('#tf-alerts').empty();
-            $('body').css({ 'cursor': 'wait' });
-            $('#tickets-tab-content').load(url, data, function(response, status, xhr) {
-                if (status != 'success') {
-                    $('#tf-alerts').append('<div class="alert alert-danger"><a class="close" data-dismiss="alert">x</a><span>Sorry but there was an error. Please try again.</span></div>');
-                }
-                $('body').css({ 'cursor': 'default' });
-            });
-        }
-
-        function updateInfoTab(url, data) {
-            $('#tf-alerts').empty();
-            $('body').css({ 'cursor': 'wait' });
-            $('#info-tab-content').load(url, data, function(response, status, xhr) {
-                if (status != 'success') {
-                    $('#tf-alerts').append('<div class="alert alert-danger"><a class="close" data-dismiss="alert">x</a><span>Sorry but there was an error. Please try again.</span></div>');
-                }
-                $('body').css({ 'cursor': 'default' });
-            });
-        }
 
     </script>
     

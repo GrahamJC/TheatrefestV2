@@ -12,52 +12,111 @@
     }
 </style>
 
-<div class="row">
+{% if tab == 'sales' %}
+    {% for msg in messages %}
+        <div class="{{ msg.tags }} alert-dismissible" role="alert">
+            {{ msg }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        </div>
+    {% endfor %}
+{% endif %}
+
+<div class="row" hx-target="#sales-tab-content">
 
     <div class="col-6">
-        {% if sale %}
-            <div class="card mb-2">
-                <h6 class="card-header">New Sale<div class="float-right">Available: {{ available }}</div></h6>
-                <div class="card-body">
-                    {% crispy sale_form %}
-                    <button class="btn btn-primary" hx-post="{% url 'venue:sale_update' performance.uuid sale.uuid %}" hx-include="#sale-form" hx-target="#sales-tab-content" hx-swap="innerHTML">Add/Update Sale</button>
-                </div>
+        {% if not performance.has_open_checkpoint %}
+            <div class="alert alert-info">
+                <p>This performance has not been opened.</p>
             </div>
-        {% elif performance.has_close_checkpoint %}
-            <div class="card mb-2">
-                <h6 class="card-header">Closed</h6>
-                <div class="card-body">
-                    <div class="alert alert-info">
-                        <p>This performance is now closed.</p>
-                    </div>
-                </div>
-            </div>
-        {% else %}
+        {% elif not performance.has_close_checkpoint and not sale %}
             <div class="card mb-2">
                 <h6 class="card-header">New Sale</h6>
                 <div class="card-body">
                     <div class="alert alert-info">
                         <p>To start a new sale click Start.</p>
                     </div>
-                    <button class="btn btn-primary" hx-get="{% url 'venue:sale_start' performance.uuid %}" hx-target="#sales-tab-content" hx-swap="innerHTML">Start</button>
+                    <button class="btn btn-primary" hx-get="{% url 'venue:sale_start' performance.uuid %}">Start</button>
                 </div>
             </div>
-        {% endif %}
-    </div>
-    <div class="col-6">
-        {% if sale %}
+        {% elif sale.completed %}
             <div class="card">
                 <h6 class="card-header">Sale: {{ sale.id }}</h6>
                 <div class="card-body">
                     <div class="alert alert-info">
-                        {% if performance.has_close_checkpoint %}
-                            <p>This performance is now closed and you can no longer make any changes.</p>
-                        {% elif sale.completed %}
-                            <p>This sale is complete but you can still make changes to correct mistakes.</p>
-                            <p>Once you have made any changes select Close to begin a new sale.</p>
+                        {% for performance in sale.ticket_performances %}
+                            <div class="row mb-2">
+                                <div class="col-12"><strong>{{ performance.show }}</strong></div>
+                                <div class="col-12">{{ performance.date | date:'D, j M' }} at {{ performance.time | time:'h:ia' }}</div>
+                                <div class="col-12">
+                                    {% for ticket in performance.tickets %}
+                                        <div class="row">
+                                            <div class="col-1"></div>
+                                            <div class="col-3">{{ ticket.id }}</div>
+                                            <div class="col-6">{{ ticket.description }}</div>
+                                            <div class="col-2 text-right">{% if ticket.cost %}&#163;{{ ticket.cost }}{% endif %}</div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                        {% if sale.buttons %}
+                            <div class="row mb-2">
+                                <div class="col-9"><strong>{{ sale.buttons }} x Badges</strong></div>
+                                <div class="col-3 text-right">&#163;{{ sale.button_cost }}</div>
+                            </div>
+                        {% endif %}
+                        {% if sale.fringers.count > 0 %}
+                            <div class="row mb-2">
+                                <div class="col-9"><strong>{{ sale.fringers.count }} x Paper fringers ({{ sale.festival.fringer_shows }} shows for &#163;{{ sale.festival.fringer_price | floatformat:0 }})</strong></div>
+                                <div class="col-3 text-right">&#163;{{ sale.fringer_cost }}</div>
+                            </div>
+                        {% endif %}
+                        <div class="row mb-2">
+                            <div class="col-9"><strong>Total</strong></div>
+                            <div class="col-3 text-right">&#163;{{ sale.total_cost }}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-9"><strong>Payment type</strong></div>
+                            <div class="col-3 text-right">{{ sale.transaction_type_description }}</div>
+                        </div>
+                    </div>
+                    {% if sale_form %}
+                        {% crispy sale_form %}
+                        <button class="btn btn-primary" hx-post="{% url 'venue:sale_update' performance.uuid sale.uuid %}" hx-include="#sale-form">Update</button>
+                    {% endif %}
+                    <div class="float-right">
+                        <button class="btn btn-secondary" hx-get="{% url 'venue:sale_close' performance.uuid sale.uuid %}">Close</button>
+                    </div>
+                </div>
+            </div>
+        {% elif performance.has_close_checkpoint %}
+            <div class="alert alert-info">
+                <p>This performance is now closed.</p>
+            </div>
+        {% elif sale_items_form %}
+            <div class="card mb-2">
+                <h6 class="card-header">New Sale<div class="float-right">Available: {{ available }}</div></h6>
+                <div class="card-body">
+                    {% crispy sale_items_form %}
+                    <button class="btn btn-primary" hx-post="{% url 'venue:sale_items' performance.uuid sale.uuid %}" hx-include="#sale-items-form">Add/Update Sale</button>
+                </div>
+            </div>
+        {% elif sale.is_squareUp %}
+            <div class="alert alert-warning">
+                <p>SquareUP POS App.</p>
+            </div>
+        {% endif %}
+    </div>
+    <div class="col-6">
+        {% if sale and not sale.completed %}
+            <div class="card">
+                <h6 class="card-header">Sale: {{ sale.id }}</h6>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        {% if sale_form %}
+                            <p>Once all items have been added select the payment type to complete the sale.</p>
                         {% else %}
-                            <p>Once the customer has paid select Complete to finish the sale.</p>
-                            <p>If you select Cancel (or leave this page) the sale will be cancelled and no tickets will be issued.</p>
+                            <p>Select Complete when payment has been received or Cancel if you want to update the sale or change the payment type.</p>
                         {% endif %}
                     </div>
                     {% for performance in sale.ticket_performances %}
@@ -92,22 +151,22 @@
                         <div class="col-9"><strong>Total</strong></div>
                         <div class="col-3 text-right">&#163;{{ sale.total_cost }}</div>
                     </div>
-                    {% if not performance.has_close_checkpoint %}
-                        <div class="row mb-2">
-                            <div class="col-12">
-                                {% if sale.completed %}
-                                    <div class="float-right">
-                                        <a class="btn btn-secondary" hx-get="{% url 'venue:sale_new' performance.uuid %}" hx-target="#sales-tab-content" hx-swap="innerHTML">Close</a>
-                                    </div>
-                                {% else %}
-                                    <a class="btn btn-primary" href="{{square_intent}}">Card Payment</a>
-                                    <div class="float-right">
-                                        <a class="btn btn-secondary" hx-get="{% url 'venue:sale_cancel' performance.uuid sale.uuid %}" hx-target="#sales-tab-content" hx-swap="innerHTML">Cancel</a>
-                                    </div>
-                                {% endif %}
-                            </div>
+                    <div class="row mb-2">
+                        <div class="col-12">
+                            {% if sale_form %}
+                                {% crispy sale_form %}
+                                <button class="btn btn-primary" hx-post="{% url 'venue:sale_payment_card' performance.uuid sale.uuid %}" hx-include="#sale-form" {% if sale.is_empty %}disabled{% endif %}>Card</button>
+                                <div class="float-right">
+                                    <button class="btn btn-secondary" hx-get="{% url 'venue:sale_cancel' performance.uuid sale.uuid %}">Cancel</button>
+                                </div>
+                            {% elif sale.is_squareUp %}
+                                <button class="btn btn-primary" onclick="squareUpComplete()">Complete</button>
+                                <div class="float-right">
+                                    <button class="btn btn-secondary" onclick="squareUpCancel()">Cancel</button>
+                                </div>
+                            {% endif %}
                         </div>
-                    {% endif %}
+                    </div>
                 </div>
             </div>
         {% else %}
@@ -115,25 +174,21 @@
                 <h6 class="card-header">All Sales</h6>
                 <div class="card-body">
                     <div class="alert alert-info">
-                        {% if performance.has_close_checkpoint %}
-                            <p>To view details of a sale select it from the list.</p>
-                        {% else %}
-                            <p>To view or update details of a previous sale select it from the list.</p>
-                        {% endif %}
+                        <p>Select a sale to view the details and add/update notes.</p>
                     </div>
                     <table class="table table-striped">
                         <thhead>
                             <tr>
                                 <th>Sale No</th>
-                                <th>Date/Time</th>
+                                <th>Time</th>
                                 <th>Amount</th>
                             </tr>
                         </thhead>
                         <tbody>
                             {% for sale in sales %}
                                 <tr>
-                                    <td><a href="#" hx-get="{% url "venue:sale_select" performance.uuid sale.uuid %}" hx-target="#sales-tab-content" hx-swap="innerHTML">{{ sale.id }}</a></td>
-                                    <td>{{ sale.completed }}</td>
+                                    <td><a href="#" hx-get="{% url "venue:sale_select" performance.uuid sale.uuid %}">{{ sale.id }}</a></td>
+                                    <td>{{ sale.completed.time }}</td>
                                     <td>&#163;{{ sale.amount }}</td>
                                 </tr>
                             {% endfor %}
@@ -145,3 +200,39 @@
     </div>
 
 </div>
+
+<script language="javascript">
+
+    // The following are used for testing only
+    function squareUpMetadata() {
+        return "{ \"venue_id\": {{venue.id}}, \"performance_id\": {{performance.id}}, \"sale_id\": {{sale.id}} }";
+    }
+
+    function squareUpComplete() {
+        var url =
+            "{% url 'venue:square_callback' %}" +
+            "?com.squareup.pos.SERVER_TRANSACTION_ID=" +
+            "&com.squareup.pos.CLIENT_TRANSACTION_ID=" +
+            "&com.squareup.pos.REQUEST_METADATA=" + squareUpMetadata() +
+            "&com.squareup.pos.ERROR_CODE=" +
+            "&com.squareup.pos.ERROR_DESCRIPTION=";
+        window.location = url;
+    }
+
+    function squareUpCancel() {
+        var url =
+            "{% url 'venue:square_callback' %}" +
+            "?com.squareup.pos.SERVER_TRANSACTION_ID=" +
+            "&com.squareup.pos.CLIENT_TRANSACTION_ID=" +
+            "&com.squareup.pos.REQUEST_METADATA=" + squareUpMetadata() +
+            "&com.squareup.pos.ERROR_CODE=com.squareup.pos.ERROR_TRANSACTION_CANCELED" +
+            "&com.squareup.pos.ERROR_DESCRIPTION=***TEST***";
+        window.location = url;
+    }
+
+    // If ready to accept card payment switch to the SquareUp POS app
+    {% if square_intent %}
+        window.location = '{{square_intent|safe}}';
+    {% endif %}
+
+</script>

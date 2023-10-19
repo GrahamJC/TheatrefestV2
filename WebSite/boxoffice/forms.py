@@ -47,7 +47,7 @@ class SaleExtrasForm(forms.Form):
     donation = forms.IntegerField(label = 'Donation to Theatrefest', required = True, initial = 0, min_value = 0, widget = forms.NumberInput(attrs = { 'style': 'width: 75px' }))
 
 
-class SaleCompleteForm(forms.Form):
+class SaleForm(forms.Form):
 
     email = forms.EmailField(label = 'e-mail address', required = True, widget = forms.TextInput(attrs = { 'style': 'width: 100%' }))
 

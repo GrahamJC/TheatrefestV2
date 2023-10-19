@@ -9,6 +9,15 @@
     }
 </style>
 
+{% if tab == 'refunds' %}
+    {% for msg in messages %}
+        <div class="{{ msg.tags }} alert-dismissible" role="alert">
+            {{ msg }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        </div>
+    {% endfor %}
+{% endif %}
+
 <div class="row" hx-target="#refunds-tab-content">
     <div class="col-6">
         {% if not refund %}

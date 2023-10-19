@@ -1,6 +1,15 @@
 {% load crispy_forms_tags %}
 {% load widget_tweaks %}
 
+{% if tab == 'tickets' %}
+    {% for msg in messages %}
+        <div class="{{ msg.tags }} alert-dismissible" role="alert">
+            {{ msg }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        </div>
+    {% endfor %}
+{% endif %}
+
 <div class="row" hx-target="#tickets-tab-content">
     <div class="col-12">
         <div class="card">

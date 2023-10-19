@@ -96,6 +96,14 @@ class Sale(TimeStampedModel):
     @property
     def is_cash(self):
         return self.transaction_type == Sale.TRANSACTION_TYPE_CASH
+
+    @property
+    def is_stripe(self):
+        return self.transaction_type == Sale.TRANSACTION_TYPE_STRIPE
+
+    @property
+    def is_squareUp(self):
+        return self.transaction_type == Sale.TRANSACTION_TYPE_SQUAREUP
     
     @property
     def ticket_performances(self):
