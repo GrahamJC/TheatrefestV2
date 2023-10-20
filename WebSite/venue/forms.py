@@ -49,7 +49,15 @@ class SaleItemsForm(forms.Form):
 
 class SaleForm(forms.Form):
 
-    pass
+    notes = forms.CharField(label = 'Notes', widget = forms.Textarea(attrs = { 'style': 'width: 100%; height: 100px' }), required = False)
+
+    def __init__(self, sale, *args, **kwargs):
+        if sale:
+            kwargs['initial'] = {
+                'notes': sale.notes,
+            }
+        super().__init__(*args, **kwargs)
+
 class CloseCheckpointForm(forms.Form):
 
     buttons = forms.IntegerField(label = 'Badges', required = True, widget = forms.NumberInput(attrs = { 'style': 'width: 75px' }))

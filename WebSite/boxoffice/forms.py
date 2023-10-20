@@ -50,8 +50,14 @@ class SaleExtrasForm(forms.Form):
 class SaleForm(forms.Form):
 
     email = forms.EmailField(label = 'e-mail address', required = True, widget = forms.TextInput(attrs = { 'style': 'width: 100%' }))
+    notes = forms.CharField(label = 'Notes', required = False, widget = forms.Textarea(attrs = { 'style': 'width: 100%; height: 100px' }))
 
     def __init__(self, sale, *args, **kwargs):
+        if sale:
+            kwargs['initial'] = {
+                'email': sale.customer,
+                'notes': sale.notes,
+            }
         super().__init__(*args, **kwargs)
         self.fields['email'].required = (sale.tickets.count() > 0)
 
@@ -59,6 +65,14 @@ class SaleForm(forms.Form):
 class SaleEMailForm(forms.Form):
 
     email = forms.EmailField(label = 'e-mail address', required = True, widget = forms.TextInput(attrs = { 'style': 'width: 100%' }))
+
+
+    def __init__(self, sale, *args, **kwargs):
+        if sale:
+            kwargs['initial'] = {
+                'email': sale.customer,
+            }
+        super().__init__(*args, **kwargs)
 
 
 class CheckpointForm(forms.Form):

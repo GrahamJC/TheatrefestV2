@@ -42,7 +42,9 @@ logger = logging.getLogger(__name__)
 
 # SquareUp interface
 def get_square_intent(request, venue, performance, sale):
-    if sale and not sale.completed and sale.transaction_type == Sale.TRANSACTION_TYPE_SQUAREUP:
+
+    # Only create intent if card payment (SquareUp) pending
+    if sale and sale.is_payment_pending and sale.is_square:
         metadata = f'{{ "venue_id": {venue.id}, "performance_id": {performance.id}, "sale_id": {sale.id} }}'
         callback_url = request.build_absolute_uri(reverse('venue:square_callback'))
         intent = ';'.join([
@@ -97,10 +99,13 @@ def square_callback(request):
         return redirect(reverse('venue:main_performance_sale', args=[venue.uuid, performance.uuid, sale.uuid]))
 
     # Complete the sale
+    sale.transaction_ID = server_transaction_id
     sale.completed = timezone.now()
     sale.save()
     logger.info(f"Sale {sale.id} completed")
-    messages.success(request, "Card payment accepted")
+    messages.success(request, "Card payment completed")
+
+    # Display main page for new sale
     return redirect(reverse('venue:main_performance', args=[venue.uuid, performance.uuid]))
 
 
@@ -170,41 +175,43 @@ def create_sale_items_form(performance, sale, post_data = None):
     assert performance
     assert sale
 
-    # Don't create form if sale is completed or transaction type has been selected
-    if sale.completed or sale.transaction_type:
-        return None
-    assert performance.has_open_checkpoint
-    assert not performance.has_close_checkpoint
-    assert is_next(performance)
-    
-    # Get initial values from sale
-    initial_data = {
-        'buttons': sale.buttons,
-        'fringers': sale.fringers.count(),
-    }
+    # Only create form if sale is in progress
+    form = None
+    if sale.is_in_progress:
 
-    # Get ticket types and add initial values
-    ticket_types = []
-    for ticket_type in sale.festival.ticket_types.filter(is_venue=True).order_by('seqno'):
-        ticket_types.append(ticket_type)
-        initial_data[SaleForm.ticket_field_name(ticket_type)] = sale.tickets.filter(type=ticket_type).count()
+        ## Additional parameter checks
+        assert performance.has_open_checkpoint
+        assert not performance.has_close_checkpoint
+        assert is_next(performance)
+        
+        # Get initial values from sale
+        initial_data = {
+            'buttons': sale.buttons,
+            'fringers': sale.fringers.count(),
+        }
 
-    # Create form
-    form = SaleItemsForm(ticket_types, data = post_data, initial = initial_data)
+        # Get ticket types and add initial values
+        ticket_types = []
+        for ticket_type in sale.festival.ticket_types.filter(is_venue=True).order_by('seqno'):
+            ticket_types.append(ticket_type)
+            initial_data[SaleItemsForm.ticket_field_name(ticket_type)] = sale.tickets.filter(type=ticket_type).count()
 
-    # Add crispy form helper
-    form.helper = FormHelper()
-    form.helper.form_id = 'sale-items-form'
-    form.helper.form_class = 'form-horizontal'
-    form.helper.label_class = 'col-6'
-    form.helper.field_class = 'col-6'
-    form.helper.layout = Layout(
-        HTML('<h5>Tickets</h5>'),
-        *(Field(form.ticket_field_name(tt)) for tt in form.ticket_types),
-        HTML('<h5>Other</h5>'),
-        'buttons',
-        'fringers',        
-    )
+        # Create form
+        form = SaleItemsForm(ticket_types, data = post_data, initial = initial_data)
+
+        # Add crispy form helper
+        form.helper = FormHelper()
+        form.helper.form_id = 'sale-items-form'
+        form.helper.form_class = 'form-horizontal'
+        form.helper.label_class = 'col-6'
+        form.helper.field_class = 'col-6'
+        form.helper.layout = Layout(
+            HTML('<h5>Tickets</h5>'),
+            *(Field(form.ticket_field_name(tt)) for tt in form.ticket_types),
+            HTML('<h5>Other</h5>'),
+            'buttons',
+            'fringers',        
+        )
 
     # Return form
     return form
@@ -215,14 +222,19 @@ def create_sale_form(sale, post_data=None):
     # Validate parameters
     assert sale
 
-    # Create form
-    form = SaleForm(data = post_data)
+    # Only create form if sale is in progress or complete 
+    form = None
+    if sale.is_in_progress or sale.is_complete:
 
-    # Add crispy form helper
-    form.helper = FormHelper()
-    form.helper.form_id = 'sale-form'
-    form.helper.layout = Layout(
-    )
+        # Create the form
+        form = SaleForm(sale, data = post_data)
+
+        # Add crispy form helper
+        form.helper = FormHelper()
+        form.helper.form_id = 'sale-form'
+        form.helper.layout = Layout(
+            'notes',
+        )
 
     # Return form
     return form
@@ -631,6 +643,7 @@ def sale_items(request, performance_uuid, sale_uuid):
     venue = performance.venue
     sale = get_object_or_404(Sale, uuid = sale_uuid)
     assert sale.venue == venue
+    assert sale.is_in_progress
 
     # Process sale form
     form = create_sale_items_form(performance, sale, request.POST)
@@ -643,7 +656,7 @@ def sale_items(request, performance_uuid, sale_uuid):
 
             # Adjust ticket numbers
             for ticket_type in form.ticket_types:
-                quantity = items_form.cleaned_data[SaleForm.ticket_field_name(ticket_type)]
+                quantity = form.cleaned_data[SaleItemsForm.ticket_field_name(ticket_type)]
                 while sale.tickets.filter(type=ticket_type).count() > quantity:
                     ticket = sale.tickets.filter(type=ticket_type).last()
                     logger.info(f"{ticket_type.name} ticket {ticket.id} removed from sale {sale.id}")
@@ -680,7 +693,7 @@ def sale_items(request, performance_uuid, sale_uuid):
                     fringer.save()
                     logger.info(f"Fringer {fringer.id} added to sale {sale.id}")
 
-            # Destroy sale form
+            # Clear form
             form = None
 
         # Insufficient tickets
@@ -704,13 +717,14 @@ def sale_payment_card(request, performance_uuid, sale_uuid):
     venue = performance.venue
     sale = get_object_or_404(Sale, uuid = sale_uuid)
     assert sale.venue == venue
-    assert not sale.completed
+    assert sale.is_in_progress
 
     # Process form
     form = create_sale_form(sale, request.POST)
     if form.is_valid():
 
         # Update sale
+        sale.notes = form.cleaned_data['notes']
         sale.amount = sale.total_cost
         sale.transaction_type = Sale.TRANSACTION_TYPE_SQUAREUP
         sale.transaction_fee = 0
@@ -735,24 +749,22 @@ def sale_cancel(request, performance_uuid, sale_uuid):
     venue = performance.venue
     sale = get_object_or_404(Sale, uuid = sale_uuid)
     assert sale.venue == venue
-    assert not sale.completed
+    assert sale.is_in_progress or sale.is_payment_pending
 
-    # Cancel sale
-    if sale.completed:
-        logger.error(f"Attempt to cancel sale {sale.id} which is already completed")
-    elif sale.transaction_type:
+    # Cancel payment or sale
+    if sale.is_payment_pending:
         logger.info(f"Sale {sale.id} payment type reset")
         sale.amount = 0
         sale.transaction_type = None
         sale.transaction_fee = 0
         sale.save()
-    else:
+    elif sale.is_in_progress:
         logger.info(f"Sale {sale.id} cancelled")
         sale.delete()
         sale = None
         messages.warning(request, 'Sale cancelled')
 
-    # Render sales tab content
+    # Update sales tab
     return  render_sales(request, performance, sale)
 
 
@@ -768,19 +780,20 @@ def sale_update(request, performance_uuid, sale_uuid):
     venue = performance.venue
     sale = get_object_or_404(Sale, uuid = sale_uuid)
     assert sale.venue == venue
-    assert sale.completed
+    assert sale.is_complete
 
     # Process sale form
     form = create_sale_form(sale, request.POST)
     if form.is_valid():
 
         # Update sale
+        sale.notes = form.cleaned_data['notes']
         sale.save();
         logger.info(f'Sale {sale.id} updated')
         messages.success(request, 'Sale updated')
         form = None
 
-    # Render sales tab content
+    # Update sales tab
     return  render_sales(request, performance, sale, sale_form=form)
 
 

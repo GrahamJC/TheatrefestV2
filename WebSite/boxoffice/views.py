@@ -39,7 +39,9 @@ logger = logging.getLogger(__name__)
 
 # Square interface
 def get_square_intent(request, boxoffice, sale):
-    if sale and not sale.completed and sale.transaction_type == Sale.TRANSACTION_TYPE_SQUAREUP:
+
+    # Only create intent if card payment (SquareUp) pending
+    if sale and sale.is_payment_pending and sale.is_square:
         metadata = f'{{ "boxoffice_id": {boxoffice.id}, "sale_id": {sale.id} }}'
         callback_url = request.build_absolute_uri(reverse('boxoffice:square_callback'))
         intent = ';'.join([
@@ -92,13 +94,18 @@ def square_callback(request):
         # Display main page with the sale still selected
         return redirect(reverse('boxoffice:main_sale', args=[boxoffice.uuid, sale.uuid]))
 
-    # Complete the sale and send a receipt (if we have an e-mail address)
+    # Complete the sale
+    sale.transaction_ID = server_transaction_id
     sale.completed = timezone.now()
     sale.save()
     logger.info(f"Sale {sale.id} completed")
-    messages.success(request, "Card payment accepted")
+    messages.success(request, "Card payment completed")
+
+    # Send e-mail receipt
     if sale.customer:
         email_receipt(sale, sale.customer)
+
+    # Display main page for new sale
     return redirect(reverse('boxoffice:main', args=[boxoffice.uuid]))
 
 # Helpers
@@ -145,27 +152,27 @@ def create_sale_tickets_form(festival, sale, performance, post_data = None):
     assert sale
     assert performance
 
-    # Don't create form if sale is completed or transaction type has been selected
-    if sale.completed or sale.transaction_type:
-        return None
+    # Only create form if sale is in progress
+    form = None
+    if sale.is_in_progress:
 
-    # Get ticket types
-    ticket_types = []
-    for ticket_type in sale.festival.ticket_types.filter(is_boxoffice=True).order_by('seqno'):
-        ticket_types.append(ticket_type)
+        # Get ticket types
+        ticket_types = []
+        for ticket_type in sale.festival.ticket_types.filter(is_boxoffice=True).order_by('seqno'):
+            ticket_types.append(ticket_type)
 
-    # Create form
-    form = SaleTicketsForm(ticket_types, data = post_data)
+        # Create form
+        form = SaleTicketsForm(ticket_types, data = post_data)
 
-    # Add crispy form helper
-    form.helper = FormHelper()
-    form.helper.form_id = 'sale-tickets-form'
-    form.helper.form_class = 'form-horizontal'
-    form.helper.label_class = 'col-6'
-    form.helper.field_class = 'col-6'
-    form.helper.layout = Layout(
-        *(Field(form.ticket_field_name(tt)) for tt in form.ticket_types),
-    )
+        # Add crispy form helper
+        form.helper = FormHelper()
+        form.helper.form_id = 'sale-tickets-form'
+        form.helper.form_class = 'form-horizontal'
+        form.helper.label_class = 'col-6'
+        form.helper.field_class = 'col-6'
+        form.helper.layout = Layout(
+            *(Field(form.ticket_field_name(tt)) for tt in form.ticket_types),
+        )
 
     # Return form
     return form
@@ -176,22 +183,22 @@ def create_sale_payw_form(sale, show, post_data = None):
     assert sale
     assert show
 
-    # Don't create form if sale is completed or transaction type has been selected
-    if sale.completed or sale.transaction_type:
-        return None
+    # Only create form if sale is in progress
+    form = None
+    if sale.is_in_progress:
 
-    # Create form
-    form = SalePAYWForm(data = post_data)
+        # Create form
+        form = SalePAYWForm(data = post_data)
 
-    # Add crispy form helper
-    form.helper = FormHelper()
-    form.helper.form_id = 'sale-payw-form'
-    form.helper.form_class = 'form-horizontal'
-    form.helper.label_class = 'col-6'
-    form.helper.field_class = 'col-6'
-    form.helper.layout = Layout(
-        Field('amount'),
-    )
+        # Add crispy form helper
+        form.helper = FormHelper()
+        form.helper.form_id = 'sale-payw-form'
+        form.helper.form_class = 'form-horizontal'
+        form.helper.label_class = 'col-6'
+        form.helper.field_class = 'col-6'
+        form.helper.layout = Layout(
+            Field('amount'),
+        )
 
     # Return form
     return form
@@ -201,31 +208,31 @@ def create_sale_extras_form(sale, post_data = None):
     # Validate parameters
     assert sale
 
-    # Don't create form if sale has been completed or payment type has been selected
-    if sale.completed or sale.transaction_type:
-        return None
+    # Only create form if sale is in progress
+    form = None
+    if sale.is_in_progress:
 
-    # Get initial values from sale
-    initial_data = {
-        'buttons': sale.buttons,
-        'fringers': sale.fringers.count(),
-        'donation': sale.donation,
-    }
+        # Get initial values from sale
+        initial_data = {
+            'buttons': sale.buttons,
+            'fringers': sale.fringers.count(),
+            'donation': sale.donation,
+        }
 
-    # Create form
-    form = SaleExtrasForm(data = post_data, initial = initial_data)
+        # Create form
+        form = SaleExtrasForm(data = post_data, initial = initial_data)
 
-    # Add crispy form helper
-    form.helper = FormHelper()
-    form.helper.form_id = 'sale-extras-form'
-    form.helper.form_class = 'form-horizontal'
-    form.helper.label_class = 'col-6'
-    form.helper.field_class = 'col-6'
-    form.helper.layout = Layout(
-        Field('buttons'),
-        Field('fringers'),
-        Field('donation'),
-    )
+        # Add crispy form helper
+        form.helper = FormHelper()
+        form.helper.form_id = 'sale-extras-form'
+        form.helper.form_class = 'form-horizontal'
+        form.helper.label_class = 'col-6'
+        form.helper.field_class = 'col-6'
+        form.helper.layout = Layout(
+            Field('buttons'),
+            Field('fringers'),
+            Field('donation'),
+        )
 
     # Return form
     return form
@@ -235,20 +242,20 @@ def create_sale_form(sale, post_data = None):
     # Validate parameters
     assert sale
 
-    # Don't create form if sale has not been completed but paym,ent type has been selected
-    if not sale.completed and sale.transaction_type:
-        return None
-    
-    # Create form
-    initial_data = { 'email': sale.customer } if sale else None
-    form = SaleForm(sale, initial=initial_data, data=post_data)
+    # Only create form if sale is in progress or complete
+    form = None
+    if sale.is_in_progress or sale.is_complete:
+        
+        # Create form
+        form = SaleForm(sale, data=post_data)
 
-    # Add crispy form helper
-    form.helper = FormHelper()
-    form.helper.form_id = 'sale-form'
-    form.helper.layout = Layout(
-        Field('email'),
-    )
+        # Add crispy form helper
+        form.helper = FormHelper()
+        form.helper.form_id = 'sale-form'
+        form.helper.layout = Layout(
+            Field('email'),
+            Field('notes'),
+        )
 
     # Return form
     return form
@@ -258,16 +265,19 @@ def create_sale_email_form(sale, post_data = None):
     # Validate parameters
     assert sale
 
-    # Create form
-    initial_data = { 'email': sale.customer }
-    form = SaleEMailForm(initial = initial_data, data = post_data)
+    # Only create form if sale is complete
+    form = None
+    if sale.is_complete:
 
-    # Add crispy form helper
-    form.helper = FormHelper()
-    form.helper.form_id = 'sale-email-form'
-    form.helper.layout = Layout(
-        Field('email'),
-    )
+        # Create form
+        form = SaleEMailForm(sale, data = post_data)
+
+        # Add crispy form helper
+        form.helper = FormHelper()
+        form.helper.form_id = 'sale-email-form'
+        form.helper.layout = Layout(
+            Field('email'),
+        )
 
     # Return form
     return form
@@ -560,6 +570,7 @@ def sale_tickets_add(request, sale_uuid, performance_uuid):
 
     # Get sale, box office and performance
     sale = get_object_or_404(Sale, uuid = sale_uuid)
+    assert sale.is_in_progress
     boxoffice = sale.boxoffice
     assert boxoffice
     performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
@@ -587,12 +598,6 @@ def sale_tickets_add(request, sale_uuid, performance_uuid):
                         ticket.save()
                         logger.info(f"{ticket_type.name} ticket {ticket.id} for {performance.show.name} on {performance.date} at {performance.time} added to sale {sale.id}")
 
-            # If sale is complete then update the total
-            if sale.completed:
-                sale.amount = sale.total_cost
-                sale.save()
-                logger.warning(f"Completed sale {sale.id} updated")
-
             # Prepare for adding more tickets
             form = None
             performance = None
@@ -613,18 +618,13 @@ def sale_remove_performance(request, sale_uuid, performance_uuid):
 
     # Get the sale and performance
     sale = get_object_or_404(Sale, uuid = sale_uuid)
+    assert sale.is_in_progress
     performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
 
     # Remove all tickets for this performance
     for ticket in sale.tickets.filter(performance = performance):
         logger.info(f"{ticket.description} ticket {ticket.id} for {performance.show.name} on {performance.date} at {performance.time} removed from sale {sale.id}")
         ticket.delete()
-
-    # If sale is complete then update the total
-    if sale.completed:
-        sale.amount = sale.total_cost
-        sale.save()
-        logger.warning(f"Completed sale {sale.id} updated")
 
     # Render updated sale
     return render_sale(request, sale.boxoffice, sale, accordion='tickets')
@@ -637,6 +637,7 @@ def sale_remove_ticket(request, sale_uuid, ticket_uuid):
 
     # Get sale and ticket
     sale = get_object_or_404(Sale, uuid = sale_uuid)
+    assert sale.is_in_progress
     ticket = get_object_or_404(Ticket, uuid = ticket_uuid)
     assert ticket.sale == sale
 
@@ -644,12 +645,6 @@ def sale_remove_ticket(request, sale_uuid, ticket_uuid):
     performance = ticket.performance
     logger.info(f"{ticket.description} ticket {ticket.id} for {performance.show.name} on {performance.date} at {performance.time} removed from sale {sale.id}")
     ticket.delete()
-
-    # If sale is complete then update the total
-    if sale.completed:
-        sale.amount = sale.total_cost
-        sale.save()
-        logger.warning(f"Completed sale {sale.id} updated")
 
     # Render updated sale
     return render_sale(request, sale.boxoffice, sale, accordion='tickets')
@@ -680,6 +675,7 @@ def sale_payw_add(request, sale_uuid, show_uuid):
 
     # Get sale, box office and performance
     sale = get_object_or_404(Sale, uuid = sale_uuid)
+    assert sale.is_in_progress
     boxoffice = sale.boxoffice
     assert boxoffice
     show = get_object_or_404(Show, uuid = show_uuid)
@@ -698,11 +694,6 @@ def sale_payw_add(request, sale_uuid, show_uuid):
         payw.save()
         logger.info(f"£{amount} PAYW donation for {show.name} added to sale {sale.id}")
 
-        # If sale is complete then update the total
-        if sale.completed:
-            sale.amount = sale.total_cost
-            sale.save()
-
         # Prepare for adding more  PAYW donations
         form = None
         show = None
@@ -715,12 +706,19 @@ def sale_payw_add(request, sale_uuid, show_uuid):
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
 @transaction.atomic
 def sale_payw_remove(request, sale_uuid, payw_uuid):
+
+    # Get sale, boxoffice and PAYW
     sale = get_object_or_404(Sale, uuid = sale_uuid)
+    assert sale.is_in_progress
+    boxoffice = sale.boxoffice
+    assert boxoffice
     payw = get_object_or_404(PayAsYouWill, uuid = payw_uuid)
+
+    # Remove PAYW
     logger.info(f"£{payw.amount} PAYW donation for {payw.show.name} removed from sale {sale.id}")
     payw.delete()
-    if sale.completed:
-        logger.warning(f"Completed sale {sale.id} updated")
+
+    # Update sales tab content
     return render_sale(request, sale.boxoffice, sale, accordion='payw')
 
 @require_POST
@@ -731,6 +729,7 @@ def sale_extras_update(request, sale_uuid):
 
     # Get sale and box office
     sale = get_object_or_404(Sale, uuid = sale_uuid)
+    assert sale.is_in_progress
     boxoffice = sale.boxoffice
     assert boxoffice
 
@@ -767,12 +766,6 @@ def sale_extras_update(request, sale_uuid):
             sale.save()
             logger.info(f"Donation updated to £{donation} for {sale.id}")
 
-        # If sale is complete then update the total
-        if sale.completed:
-            sale.amount = sale.total_cost
-            sale.save()
-            logger.warning(f"Completed sale {sale.id} updated")
-
         # Destroy sale form
         form = None
 
@@ -782,9 +775,11 @@ def sale_extras_update(request, sale_uuid):
 @transaction.atomic
 def sale_payment(request, sale_uuid, payment_type):
 
-    # Get sale
+    # Get sale and boxoffice
     sale = get_object_or_404(Sale, uuid = sale_uuid)
-    assert not sale.completed
+    assert sale.is_in_progress
+    boxoffice = sale.boxoffice
+    assert boxoffice
 
     # Process form
     form = create_sale_form(sale, request.POST)
@@ -792,6 +787,7 @@ def sale_payment(request, sale_uuid, payment_type):
 
         # Update sale
         sale.customer = form.cleaned_data['email']
+        sale.notes = form.cleaned_data['notes']
         sale.amount = sale.total_cost
         sale.transaction_type = payment_type
         sale.transaction_fee = 0
@@ -801,19 +797,23 @@ def sale_payment(request, sale_uuid, payment_type):
         # Clear form
         form = None
 
-    # Render sale
-    return render_sale(request, sale.boxoffice, sale, sale_form=form)
+    # Update sales tab
+    return render_sale(request, boxoffice, sale, sale_form=form)
 
 @require_POST
 @login_required
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
 def sale_payment_cash(request, sale_uuid):
+
+    # Select cash payment
     return sale_payment(request, sale_uuid, Sale.TRANSACTION_TYPE_CASH)
 
 @require_POST
 @login_required
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
 def sale_payment_card(request, sale_uuid):
+
+    # Select card payment
     return sale_payment(request, sale_uuid, Sale.TRANSACTION_TYPE_SQUAREUP)
 
 @require_GET
@@ -822,45 +822,51 @@ def sale_payment_card(request, sale_uuid):
 @transaction.atomic
 def sale_complete(request, sale_uuid):
 
-    # Get sale
+    # Get sale and boxoffice
     sale = get_object_or_404(Sale, uuid = sale_uuid)
-    if sale.completed:
-        logger.error(f"Attempt to complete sale {sale.id} which is already completed")
+    assert (sale.is_in_progress and sale.total_cost == 0) or (sale.is_payment_pending and sale.is_cash)
+    boxoffice = sale.boxoffice
+    assert boxoffice
 
-    else:
-        # Complete sale
-        sale.completed = timezone.now()
-        sale.save()
-        logger.info(f"Sale {sale.id} completed")
-        messages.success(request, 'Sale completed')
+    # Complete sale
+    sale.completed = timezone.now()
+    sale.save()
+    logger.info(f"Sale {sale.id} completed")
+    messages.success(request, 'Sale completed')
 
-        # Send a receipt (if we have an e-mail address)
-        if sale.customer:
-            email_receipt(sale, sale.customer)
+    # Send a receipt (if we have an e-mail address)
+    if sale.customer:
+        email_receipt(sale, sale.customer)
 
     # Ready for new sale
-    return render_sale(request, sale.boxoffice, None)
+    return render_sale(request, boxoffice, None)
 
 @require_GET
 @login_required
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
 @transaction.atomic
 def sale_cancel(request, sale_uuid):
+
+    # Get sale and boxoffice
     sale = get_object_or_404(Sale, uuid = sale_uuid)
+    assert sale.is_in_progress or sale.is_payment_pending
     boxoffice = sale.boxoffice
-    if sale.completed:
-        logger.error(f"Attempt to cancel sale {sale.id} which is already completed")
-    elif sale.transaction_type:
+    assert boxoffice
+
+    # Cancel payment or sale
+    if sale.is_payment_pending:
         logger.info(f"Sale {sale.id} payment type reset")
         sale.amount = 0
         sale.transaction_type = None
         sale.transaction_fee = 0
         sale.save()
-    else:
+    elif sale.is_in_progress:
         logger.info(f"Sale {sale.id} cancelled")
         sale.delete()
         sale = None
         messages.warning(request, 'Sale cancelled')
+
+    # Update sales tab
     return render_sale(request, boxoffice, sale)
 
 @require_GET
@@ -868,8 +874,15 @@ def sale_cancel(request, sale_uuid):
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
 @transaction.atomic
 def sale_select(request, sale_uuid):
+
+    # Get sale and boxoffice
     sale = get_object_or_404(Sale, uuid = sale_uuid)
-    return render_sale(request, sale.boxoffice, sale)
+    assert sale.is_complete
+    boxoffice = sale.boxoffice
+    assert boxoffice
+
+    # Update sales tab
+    return render_sale(request, boxoffice, sale)
 
 @require_POST
 @login_required
@@ -877,30 +890,47 @@ def sale_select(request, sale_uuid):
 @transaction.atomic
 def sale_update(request, sale_uuid):
 
-    # Get sale
+    # Get sale and boxoffice
     sale = get_object_or_404(Sale, uuid = sale_uuid)
-    assert sale.completed
+    assert sale.is_complete
+    boxoffice = sale.boxoffice
+    assert boxoffice
 
     # Process form
     form = create_sale_form(sale, request.POST)
     if form.is_valid():
 
         # Update sale
+        sale.customer = form.cleaned_data['email']
+        sale.notes = form.cleaned_data['notes']
         sale.save()
         logger.info(f'Sale {sale.id} updated')
         messages.success(request, 'Sale updated')
+
+        # If e-mail address was changed send a new receipt
+        if 'email' in form.changed_data:
+            email_receipt(sale, sale.customer)
+
+        # Clear form
         form = None
 
-    # Render sale
-    return render_sale(request, sale.boxoffice, sale, sale_form=form)
+    # Update sales tab
+    return render_sale(request, boxoffice, sale, sale_form=form)
 
 @require_GET
 @login_required
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
 @transaction.atomic
 def sale_close(request, sale_uuid):
+
+    # Get sale and boxoffice
     sale = get_object_or_404(Sale, uuid = sale_uuid)
-    return render_sale(request, sale.boxoffice, None)
+    assert sale.is_complete
+    boxoffice = sale.boxoffice
+    assert boxoffice
+
+    # Update sales tab
+    return render_sale(request, boxoffice, None)
 
 @require_POST
 @login_required
@@ -908,16 +938,21 @@ def sale_close(request, sale_uuid):
 @transaction.atomic
 def sale_email(request, sale_uuid):
 
-    # Get sale
+    # Get sale and boxoffice
     sale = get_object_or_404(Sale, uuid = sale_uuid)
+    assert sale.is_complete
+    boxoffice = sale.boxoffice
+    assert boxoffice
 
     # Process form
     form = create_sale_email_form(sale, request.POST)
     if form.is_valid():
+
+        # Send e-mail receipt
         email_receipt(sale, form.cleaned_data['email'])
         return HttpResponse('<div id=sale-email-status" class="alert alert-success">e-mail sent.</div>')
 
-    # Return status
+    # Form has errors
     return HttpResponse('<div id=sale-email-status" class="alert alert-danger">Invalid e-mail address.</div>')
 
 # Refunds

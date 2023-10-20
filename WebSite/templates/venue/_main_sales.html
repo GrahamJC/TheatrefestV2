@@ -38,7 +38,7 @@
                     <button class="btn btn-primary" hx-get="{% url 'venue:sale_start' performance.uuid %}">Start</button>
                 </div>
             </div>
-        {% elif sale.completed %}
+        {% elif sale.is_complete %}
             <div class="card">
                 <h6 class="card-header">Sale: {{ sale.id }}</h6>
                 <div class="card-body">
@@ -51,9 +51,8 @@
                                     {% for ticket in performance.tickets %}
                                         <div class="row">
                                             <div class="col-1"></div>
-                                            <div class="col-3">{{ ticket.id }}</div>
-                                            <div class="col-6">{{ ticket.description }}</div>
-                                            <div class="col-2 text-right">{% if ticket.cost %}&#163;{{ ticket.cost }}{% endif %}</div>
+                                            <div class="col-8">{{ ticket.description }}</div>
+                                            <div class="col-3 text-right">{% if ticket.cost %}&#163;{{ ticket.cost }}{% endif %}</div>
                                         </div>
                                     {% endfor %}
                                 </div>
@@ -101,14 +100,41 @@
                     <button class="btn btn-primary" hx-post="{% url 'venue:sale_items' performance.uuid sale.uuid %}" hx-include="#sale-items-form">Add/Update Sale</button>
                 </div>
             </div>
-        {% elif sale.is_squareUp %}
+        {% elif sale.is_square %}
             <div class="alert alert-warning">
                 <p>SquareUP POS App.</p>
             </div>
         {% endif %}
     </div>
     <div class="col-6">
-        {% if sale and not sale.completed %}
+        {% if not sale or sale.is_complete %}
+            <div class="card">
+                <h6 class="card-header">All Sales</h6>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <p>Select a sale to view the details and add/update notes.</p>
+                    </div>
+                    <table class="table table-striped">
+                        <thhead>
+                            <tr>
+                                <th>Sale No</th>
+                                <th>Time</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thhead>
+                        <tbody>
+                            {% for sale in sales %}
+                                <tr>
+                                    <td><a href="#" hx-get="{% url "venue:sale_select" performance.uuid sale.uuid %}">{{ sale.id }}</a></td>
+                                    <td>{{ sale.completed.time }}</td>
+                                    <td>&#163;{{ sale.amount }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% else %}
             <div class="card">
                 <h6 class="card-header">Sale: {{ sale.id }}</h6>
                 <div class="card-body">
@@ -127,9 +153,8 @@
                                 {% for ticket in performance.tickets %}
                                     <div class="row">
                                         <div class="col-1"></div>
-                                        <div class="col-3">{{ ticket.id }}</div>
-                                        <div class="col-6">{{ ticket.description }}</div>
-                                        <div class="col-2 text-right">{% if ticket.cost %}&#163;{{ ticket.cost }}{% endif %}</div>
+                                        <div class="col-8">{{ ticket.description }}</div>
+                                        <div class="col-3 text-right">{% if ticket.cost %}&#163;{{ ticket.cost }}{% endif %}</div>
                                     </div>
                                 {% endfor %}
                             </div>
@@ -159,7 +184,7 @@
                                 <div class="float-right">
                                     <button class="btn btn-secondary" hx-get="{% url 'venue:sale_cancel' performance.uuid sale.uuid %}">Cancel</button>
                                 </div>
-                            {% elif sale.is_squareUp %}
+                            {% elif sale.is_square %}
                                 <button class="btn btn-primary" onclick="squareUpComplete()">Complete</button>
                                 <div class="float-right">
                                     <button class="btn btn-secondary" onclick="squareUpCancel()">Cancel</button>
@@ -167,33 +192,6 @@
                             {% endif %}
                         </div>
                     </div>
-                </div>
-            </div>
-        {% else %}
-            <div class="card">
-                <h6 class="card-header">All Sales</h6>
-                <div class="card-body">
-                    <div class="alert alert-info">
-                        <p>Select a sale to view the details and add/update notes.</p>
-                    </div>
-                    <table class="table table-striped">
-                        <thhead>
-                            <tr>
-                                <th>Sale No</th>
-                                <th>Time</th>
-                                <th>Amount</th>
-                            </tr>
-                        </thhead>
-                        <tbody>
-                            {% for sale in sales %}
-                                <tr>
-                                    <td><a href="#" hx-get="{% url "venue:sale_select" performance.uuid sale.uuid %}">{{ sale.id }}</a></td>
-                                    <td>{{ sale.completed.time }}</td>
-                                    <td>&#163;{{ sale.amount }}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
                 </div>
             </div>
         {% endif %}

@@ -30,7 +30,7 @@
                     <button class="btn btn-primary" hx-get="{% url 'boxoffice:sale_start' boxoffice.uuid %}">Start</button>
                 </div>
             </div>
-        {% elif sale.completed %}
+        {% elif sale.is_complete %}
             <div class="card">
                 <h6 class="card-header">Sale: {{ sale.id }}</h6>
                 <div class="card-body">
@@ -43,9 +43,8 @@
                                     {% for ticket in performance.tickets %}
                                         <div class="row">
                                             <div class="col-1"></div>
-                                            <div class="col-3">{{ticket.id}}</div>
-                                            <div class="col-6">{{ ticket.description }}</div>
-                                            <div class="col-2 text-right">{% if ticket.cost %}&#163;{{ ticket.cost }}{% endif %}</div>
+                                            <div class="col-8">{{ ticket.description }}</div>
+                                            <div class="col-3 text-right">{% if ticket.cost %}&#163;{{ ticket.cost }}{% endif %}</div>
                                         </div>
                                     {% endfor %}
                                 </div>
@@ -94,7 +93,7 @@
                     </div>
                 </div>
             </div>
-        {% elif not sale.transaction_type %}
+        {% elif sale.is_in_progress %}
             <div id="sale-accordion" class="accordion">
                 <div class="card">
                     <div id="sale-tickets-head" class="card-header">
@@ -182,14 +181,41 @@
             <div class="alert alert-warning">
                 <p>Cash</p>
             </div>
-        {% elif sale.is_squareUp %}
+        {% elif sale.is_square %}
             <div class="alert alert-warning">
                 <p>SquareUP POS App.</p>
             </div>
         {% endif %}
     </div>
     <div class="col-6">
-        {% if sale and not sale.completed %}
+        {% if not sale or sale.is_complete %}
+            <div class="card">
+                <h6 class="card-header">Sales Since Last Checkpoint</h6>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <p>Select a sale to view the details and add/update notes.</p>
+                    </div>
+                    <table class="table table-striped">
+                        <thhead>
+                            <tr>
+                                <th>Sale</th>
+                                <th>Customer</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thhead>
+                        <tbody>
+                            {% for sale in sales %}
+                                <tr>
+                                    <td><a href="#" hx-get="{% url 'boxoffice:sale_select' sale.uuid %}">{{ sale.id }}</a></td>
+                                    <td>{{ sale.customer }}</td>
+                                    <td>&#163;{{ sale.amount }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% else %}
             <div class="card">
                 <h6 class="card-header">Sale: {{ sale.id }}</h6>
                 <div class="card-body">
@@ -199,7 +225,7 @@
                             {% if sale.tickets.count > 0 %}<p><b>An e-mail address is required when purchasing tickets to identify the ticket holder at the venue and to notify them if the show is cancelled.</b></p>{% endif %}
                         {% elif sale.is_cash %}
                             <p>Select Complete when payment has been received or Cancel if you want to update the sale or change the payment type.</p>
-                        {% elif sale.is_squareUp %}
+                        {% elif sale.is_square %}
                             <p>Select Complete when payment has been received or Cancel if you want to update the sale or change the payment type.</p>
                         {% endif %}
                     </div>
@@ -207,25 +233,25 @@
                         <div class="row mb-2">
                             <div class="col-9"><strong>{{ performance.show }}</strong></div>
                             <div class="col-3 text-right">
-                                {% if not sale.transaction_type %}
+                                {% if sale.is_in_progress %}
                                     <a href="#" hx-get="{% url 'boxoffice:sale_remove_performance' sale.uuid performance.uuid %}">Remove</a>
                                 {% endif %}
                             </div>
                             <div class="col-6">{{ performance.date | date:'D, j M' }} at {{ performance.time | time:'h:ia' }}</div>
                             <div class="col-3">
-                                {% if not sale.transaction_type %}
+                                {% if sale.is_in_progress %}
                                     <a href="#tf-boxoffice-sale-tickets-{{ forloop.counter }}" data-toggle="collapse">{{ performance.tickets | length }} Tickets</a>
                                 {% endif %}
                             </div>
                             <div class="col-3 text-right">&#163;{{ performance.ticket_cost }}</div>
-                            {% if not sale.transaction_type %}
+                            {% if sale.is_in_progress %}
                                 <div id="tf-boxoffice-sale-tickets-{{ forloop.counter }}" class="col-12 collapse">
                                     {% for ticket in performance.tickets %}
                                         <div class="row">
                                             <div class="col-1"></div>
-                                            <div class="col-6">{{ ticket.description }}</div>
-                                            <div class="col-2 text-right">{% if ticket.cost %}&#163;{{ ticket.cost }}{% endif %}</div>
-                                            <div class="col-3">
+                                            <div class="col-5">{{ ticket.description }}</div>
+                                            <div class="col-3 text-right">{% if ticket.cost %}&#163;{{ ticket.cost }}{% endif %}</div>
+                                            <div class="col-3 text-right">
                                                 <a href="#" hx-get="{% url 'boxoffice:sale_remove_ticket' sale.uuid ticket.uuid %}">Remove</a>
                                             </div>
                                         </div>
@@ -238,7 +264,7 @@
                         <div class="row mb-2">
                             <div class="col-9"><strong>{{ payw.show.name }}</strong></div>
                             <div class="col-3 text-right">
-                                {% if not sale.transaction_type %}
+                                {% if sale.is_in_progress %}
                                     <a href="#" hx-get="{% url 'boxoffice:sale_payw_remove' sale.uuid payw.uuid %}">Remove</a>
                                 {% endif %}
                             </div>
@@ -268,7 +294,7 @@
                         <div class="col-9"><strong>Total</strong></div>
                         <div class="col-3 text-right">&#163;{{ sale.total_cost }}</div>
                     </div>
-                    {% if sale.transaction_type %}
+                    {% if sale.is_payment_pending %}
                         <div class="row mb-2">
                             <div class="col-9"><strong>Payment type</strong></div>
                             <div class="col-3 text-right">{{ sale.transaction_type_description }}</div>
@@ -288,7 +314,7 @@
                                 <div class="float-right">
                                     <button class="btn btn-secondary" hx-get="{% url 'boxoffice:sale_cancel' sale.uuid %}">Cancel</button>
                                 </div>
-                            {% elif sale.is_squareUp %}
+                            {% elif sale.is_square %}
                                 <button class="btn btn-primary" onclick="squareUpComplete()">Complete</button>
                                 <div class="float-right">
                                     <button class="btn btn-secondary" onclick="squareUpCancel()">Cancel</button>
@@ -296,33 +322,6 @@
                             {% endif %}
                         </div>
                     </div>
-                </div>
-            </div>
-        {% else %}
-            <div class="card">
-                <h6 class="card-header">Sales Since Last Checkpoint</h6>
-                <div class="card-body">
-                    <div class="alert alert-info">
-                        <p>Select a sale to view the details and add/update notes.</p>
-                    </div>
-                    <table class="table table-striped">
-                        <thhead>
-                            <tr>
-                                <th>Sale</th>
-                                <th>Customer</th>
-                                <th>Amount</th>
-                            </tr>
-                        </thhead>
-                        <tbody>
-                            {% for sale in sales %}
-                                <tr>
-                                    <td><a href="#" hx-get="{% url 'boxoffice:sale_select' sale.uuid %}">{{ sale.id }}</a></td>
-                                    <td>{{ sale.customer }}</td>
-                                    <td>&#163;{{ sale.amount }}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
                 </div>
             </div>
         {% endif %}

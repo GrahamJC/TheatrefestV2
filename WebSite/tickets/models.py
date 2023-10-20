@@ -44,9 +44,10 @@ class Sale(TimeStampedModel):
     amount = models.DecimalField(blank = True, default = 0, max_digits = 5, decimal_places = 2)
     completed = models.DateTimeField(null = True, blank = True)
     cancelled = models.DateTimeField(null = True, blank = True)
-    stripe_pi = models.CharField(max_length = 64, null = True, blank = True)
+    transaction_ID = models.CharField(max_length = 64, null = True, blank = True)
     transaction_type = models.PositiveIntegerField(null = True, blank = True, choices = TRANSACTION_TYPE_CHOICES)
     transaction_fee = models.DecimalField(blank = True, default = 0, max_digits = 4, decimal_places = 2)
+    notes = models.TextField(blank = True, default = '')
 
     @property
     def customer_user(self):
@@ -94,6 +95,22 @@ class Sale(TimeStampedModel):
         return int(self.total_cost * 100)
 
     @property
+    def is_complete(self):
+        return self.completed != None
+
+    @property
+    def is_cancelled(self):
+        return self.cancelled != None
+    
+    @property
+    def is_in_progress(self):
+        return not self.is_complete and not self.is_cancelled and self.transaction_type == None
+    
+    @property
+    def is_payment_pending(self):
+        return not self.is_complete and not self.is_cancelled and self.transaction_type != None
+
+    @property
     def is_cash(self):
         return self.transaction_type == Sale.TRANSACTION_TYPE_CASH
 
@@ -102,7 +119,7 @@ class Sale(TimeStampedModel):
         return self.transaction_type == Sale.TRANSACTION_TYPE_STRIPE
 
     @property
-    def is_squareUp(self):
+    def is_square(self):
         return self.transaction_type == Sale.TRANSACTION_TYPE_SQUAREUP
     
     @property
@@ -129,7 +146,7 @@ class Sale(TimeStampedModel):
         elif self.transaction_type == self.TRANSACTION_TYPE_STRIPE:
             return 'Stripe'
         elif self.transaction_type == self.TRANSACTION_TYPE_SQUAREUP:
-            return 'SquareUp'
+            return 'Square'
         else:
             return 'Unknown'
         
