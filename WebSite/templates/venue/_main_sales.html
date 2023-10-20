@@ -74,10 +74,12 @@
                             <div class="col-9"><strong>Total</strong></div>
                             <div class="col-3 text-right">&#163;{{ sale.total_cost }}</div>
                         </div>
-                        <div class="row mb-2">
-                            <div class="col-9"><strong>Payment type</strong></div>
-                            <div class="col-3 text-right">{{ sale.transaction_type_description }}</div>
-                        </div>
+                        {% if sale.transaction_type %}
+                            <div class="row mb-2">
+                                <div class="col-9"><strong>Payment type</strong></div>
+                                <div class="col-3 text-right">{{ sale.transaction_type_description }}</div>
+                            </div>
+                        {% endif %}
                     </div>
                     {% if sale_form %}
                         {% crispy sale_form %}
@@ -178,9 +180,13 @@
                     </div>
                     <div class="row mb-2">
                         <div class="col-12">
-                            {% if sale_form %}
+                            {% if sale.is_in_progress %}
                                 {% crispy sale_form %}
-                                <button class="btn btn-primary" hx-post="{% url 'venue:sale_payment_card' performance.uuid sale.uuid %}" hx-include="#sale-form" {% if sale.is_empty %}disabled{% endif %}>Card</button>
+                                {% if sale.total_cost > 0 %}
+                                    <button class="btn btn-primary" hx-post="{% url 'venue:sale_payment_card' performance.uuid sale.uuid %}" hx-include="#sale-form">Card</button>
+                                {% elif not sale.is_empty %}
+                                    <button class="btn btn-primary" hx-post="{% url 'venue:sale_complete_zero' performance.uuid sale.uuid %}" hx-include="#sale-form">Complete</button>
+                                {% endif %}
                                 <div class="float-right">
                                     <button class="btn btn-secondary" hx-get="{% url 'venue:sale_cancel' performance.uuid sale.uuid %}">Cancel</button>
                                 </div>
@@ -224,7 +230,7 @@
             "&com.squareup.pos.CLIENT_TRANSACTION_ID=" +
             "&com.squareup.pos.REQUEST_METADATA=" + squareUpMetadata() +
             "&com.squareup.pos.ERROR_CODE=com.squareup.pos.ERROR_TRANSACTION_CANCELED" +
-            "&com.squareup.pos.ERROR_DESCRIPTION=***TEST***";
+            "&com.squareup.pos.ERROR_DESCRIPTION=*Cancelled*";
         window.location = url;
     }
 

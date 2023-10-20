@@ -634,8 +634,7 @@ class CheckoutView(LoginRequiredMixin, View):
                     logger.info(f"eFringer {fringer.name} returned to basket {basket.user.id}")
                 sale.cancelled = timezone.now()
                 sale.save()
-                logger.info(f"Incomplete sale {sale.id} auto-cancelled")
-            messages.error(request, f"Payment cancelled. Your card has not been charged.")
+                logger.info(f"Sale {sale.id} auto-cancelled")
 
         # Display basket
         context = {

@@ -22,9 +22,9 @@ def user_logged_in_signal(sender, user, request, **kwargs):
             fringer.sale = None
             fringer.save()
             logger.info(f"eFringer {fringer.name} returned to basket {user.id}")
-        logger.info(f"Incomplete sale {sale.id} auto-cancelled")
         sale.cancelled = timezone.now()
         sale.save
+        logger.info(f"Sale {sale.id} auto-cancelled")
 
 
 @receiver(user_logged_out)

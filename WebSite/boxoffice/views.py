@@ -98,7 +98,7 @@ def square_callback(request):
     sale.transaction_ID = server_transaction_id
     sale.completed = timezone.now()
     sale.save()
-    logger.info(f"Sale {sale.id} completed")
+    logger.info(f"Sale {sale.id} completed (SquareUp)")
     messages.success(request, "Card payment completed")
 
     # Send e-mail receipt
@@ -117,7 +117,7 @@ def get_sales(boxoffice, date):
         return Sale.objects.none()
 
     # Get sales since last checkpoint
-    return boxoffice.sales.filter(created__gte = checkpoint.created).order_by('-id')
+    return boxoffice.sales.filter(cancelled__isnull=True, created__gte = checkpoint.created).order_by('-id')
 
 def get_refunds(boxoffice, date):
 
@@ -482,11 +482,16 @@ def main(request, boxoffice_uuid, tab='sales'):
     boxoffice = get_object_or_404(BoxOffice, uuid = boxoffice_uuid)
 
     # Cancel any incomplete box-office sales and refunds
-    for sale in boxoffice.sales.filter(user_id = request.user.id, completed__isnull = True):
-        logger.info(f"Incomplete sale {sale.id} auto-cancelled at {boxoffice.name}")
-        sale.delete()
+    for sale in boxoffice.sales.filter(user_id=request.user.id, completed__isnull=True, cancelled__isnull=True):
+        if sale.is_empty:
+            logger.info(f"Sale {sale.id} auto-deleted (empty)")
+            sale.delete()
+        else:
+            sale.cancelled = timezone.now()
+            sale.save()
+            logger.info(f"Sale {sale.id} auto-cancelled")
     for refund in boxoffice.refunds.filter(user_id = request.user.id, completed__isnull = True):
-        logger.info(f"Incomplete refund {refund.id} auto-cancelled at {boxoffice.name}")
+        logger.info(f"Incomplete refund {refund.id} auto-deleted at {boxoffice.name}")
         refund.delete()
 
     # Render main page
@@ -777,7 +782,7 @@ def sale_payment(request, sale_uuid, payment_type):
 
     # Get sale and boxoffice
     sale = get_object_or_404(Sale, uuid = sale_uuid)
-    assert sale.is_in_progress
+    assert sale.is_in_progress and sale.total_cost > 0
     boxoffice = sale.boxoffice
     assert boxoffice
 
@@ -820,11 +825,33 @@ def sale_payment_card(request, sale_uuid):
 @login_required
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
 @transaction.atomic
-def sale_complete(request, sale_uuid):
+def sale_payment_cancel(request, sale_uuid):
 
     # Get sale and boxoffice
     sale = get_object_or_404(Sale, uuid = sale_uuid)
-    assert (sale.is_in_progress and sale.total_cost == 0) or (sale.is_payment_pending and sale.is_cash)
+    assert sale.is_payment_pending
+    boxoffice = sale.boxoffice
+    assert boxoffice
+
+    # Cancel payment
+    sale.amount = 0
+    sale.transaction_type = None
+    sale.transaction_fee = 0
+    sale.save()
+    logger.info(f"Sale {sale.id} payment cancelled")
+
+    # Update sales tab
+    return render_sale(request, boxoffice, sale)
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+@transaction.atomic
+def sale_complete_cash(request, sale_uuid):
+
+    # Get sale and boxoffice
+    sale = get_object_or_404(Sale, uuid = sale_uuid)
+    assert sale.is_payment_pending and sale.is_cash
     boxoffice = sale.boxoffice
     assert boxoffice
 
@@ -838,8 +865,38 @@ def sale_complete(request, sale_uuid):
     if sale.customer:
         email_receipt(sale, sale.customer)
 
-    # Ready for new sale
+    # Update sales tab
     return render_sale(request, boxoffice, None)
+
+@require_POST
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+@transaction.atomic
+def sale_complete_zero(request, sale_uuid):
+
+    # Get sale and boxoffice
+    sale = get_object_or_404(Sale, uuid = sale_uuid)
+    assert sale.is_in_progress and sale.total_cost == 0 and not sale.is_empty
+    boxoffice = sale.boxoffice
+    assert boxoffice
+
+    # Process form
+    form = create_sale_form(sale, request.POST)
+    if form.is_valid():
+
+        # Complete sale
+        sale.customer = form.cleaned_data['email']
+        sale.notes = form.cleaned_data['notes']
+        sale.completed = timezone.now()
+        sale.save()
+        logger.info(f"Sale {sale.id} completed")
+        messages.success(request, 'Sale completed')
+
+        # Clear form
+        form = None
+
+    # Update sales tab
+    return render_sale(request, boxoffice, sale, sale_form=form)
 
 @require_GET
 @login_required
@@ -849,25 +906,23 @@ def sale_cancel(request, sale_uuid):
 
     # Get sale and boxoffice
     sale = get_object_or_404(Sale, uuid = sale_uuid)
-    assert sale.is_in_progress or sale.is_payment_pending
+    assert sale.is_in_progress
     boxoffice = sale.boxoffice
     assert boxoffice
 
-    # Cancel payment or sale
-    if sale.is_payment_pending:
-        logger.info(f"Sale {sale.id} payment type reset")
-        sale.amount = 0
-        sale.transaction_type = None
-        sale.transaction_fee = 0
-        sale.save()
-    elif sale.is_in_progress:
-        logger.info(f"Sale {sale.id} cancelled")
+    # Cancel sale (or delete it if empty)
+    if sale.is_empty:
+        logger.info(f"Sale {sale.id} cancelled (deleted - empty)")
         sale.delete()
-        sale = None
+        messages.warning(request, 'Sale cancelled')
+    else:
+        sale.cancelled = timezone.now()
+        sale.save()
+        logger.info(f"Sale {sale.id} cancelled")
         messages.warning(request, 'Sale cancelled')
 
     # Update sales tab
-    return render_sale(request, boxoffice, sale)
+    return render_sale(request, boxoffice, None)
 
 @require_GET
 @login_required

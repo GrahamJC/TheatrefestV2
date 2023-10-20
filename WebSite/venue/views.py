@@ -102,7 +102,7 @@ def square_callback(request):
     sale.transaction_ID = server_transaction_id
     sale.completed = timezone.now()
     sale.save()
-    logger.info(f"Sale {sale.id} completed")
+    logger.info(f"Sale {sale.id} completed (SQuareUp)")
     messages.success(request, "Card payment completed")
 
     # Display main page for new sale
@@ -249,9 +249,9 @@ def render_main(request, venue, performance, sale=None, tab=None):
     sales = None
     if performance:
         if performance.has_close_checkpoint:
-            sales = venue.sales.filter(created__gte = performance.open_checkpoint.created, created__lte = performance.close_checkpoint.created).order_by('-id')
+            sales = venue.sales.filter(created__gte=performance.open_checkpoint.created, created__lte=performance.close_checkpoint.created, completed__isnull=False).order_by('-id')
         elif performance.has_open_checkpoint:
-            sales = venue.sales.filter(created__gte = performance.open_checkpoint.created).order_by('-id')
+            sales = venue.sales.filter(created__gte=performance.open_checkpoint.created, completed__isnull=False).order_by('-id')
         else:
             sales = Sale.objects.none()
 
@@ -301,9 +301,9 @@ def render_sales(request, performance, sale, items_form=None, sale_form=None):
     venue = performance.venue
     sales = Sale.objects.none()
     if performance.has_close_checkpoint:
-        sales = venue.sales.filter(created__gte = performance.open_checkpoint.created, created__lte = performance.close_checkpoint.created).order_by('-id')
+        sales = venue.sales.filter(created__gte=performance.open_checkpoint.created, created__lte=performance.close_checkpoint.created, completed__isnull=False).order_by('-id')
     elif performance.has_open_checkpoint:
-        sales = venue.sales.filter(created__gte = performance.open_checkpoint.created).order_by('-id')
+        sales = venue.sales.filter(created__gte=performance.open_checkpoint.created, completed__isnull=False).order_by('-id')
 
     # Render sales tab content
     context = {
@@ -392,9 +392,14 @@ def main(request, venue_uuid):
     performance = venue.get_next_performance(request.now.date()) or venue.get_last_performance(request.now.date())
 
     # Delete any imcomplete sales for this venue
-    for sale in venue.sales.filter(user_id = request.user.id, completed__isnull = True):
-        logger.info("Incomplete venue sale %s (%s) at %s auto-cancelled", sale.id, sale.customer, venue.name)
-        sale.delete()
+    for sale in venue.sales.filter(user_id=request.user.id, completed__isnull=True, cancelled__isnull=True):
+        if sale.is_empty:
+            logger.info(f"Sale {sale.id} auto-deleted (empty)")
+            sale.delete()
+        else:
+            sale.cancelled = timezone.now()
+            sale.save()
+            logger.info(f"Sale {sale.id} auto-cancelled")
 
     # Render page
     return render_main(request, venue, performance)
@@ -410,11 +415,6 @@ def main_performance(request, venue_uuid, performance_uuid):
     venue = get_object_or_404(Venue, uuid = venue_uuid)
     performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
     assert(venue == performance.venue)
-
-    # Delete any incomplete sales for this venue
-    for sale in venue.sales.filter(completed__isnull = True):
-        logger.info(f"Sale {sale.id} auto-cancelled")
-        sale.delete()
 
     # Render page
     return render_main(request, venue, performance)
@@ -740,6 +740,65 @@ def sale_payment_card(request, performance_uuid, sale_uuid):
 @login_required
 @user_passes_test(lambda u: u.is_venue or u.is_admin)
 @transaction.atomic
+def sale_payment_cancel(request, performance_uuid, sale_uuid):
+
+    # Get performance, venue and sale
+    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+    assert performance.has_open_checkpoint
+    assert not performance.has_close_checkpoint
+    venue = performance.venue
+    sale = get_object_or_404(Sale, uuid = sale_uuid)
+    assert sale.venue == venue
+    assert sale.is_payment_pending
+
+    # Cancel payment
+    sale.amount = 0
+    sale.transaction_type = None
+    sale.transaction_fee = 0
+    sale.save()
+    logger.info(f"Sale {sale.id} payment cancelled")
+
+    # Update sales tab
+    return  render_sales(request, performance, sale)
+
+
+@require_POST
+@login_required
+@user_passes_test(lambda u: u.is_venue or u.is_admin)
+@transaction.atomic
+def sale_complete_zero(request, performance_uuid, sale_uuid):
+
+    # Get performance, venue and sale
+    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+    assert performance.has_open_checkpoint
+    assert not performance.has_close_checkpoint
+    venue = performance.venue
+    sale = get_object_or_404(Sale, uuid = sale_uuid)
+    assert sale.venue == venue
+    assert sale.is_in_progress and sale.total_cost == 0
+
+    # Process form
+    form = create_sale_form(sale, request.POST)
+    if form.is_valid():
+
+        # Complete sale
+        sale.notes = form.cleaned_data['notes']
+        sale.completed = timezone.now()
+        sale.save()
+        logger.info(f"Sale {sale.id} completed")
+        messages.success(request, 'Sale completed')
+
+        # Clear form
+        form = None
+
+    # Update sales tab
+    return  render_sales(request, performance, sale, sale_form=form)
+
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_venue or u.is_admin)
+@transaction.atomic
 def sale_cancel(request, performance_uuid, sale_uuid):
 
     # Get performance, venue and sale
@@ -749,23 +808,21 @@ def sale_cancel(request, performance_uuid, sale_uuid):
     venue = performance.venue
     sale = get_object_or_404(Sale, uuid = sale_uuid)
     assert sale.venue == venue
-    assert sale.is_in_progress or sale.is_payment_pending
+    assert sale.is_in_progress
 
-    # Cancel payment or sale
-    if sale.is_payment_pending:
-        logger.info(f"Sale {sale.id} payment type reset")
-        sale.amount = 0
-        sale.transaction_type = None
-        sale.transaction_fee = 0
-        sale.save()
-    elif sale.is_in_progress:
-        logger.info(f"Sale {sale.id} cancelled")
+    # Cancel sale (or delete it if empty)
+    if sale.is_empty:
+        logger.info(f"Sale {sale.id} cancelled (deleted - empty)")
         sale.delete()
-        sale = None
+        messages.warning(request, 'Sale cancelled')
+    else:
+        sale.cancelled = timezone.now()
+        sale.save()
+        logger.info(f"Sale {sale.id} cancelled")
         messages.warning(request, 'Sale cancelled')
 
     # Update sales tab
-    return  render_sales(request, performance, sale)
+    return  render_sales(request, performance, None)
 
 
 @require_POST

@@ -22,6 +22,7 @@ urlpatterns = [
     path('performance/<uuid:performance_uuid>/sale/start', views.sale_start, name = 'sale_start'),
     path('performance/<uuid:performance_uuid>/sale/<uuid:sale_uuid>/items', views.sale_items, name = 'sale_items'),
     path('performance/<uuid:performance_uuid>/sale/<uuid:sale_uuid>/payment/card', views.sale_payment_card, name = 'sale_payment_card'),
+    path('performance/<uuid:performance_uuid>/sale/<uuid:sale_uuid>/complete/zero', views.sale_complete_zero, name = 'sale_complete_zero'),
     path('performance/<uuid:performance_uuid>/sale/<uuid:sale_uuid>/cancel', views.sale_cancel, name = 'sale_cancel'),
     path('performance/<uuid:performance_uuid>/sale/<uuid:sale_uuid>/update', views.sale_update, name = 'sale_update'),
     # Tickets API
