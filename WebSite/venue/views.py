@@ -394,7 +394,7 @@ def main(request, venue_uuid):
     # Delete any imcomplete sales for this venue
     for sale in venue.sales.filter(user_id=request.user.id, completed__isnull=True, cancelled__isnull=True):
         if sale.is_empty:
-            logger.info(f"Sale {sale.id} auto-deleted (empty)")
+            logger.info(f"Sale {sale.id} auto-deleted (venue {venue.name})")
             sale.delete()
         else:
             sale.cancelled = timezone.now()

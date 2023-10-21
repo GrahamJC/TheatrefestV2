@@ -484,14 +484,14 @@ def main(request, boxoffice_uuid, tab='sales'):
     # Cancel any incomplete box-office sales and refunds
     for sale in boxoffice.sales.filter(user_id=request.user.id, completed__isnull=True, cancelled__isnull=True):
         if sale.is_empty:
-            logger.info(f"Sale {sale.id} auto-deleted (empty)")
+            logger.info(f"Sale {sale.id} auto-deleted (boxoffice {boxoffice.name})")
             sale.delete()
         else:
             sale.cancelled = timezone.now()
             sale.save()
             logger.info(f"Sale {sale.id} auto-cancelled")
     for refund in boxoffice.refunds.filter(user_id = request.user.id, completed__isnull = True):
-        logger.info(f"Incomplete refund {refund.id} auto-deleted at {boxoffice.name}")
+        logger.info(f"Refund {refund.id} auto-deleted (boxoffice {boxoffice.name})")
         refund.delete()
 
     # Render main page

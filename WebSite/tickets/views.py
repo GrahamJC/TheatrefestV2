@@ -632,9 +632,8 @@ class CheckoutView(LoginRequiredMixin, View):
                     fringer.sale = None
                     fringer.save()
                     logger.info(f"eFringer {fringer.name} returned to basket {basket.user.id}")
-                sale.cancelled = timezone.now()
-                sale.save()
-                logger.info(f"Sale {sale.id} auto-cancelled")
+                logger.info(f"Sale {sale.id} auto-deleted (online)")
+                sale.delete()
 
         # Display basket
         context = {
@@ -783,9 +782,9 @@ def checkout_stripe(request):
             success_url = request.build_absolute_uri(reverse('tickets:checkout_success', args=[sale.uuid])),
             cancel_url = request.build_absolute_uri(reverse('tickets:checkout_cancel', args=[sale.uuid])),
         )
-        sale.stripe_pi = session.payment_intent
+        logger.info(f"Stripe PI {session.id} created for sale {sale.id}")
+        sale.transaction_ID = session.id
         sale.save()
-        logger.info(f"Stripe PI {session.payment_intent} created for sale {sale.id}")
 
     return redirect(session.url, code=303)
 
@@ -838,6 +837,9 @@ def checkout_cancel(request, sale_uuid):
         fringer.sale = None
         fringer.save()
         logger.info(f"eFringer {fringer.name} returned to basket {basket.user.id}")
+    sale.amount = 0
+    sale.transaction_type = None
+    sale.transaction_fee = 0
     sale.cancelled = timezone.now()
     sale.save()
     logger.info(f"Sale {sale.id} cancelled")
