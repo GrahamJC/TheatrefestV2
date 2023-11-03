@@ -399,7 +399,7 @@ class AdminCommitmentCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView)
         return context_data
 
     def get_success_url(self):
-        return reverse('volunteers:admin_commitment_update', args=[self.object.uuid])
+        return reverse('volunteers:admin_commitment_update', kwargs={'slug': self.object.uuid})
 
 
 class AdminCommitmentUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
@@ -410,7 +410,6 @@ class AdminCommitmentUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView)
     context_object_name = 'commitment'
     template_name = 'volunteers/admin_commitment.html'
     success_message = 'Commitment updated'
-    success_url = reverse_lazy('volunteers:admin_commitment_list')
 
     def dispatch(self, request, *args, **kwargs):
         self.initial_tab = kwargs.pop('tab', None)
@@ -458,7 +457,14 @@ class AdminCommitmentUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView)
             { 'text': 'Update' },
         ]
         return context_data
-    
+
+    def form_valid(self, form):
+        form.instance.update_shifts()
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('volunteers:admin_commitment_update', kwargs={'slug': self.object.uuid})
+
 
 @login_required
 def admin_commitment_delete(request, slug):
@@ -486,6 +492,9 @@ class AdminCommitmentShiftCreate(LoginRequiredMixin, SuccessMessageMixin, Create
         initial = super().get_initial()
         initial['commitment'] = self.commitment
         initial['role'] = self.commitment.role
+        initial['needs_dbs'] = self.commitment.needs_dbs
+        initial['volunteer_can_accept'] = self.commitment.volunteer_can_accept
+        initial['volunteer'] = self.commitment.volunteer
         return initial
 
     def get_form_kwargs(self):
@@ -540,12 +549,6 @@ class AdminCommitmentShiftUpdate(LoginRequiredMixin, SuccessMessageMixin, Update
     def dispatch(self, request, *args, **kwargs):
         self.commitment = get_object_or_404(Commitment, uuid=kwargs['commitment_uuid'])
         return super().dispatch(request, *args, **kwargs)
-
-    def get_initial(self):
-        initial = super().get_initial()
-        initial['commitment'] = self.commitment
-        initial['role'] = self.commitment.role
-        return initial
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()

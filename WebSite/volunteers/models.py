@@ -95,6 +95,14 @@ class Commitment(TimeStampedModel):
     def can_delete(self):
         return not self.volunteer
 
+    def update_shifts(self):
+        for shift in self.shifts.all():
+            shift.role = self.role
+            shift.needs_dbs = self.needs_dbs
+            shift.volunteer_can_accept = self.volunteer_can_accept
+            shift.volunteer = self.volunteer
+            shift.save()
+
 
 class Shift(TimeStampedModel):
 

@@ -144,11 +144,14 @@ class AdminShiftForm(forms.ModelForm):
         if self.instance.commitment or self.initial.get('commitment'):
             self.fields['commitment'].disabled = True
             self.fields['role'].disabled = True
+            self.fields['needs_dbs'].disabled = True
+            self.fields['volunteer_can_accept'].disabled = True
+            self.fields['volunteer'].disabled = True
         else:
             self.fields['commitment'].queryset = Commitment.objects.filter(festival=festival)
             self.fields['role'].queryset = Role.objects.filter(festival=festival)
+            self.fields['volunteer'].queryset = Volunteer.objects.filter(user__festival=festival).order_by('user__last_name', 'user__first_name')
         self.fields['location'].queryset = Location.objects.filter(festival=festival)
-        self.fields['volunteer'].queryset = Volunteer.objects.filter(user__festival=festival).order_by('user__last_name', 'user__first_name')
     
 
 class VolunteerAddForm(forms.Form):
