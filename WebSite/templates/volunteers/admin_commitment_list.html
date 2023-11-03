@@ -1,0 +1,33 @@
+﻿{% extends "base.html" %}
+{% load i18n %}
+
+{% block pagetitle %}Commitments{% endblock %}
+
+{% block content %}
+
+    <table class="table">
+        <thead class="thead-light">
+            <tr>
+                <th>Description</th>
+                <th>Role</th>
+                <th>Needs</th>
+                <th>Shifts</th>
+                <th>Volunteer</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for commitment in commitments %}
+                <tr>
+                    <td><a href="{% url 'volunteers:admin_commitment_update' commitment.uuid %}">{{ commitment.description }}</a></td>
+                    <td>{{ commitment.role.description }}</td>
+                    <td>{% if commitment.needs_dbs %}DBS{% endif %}</td>
+                    <td>{{ commitment.shifts.count }}</td>
+                    <td>{% if commitment.volunteer %}{{ commitment.volunteer.user.first_name }} {{ commitment.volunteer.user.last_name }}{% endif %}</td>
+                </tr>
+            {%endfor %}
+        </tbody>
+    </table>
+
+    <a href="{% url 'volunteers:admin_commitment_create' %}" class="btn btn-primary">Add Commitment</a>
+
+{% endblock %}

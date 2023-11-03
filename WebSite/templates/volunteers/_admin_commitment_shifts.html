@@ -1,0 +1,24 @@
+﻿<table class="table">
+    <thead class="thead-light">
+        <tr>
+            <th>Location</th>
+            <th>Date</th>
+            <th>Start</th>
+            <th>End</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for shift in commitment.shifts.all %}
+            <tr>
+                <td><a href="{% url 'volunteers:admin_commitment_shift_update' commitment.uuid shift.uuid %}">{{ shift.location.description }}</a></td>
+                <td>{{ shift.date }}</td>
+                <td>{{ shift.start_time }}</td>
+                <td>{{ shift.end_time }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="mb-4 text-right">
+    <a class="btn btn-primary" href="{% url 'volunteers:admin_commitment_shift_create' commitment.uuid %}">Add Shift</a>
+</div>

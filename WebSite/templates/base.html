@@ -122,17 +122,8 @@
                     </nav>
                 </div>    
 
-                <div id="tf-header">
-                    <h3 id="tf-page-title">
-                        <div class="float-right mb-2">
-                            <a href="https://www.facebook.com/TheatrefestND/"><img src="{% static 'facebook.png' %}"/></a>
-                            <a href="https://twitter.com/@theatrefestND"><img src="{% static 'twitter.png' %}"/></a>
-                            <a href="https://www.instagram.com/theatrefestND"><img src="{% static 'instagram.png' %}"/></a>
-                        </div>
-                        {% block pagetitle %}{% endblock %}
-                    </h3>
-                    <div class="clearfix"></div>
-                    {% if breadcrumbs %}
+                {% if breadcrumbs %}
+                    <div id="tf-bfreadcrumbs">
                         <nav aria-label="breadcrumb">
                             <ol class="breadcrumb">
                                 {% for breadcrumb in breadcrumbs %}
@@ -144,7 +135,19 @@
                                 {% endfor %}
                             </ol>
                         </nav>
-                    {% endif %}
+                    </div>
+                {% endif %}
+
+                <div id="tf-header">
+                    <h3 id="tf-page-title">
+                        <div class="float-right mb-2">
+                            <a href="https://www.facebook.com/TheatrefestND/"><img src="{% static 'facebook.png' %}"/></a>
+                            <a href="https://twitter.com/@theatrefestND"><img src="{% static 'twitter.png' %}"/></a>
+                            <a href="https://www.instagram.com/theatrefestND"><img src="{% static 'instagram.png' %}"/></a>
+                        </div>
+                        {% block pagetitle %}{% endblock %}
+                    </h3>
+                    <div class="clearfix"></div>
                     <div id="tf-alerts">
                         {% block messages %}
                             {% for msg in messages %}

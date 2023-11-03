@@ -22,12 +22,17 @@ from crispy_forms.bootstrap import FormActions, TabHolder, Tab
 from core.models import User
 from content.models import Document
 
-from .models import Role, Location, Shift, Volunteer
+from .models import Role, Location, Shift, Commitment, Volunteer
 from .forms import (
-    AdminRoleForm, AdminLocationForm, AdminShiftForm,
+    AdminRoleForm, AdminLocationForm, AdminShiftForm, AdminCommitmentForm,
     VolunteerAddForm, AdminVolunteerForm, VolunteerUserForm, VolunteerRolesForm,
     AdminShiftSearchForm,
 )
+
+
+# Logging
+import logging
+logger = logging.getLogger(__name__)
 
 
 def render_shifts(request, volunteer):
@@ -125,6 +130,15 @@ class AdminRoleList(LoginRequiredMixin, ListView):
     def get_queryset(self):
         return Role.objects.filter(festival=self.request.festival)
 
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
+        context_data['breadcrumbs'] = [
+            { 'text': 'Volunteer Admin', 'url': reverse('volunteers:admin_home') },
+            { 'text': 'Roles' },
+        ]
+        return context_data
+
 
 class AdminRoleCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
 
@@ -154,6 +168,16 @@ class AdminRoleCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
             ),
         )
         return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
+        context_data['breadcrumbs'] = [
+            { 'text': 'Volunteer Admin', 'url': reverse('volunteers:admin_home') },
+            { 'text': 'Roles', 'url': reverse('volunteers:admin_role_list') },
+            { 'text': 'Create' },
+        ]
+        return context_data
 
 
 class AdminRoleUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
@@ -186,6 +210,16 @@ class AdminRoleUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
             )
         )
         return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
+        context_data['breadcrumbs'] = [
+            { 'text': 'Volunteer Admin', 'url': reverse('volunteers:admin_home') },
+            { 'text': 'Roles', 'url': reverse('volunteers:admin_role_list') },
+            { 'text': 'Update' },
+        ]
+        return context_data
     
 
 @login_required
@@ -206,6 +240,15 @@ class AdminLocationList(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         return Location.objects.filter(festival=self.request.festival)
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
+        context_data['breadcrumbs'] = [
+            { 'text': 'Volunteer Admin', 'url': reverse('volunteers:admin_home') },
+            { 'text': 'Locations' },
+        ]
+        return context_data
 
 
 class AdminLocationCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
@@ -235,6 +278,16 @@ class AdminLocationCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
             ),
         )
         return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
+        context_data['breadcrumbs'] = [
+            { 'text': 'Volunteer Admin', 'url': reverse('volunteers:admin_home') },
+            { 'text': 'Locations', 'url': reverse('volunteers:admin_location_list') },
+            { 'text': 'Create' },
+        ]
+        return context_data
 
 
 class AdminLocationUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
@@ -266,6 +319,16 @@ class AdminLocationUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
             )
         )
         return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
+        context_data['breadcrumbs'] = [
+            { 'text': 'Volunteer Admin', 'url': reverse('volunteers:admin_home') },
+            { 'text': 'Locations', 'url': reverse('volunteers:admin_location_list') },
+            { 'text': 'Update' },
+        ]
+        return context_data
     
 
 @login_required
@@ -276,6 +339,263 @@ def admin_location_delete(request, slug):
     location.delete()
     messages.success(request, 'Location deleted')
     return redirect('volunteers:admin_location_list')
+
+
+class AdminCommitmentList(LoginRequiredMixin, ListView):
+
+    model = Commitment
+    context_object_name = 'commitments'
+    template_name = 'volunteers/admin_commitment_list.html'
+
+    def get_queryset(self):
+        return Commitment.objects.filter(festival=self.request.festival)
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
+        context_data['breadcrumbs'] = [
+            { 'text': 'Volunteer Admin', 'url': reverse('volunteers:admin_home') },
+            { 'text': 'Commitments', 'url': reverse('volunteers:admin_commitment_list') },
+        ]
+        return context_data
+
+class AdminCommitmentCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+
+    model = Commitment
+    form_class = AdminCommitmentForm
+    context_object_name = 'commitment'
+    template_name = 'volunteers/admin_commitment.html'
+    success_message = 'Commitment added'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['festival'] = self.request.festival
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Field('description'),
+            Field('role'),
+            Field('needs_dbs'),
+            Field('volunteer_can_accept'),
+            Field('notes'),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('cancel', 'Cancel'),
+            ),
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
+        context_data['breadcrumbs'] = [
+            { 'text': 'Volunteer Admin', 'url': reverse('volunteers:admin_home') },
+            { 'text': 'Commitments', 'url': reverse('volunteers:admin_commitment_list') },
+            { 'text': 'Create' },
+        ]
+        return context_data
+
+    def get_success_url(self):
+        return reverse('volunteers:admin_commitment_update', args=[self.object.uuid])
+
+
+class AdminCommitmentUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+
+    model = Commitment
+    form_class = AdminCommitmentForm
+    slug_field = 'uuid'
+    context_object_name = 'commitment'
+    template_name = 'volunteers/admin_commitment.html'
+    success_message = 'Commitment updated'
+    success_url = reverse_lazy('volunteers:admin_commitment_list')
+
+    def dispatch(self, request, *args, **kwargs):
+        self.initial_tab = kwargs.pop('tab', None)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['festival'] = self.request.festival
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            TabHolder(
+                Tab('General',
+                    Field('description'),
+                    Field('role'),
+                    Field('needs_dbs'),
+                    Field('volunteer_can_accept'),
+                    Field('volunteer'),
+                ),
+                Tab('Shifts',
+                    HTML('{% include \'volunteers/_admin_commitment_shifts.html\' %}')
+                ),
+                Tab('Notes',
+                    Field('notes'),
+                ),
+            ),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('delete', 'Delete'),
+                Button('cancel', 'Cancel'),
+            )
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
+        context_data['initial_tab'] = self.initial_tab
+        context_data['breadcrumbs'] = [
+            { 'text': 'Volunteer Admin', 'url': reverse('volunteers:admin_home') },
+            { 'text': 'Commitments', 'url': reverse('volunteers:admin_commitment_list') },
+            { 'text': 'Update' },
+        ]
+        return context_data
+    
+
+@login_required
+def admin_commitment_delete(request, slug):
+
+    # Delete commitment
+    group = get_object_or_404(Commitment, uuid=slug)
+    group.delete()
+    messages.success(request, 'Commitment deleted')
+    return redirect('volunteers:admin_commitment_list')
+
+
+class AdminCommitmentShiftCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+
+    model = Shift
+    form_class = AdminShiftForm
+    context_object_name = 'shift'
+    template_name = 'volunteers/admin_commitment_shift.html'
+    success_message = 'Commitment shift added'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.commitment = get_object_or_404(Commitment, uuid=kwargs['commitment_uuid'])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_initial(self):
+        initial = super().get_initial()
+        initial['commitment'] = self.commitment
+        initial['role'] = self.commitment.role
+        return initial
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['festival'] = self.request.festival
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Field('location'),
+            Row(
+                Column('date', css_class='col-sm-4'),
+                Column('start_time', css_class='col-sm-4'),
+                Column('end_time', css_class='col-sm-4'),
+                css_class='form-row',
+            ),
+            Field('notes'),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('cancel', 'Cancel'),
+            ),
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
+        context_data['commitment'] = self.commitment
+        context_data['breadcrumbs'] = [
+            { 'text': 'Volunteer Admin', 'url': reverse('volunteers:admin_home') },
+            { 'text': 'Commitments', 'url': reverse('volunteers:admin_commitment_list') },
+            { 'text': 'Shifts', 'url': reverse('volunteers:admin_commitment_update_tab', kwargs={ 'slug': self.commitment.uuid, 'tab': 'shifts' }) },
+            { 'text': 'Create' },
+        ]
+        return context_data
+
+    def get_success_url(self):
+        return reverse('volunteers:admin_commitment_update_tab', args=[self.commitment.uuid, 'shifts'])
+
+
+class AdminCommitmentShiftUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+
+    model = Shift
+    form_class = AdminShiftForm
+    slug_field = 'uuid'
+    context_object_name = 'shift'
+    template_name = 'volunteers/admin_commitment_shift.html'
+    success_message = 'Commitment shift updated'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.commitment = get_object_or_404(Commitment, uuid=kwargs['commitment_uuid'])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_initial(self):
+        initial = super().get_initial()
+        initial['commitment'] = self.commitment
+        initial['role'] = self.commitment.role
+        return initial
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['festival'] = self.request.festival
+        return kwargs
+        
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Field('location'),
+            Row(
+                Column('date', css_class='col-sm-4'),
+                Column('start_time', css_class='col-sm-4'),
+                Column('end_time', css_class='col-sm-4'),
+                css_class='form-row',
+            ),
+            Field('notes'),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('delete', 'Delete'),
+                Button('cancel', 'Cancel'),
+            )
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
+        context_data['commitment'] = self.commitment
+        context_data['breadcrumbs'] = [
+            { 'text': 'Volunteer Admin', 'url': reverse('volunteers:admin_home') },
+            { 'text': 'Commitments', 'url': reverse('volunteers:admin_commitment_list') },
+            { 'text': 'Shifts', 'url': reverse('volunteers:admin_commitment_update_tab', kwargs={ 'slug': self.commitment.uuid, 'tab': 'shifts' }) },
+            { 'text': 'Update' },
+        ]
+        return context_data
+
+    def get_success_url(self):
+        return reverse('volunteers:admin_commitment_update_tab', args=[self.commitment.uuid, 'shifts'])
+    
+
+@login_required
+def admin_commitment_shift_delete(request, commitment_uuid, slug):
+
+    # Delete venue contact
+    shift = get_object_or_404(Shift, uuid=slug)
+    shift.delete()
+    messages.success(request, 'Commitment shift deleted')
+    return redirect('volunteers:admin_commitment_update_tab', commitment_uuid, 'shifts')
 
 
 def create_admin_shift_search_form(festival, initial_data = None, post_data = None):
@@ -291,12 +611,13 @@ def create_admin_shift_search_form(festival, initial_data = None, post_data = No
         Field('role'),
         Field('volunteer'),
         Field('status'),
+        Field('include_commitments'),
         Submit('shift-search', 'Search', css_class='btn-primary'),
     )
     return form
 
 
-def admin_get_shifts(festival, date_str, location_id_str, role_id_str, volunteer_id_str, status):
+def admin_get_shifts(festival, date_str, location_id_str, role_id_str, volunteer_id_str, status, include_commitments):
 
     # Get shifts meeting criteria
     shifts = Shift.objects.filter(location__festival = festival)
@@ -316,6 +637,8 @@ def admin_get_shifts(festival, date_str, location_id_str, role_id_str, volunteer
         shifts = shifts.filter(volunteer__isnull = False)
     elif status == 'NotAccepted':
         shifts = shifts.filter(volunteer__isnull = True)
+    if not include_commitments:
+        shifts = shifts.filter(commitment__isnull=True)
     shifts = list(shifts.order_by('date', 'start_time', 'location__description', 'role__description'))
     return shifts
 
@@ -327,29 +650,36 @@ class AdminShiftList(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
 
         # Get search criteria from session
-        date_str = request.session.get('shift_search_date', '20000101')
-        location_id_str = request.session.get('shift_search_location_id', '0')
-        role_id_str = request.session.get('shift_search_role_id', '0')
-        volunteer_id_str = request.session.get('shift_search_volunteer_id', '0')
-        status = request.session.get('shift_search_status', 'All')
+        #date_str = request.session.get('shift_search_date', '20000101')
+        #location_id_str = request.session.get('shift_search_location_id', '0')
+        #role_id_str = request.session.get('shift_search_role_id', '0')
+        #volunteer_id_str = request.session.get('shift_search_volunteer_id', '0')
+        #status = request.session.get('shift_search_status', 'All')
+        #include_commitments = request.session.get('shift_search_include_commitments', False)
 
         # Create search form
-        initial_data = {
-            'date': date_str,
-            'location': location_id_str,
-            'role': role_id_str,
-            'volunteer': volunteer_id_str,
-            'status': status,
-        }
-        search_form = create_admin_shift_search_form(request.festival, initial_data = initial_data)
+        #initial_data = {
+        #    'date': date_str,
+        #    'location': location_id_str,
+        #    'role': role_id_str,
+        #    'volunteer': volunteer_id_str,
+        #    'status': status,
+        #    'include_commitments': include_commitments,
+        #}
+        #search_form = create_admin_shift_search_form(request.festival, initial_data = initial_data)
+        search_form = create_admin_shift_search_form(request.festival)
 
         # Get shifts that meet criteria
-        #shifts = admin_get_shifts(request.festival, date_str, location_id_str, role_id_str, volunteer_id_str, status)
+        #shifts = admin_get_shifts(request.festival, date_str, location_id_str, role_id_str, volunteer_id_str, status, include_commitments)
 
         # Render page
         context = {
             'search_form': search_form,
             'shifts': None,
+            'breadcrumbs': [
+                { 'text': 'Volunteer Admin', 'url': reverse('volunteers:admin_home') },
+                { 'text': 'Shifts' },
+            ]
         }
         return render(request, 'volunteers/admin_shift_list.html', context)
 
@@ -366,29 +696,27 @@ class AdminShiftList(LoginRequiredMixin, View):
             role_id_str = search_form.cleaned_data['role']
             volunteer_id_str = search_form.cleaned_data['volunteer']
             status = search_form.cleaned_data['status']
-            shifts = admin_get_shifts(request.festival, date_str, location_id_str, role_id_str, volunteer_id_str, status)
+            include_commitments = search_form.cleaned_data['include_commitments']
+            shifts = admin_get_shifts(request.festival, date_str, location_id_str, role_id_str, volunteer_id_str, status, include_commitments)
 
             # Save search criteria in session
-            request.session['shift_search_date'] = date_str
-            request.session['shift_search_location_id'] = location_id_str
-            request.session['shift_search_role_id'] = role_id_str
-            request.session['shift_search_volunteer_id'] = volunteer_id_str
+            #request.session['shift_search_date'] = date_str
+            #request.session['shift_search_location_id'] = location_id_str
+            #request.session['shift_search_role_id'] = role_id_str
+            #request.session['shift_search_volunteer_id'] = volunteer_id_str
+            #request.session['shift_search_status'] = status
+            #request.session['shift_search_include_commitments'] = include_commitments
         
         # Render page
         context = {
             'search_form': search_form,
             'shifts': shifts,
+            'breadcrumbs': [
+                { 'text': 'Volunteer Admin', 'url': reverse('volunteers:admin_home') },
+                { 'text': 'Shifts' },
+            ]
         }
         return render(request, 'volunteers/admin_shift_list.html', context)
-
-
-    #def get_queryset(self):
-        #queryset = Shift.objects.filter(location__festival = self.request.festival)
-        #if 'location_uuid' in self.request.GET:
-        #    queryset = queryset.filter(uuid = self.request.GET['location_uuid'])
-        #if 'date' in self.request.GET:
-        #    queryset = queryset.filter(UpdateView = self.request.GET['date'])
-        #return queryset
 
 
 class AdminShiftCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
@@ -405,20 +733,12 @@ class AdminShiftCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         kwargs['festival'] = self.request.festival
         return kwargs
 
-    def get_initial(self, **kwargs):
-        initial = super().get_initial(**kwargs)
-        if 'location_uuid' in self.request.GET:
-            initial['location'] = get_object_or_404(Location, uuid=self.request.GET['location_uuid'])
-        if 'date' in self.request.GET:
-            initial['date'] = self.request.GET['date']
-        return initial
-
     def get_form(self):
         form = super().get_form()
         form.helper = FormHelper()
         form.helper.layout = Layout(
-            'role',
-            'location',
+            Field('role'),
+            Field('location'),
             Row(
                 Column('date', css_class='col-sm-4'),
                 Column('start_time', css_class='col-sm-4'),
@@ -435,6 +755,16 @@ class AdminShiftCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
             ),
         )
         return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
+        context_data['breadcrumbs'] = [
+            { 'text': 'Volunteer Admin', 'url': reverse('volunteers:admin_home') },
+            { 'text': 'Shifts', 'url': reverse('volunteers:admin_shift_list') },
+            { 'text': 'Create' },
+        ]
+        return context_data
 
 
 class AdminShiftUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
@@ -456,8 +786,8 @@ class AdminShiftUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
         form = super().get_form()
         form.helper = FormHelper()
         form.helper.layout = Layout(
-            'role',
-            'location',
+            Field('role'),
+            Field('location'),
             Row(
                 Column('date', css_class='col-sm-4'),
                 Column('start_time', css_class='col-sm-4'),
@@ -475,6 +805,16 @@ class AdminShiftUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
             )
         )
         return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
+        context_data['breadcrumbs'] = [
+            { 'text': 'Volunteer Admin', 'url': reverse('volunteers:admin_home') },
+            { 'text': 'Shifts', 'url': reverse('volunteers:admin_shift_list') },
+            { 'text': 'Update' },
+        ]
+        return context_data
     
 
 @login_required
@@ -573,6 +913,12 @@ class AdminVolunteerUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['festival'] = self.request.festival
+        context['breadcrumbs'] = [
+            { 'text': 'Volunteer Admin', 'url': reverse('volunteers:admin_home') },
+            { 'text': 'Volunteers', 'url': reverse('volunteers:admin_volunteers') },
+            { 'text': 'Update' },
+        ]
         return context
 
 

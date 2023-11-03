@@ -22,9 +22,6 @@
         </tbody>
     </table>
 
-    <div class="row">
-        <div class="col-6"><a href="{% url 'volunteers:admin_home' %}" class="btn btn-secondary">Back</a></div>
-        <div class="col-6 text-right"><a href="{% url 'volunteers:admin_location_create' %}" class="btn btn-primary">Add Location</a></div>
-    </div>
+    <a href="{% url 'volunteers:admin_location_create' %}" class="btn btn-primary">Add Location</a>
 
 {% endblock %}

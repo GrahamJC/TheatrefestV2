@@ -20,7 +20,6 @@
                 <th>End</th>
                 <th>Location</th>
                 <th>Role</th>
-                <th>Needs</th>
                 <th>Volunteer</th>
             </tr>
         </thead>
@@ -31,17 +30,19 @@
                     <td>{{ shift.start_time }}</td>
                     <td>{{ shift.end_time }}</td>
                     <td>{{ shift.location.description }}</td>
-                    <td><a href="{% url 'volunteers:admin_shift_update' shift.uuid %}">{{ shift.role.description }}</a></td>
-                    <td>{% if shift.needs_dbs %}DBS{% endif %}</td>
+                    <td>
+                        {% if shift.commitment %}
+                            {{ shift.role.description }}
+                        {% else %}
+                            <a href="{% url 'volunteers:admin_shift_update' shift.uuid %}">{{ shift.role.description }}</a>
+                        {% endif %}
+                    </td>
                     <td>{% if shift.volunteer %}{{ shift.volunteer.user.first_name }} {{ shift.volunteer.user.last_name }}{% endif %}</td>
                 </tr>
             {%endfor %}
         </tbody>
     </table>
 
-    <div class="row">
-        <div class="col-6"><a href="{% url 'volunteers:admin_home' %}" class="btn btn-secondary">Back</a></div>
-        <div class="col-6 text-right"><a href="{% url 'volunteers:admin_shift_create' %}" class="btn btn-primary">Add Shift</a></div>
-    </div>
+    <a href="{% url 'volunteers:admin_shift_create' %}" class="btn btn-primary">Add Shift</a>
 
 {% endblock %}
