@@ -877,10 +877,7 @@ def ticket_cancel(request, ticket_uuid):
 @require_GET
 def donations(request):
 
-    context = {
-        'stripe_key': settings.STRIPE_PUBLIC_KEY,
-    }
-    return render(request, 'tickets/donations.html', context)
+    return render(request, 'tickets/donations.html')
 
 @require_POST
 @csrf_exempt
@@ -890,19 +887,23 @@ def donation_stripe(request):
     email = request.POST['donationEmail']
 
     try:
+        # Create Stripe session
+        stripe.api_key = settings.STRIPE_PRIVATE_KEY
         session = stripe.checkout.Session.create(
             customer_email = email,
             payment_method_types = ['card'],
-            line_items = [
-                {
-                    'name': 'Theatrefest',
-                    'description': 'Donation',
-                    'amount': amount * 100,
-                    'currency': 'GBP',
-                    'quantity': 1,
-                },
-            ],
             mode = 'payment',
+            line_items = [{
+                'price_data': {
+                    'currency': 'GBP',
+                    'unit_amount': int(amount * 100),
+                    'product_data': {
+                        'name': 'Theatrefest',
+                        'description': 'Donation',
+                    },
+                },
+                'quantity': 1,
+            }],
             success_url = request.build_absolute_uri(reverse('tickets:donation_success') + f"?amount={amount}&email={email}"),
             cancel_url = request.build_absolute_uri(reverse('tickets:donation_cancel')),
         )
@@ -910,7 +911,8 @@ def donation_stripe(request):
         return redirect(session.url, code=303)
 
     except Exception as e:
-        return HttpResponse('Error')
+        return HttpResponse(f'Error: {e.message}')
+
 
 @require_GET
 def donation_success(request):
