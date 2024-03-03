@@ -210,6 +210,7 @@ class Refund(TimeStampedModel):
 class Basket(TimeStampedModel):
     
     user = AutoOneToOneField(settings.AUTH_USER_MODEL, on_delete = models.CASCADE, primary_key = True, related_name = 'basket')
+    buttons = models.IntegerField(blank = True, default = 0)
 
     @property
     def ticket_count(self):
@@ -244,8 +245,12 @@ class Basket(TimeStampedModel):
         return sum([f.price for f in self.fringers.all()])
 
     @property
+    def button_cost(self):
+        return self.buttons *  self.user.festival.button_price
+
+    @property
     def total_cost(self):
-        return self.ticket_cost + self.fringer_cost
+        return self.ticket_cost + self.fringer_cost + self.button_cost
 
     @property
     def performances(self):

@@ -27,7 +27,7 @@ from crispy_forms.layout import Layout, Field, HTML, Submit, Button, Row, Column
 from crispy_forms.bootstrap import FormActions, TabHolder, Tab, Div
 
 from .models import Sale, Refund, Basket, FringerType, Fringer, TicketType, Ticket, Donation, PayAsYouWill
-from .forms import BuyTicketForm, RenameFringerForm, BuyFringerForm
+from .forms import BuyTicketForm, RenameFringerForm, BuyFringerForm, CheckoutButtonsForm
 from program.models import Show, ShowPerformance
 
 # Logging
@@ -608,108 +608,162 @@ class PAYWView(LoginRequiredMixin, View):
         }
         return render(request, "tickets/payw.html", context)
 
+# Checkout
+def checkout_buttons_form(basket, post_data=None):
 
-class CheckoutView(LoginRequiredMixin, View):
+    # Create form
+    initial_data = { 'buttons': basket.buttons }
+    form = CheckoutButtonsForm(initial=initial_data, data=post_data)
 
-    @method_decorator(never_cache)
-    def get(self, request):
+    # Add crispy form helper
+    form.helper = FormHelper()
+    form.helper.form_id = 'buttons-form'
+    form.helper.form_class = 'form-horizontal'
+    form.helper.label_class = 'col-6'
+    form.helper.field_class = 'col-6'
 
-        # Get basket
-        basket = request.user.basket
+    # Return form
+    return form
 
-        # Cancel incomplete sales (can happen if user uses browser back button to return to checkout
-        # from Stripe payment page)
-        incomplete = request.user.sales.filter(boxoffice__isnull = True, venue__isnull = True, completed__isnull = True) 
-        if incomplete:
-            for sale in incomplete:
-                for ticket in sale.tickets.all():
-                    ticket.basket = basket
-                    ticket.sale = None
-                    ticket.save()
-                    logger.info(f"{ticket.description} ticket for {ticket.performance.show.name} on {ticket.performance.date} at {ticket.performance.time} returned to basket {basket.user.id}")
-                for fringer in sale.fringers.all():
-                    fringer.basket = basket
-                    fringer.sale = None
-                    fringer.save()
-                    logger.info(f"eFringer {fringer.name} returned to basket {basket.user.id}")
-                logger.info(f"Sale {sale.id} auto-deleted (online)")
-                sale.delete()
+def render_checkout_buttons(request, form=None):
+    context = {
+        'buttons_form': form,
+    }
+    return render(request, "tickets/_checkout_buttons.html", context)
 
-        # Display basket
-        context = {
-            'basket': basket,
-            'stripe_key': settings.STRIPE_PUBLIC_KEY,
-        }
-        return render(request, "tickets/checkout.html", context)
+def render_checkout_pay(request, basket, form=None):
+    if not form:
+        form = checkout_buttons_form(basket)
+    context = {
+        'basket': basket,
+        'buttons_form': form,
+    }
+    return render(request, "tickets/_checkout_pay.html", context)
 
-class CheckoutRemoveFringerView(LoginRequiredMixin, View):
+@login_required
+@require_GET
+def checkout(request):
 
-    @transaction.atomic
-    def get(self, request, fringer_uuid):
+    # Get basket
+    basket = request.user.basket
 
-        # Get basket and fringer to be removed
-        basket = request.user.basket
-        fringer = get_object_or_404(Fringer, uuid = fringer_uuid)
+    # Create buttons form
+    form = checkout_buttons_form(basket)
 
-        # Delete fringer
-        logger.info(f"eFringer {fringer.name} removed from basket {basket.user.id}")
-        messages.success(request, f"Fringer {fringer.name} removed from basket")
-        fringer.delete()
+    # Render checkout page
+    context = {
+        'buttons_form': form,
+    }
+    return render(request, "tickets/checkout.html", context)
 
-        # Redisplay checkout
-        return redirect(reverse("tickets:checkout"))
+@login_required
+@require_POST
+@transaction.atomic
+def checkout_buttons_add(request):
 
+    # Get basket
+    basket = request.user.basket
 
-class CheckoutRemovePerformanceView(LoginRequiredMixin, View):
+    # Create buttons form
+    form = checkout_buttons_form(basket, request.POST)
 
-    @transaction.atomic
-    def get(self, request, performance_uuid):
+    # Check for errors
+    if form.is_valid():
 
-        # Get basket and performance
-        basket = request.user.basket
-        performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+        # Add buttons to basket and proceed to payment
+        basket.buttons = form.cleaned_data['buttons']
+        basket.save()
+        return render_checkout_pay(request, basket)
 
-        # Delete all tickets for the performance
-        for ticket in basket.tickets.filter(performance = performance):
-            logger.info(f"{ticket.description} ticket for {performance.show.name} on {performance.date} at {performance.time} removed from basket {basket.user.id}")
-            ticket.delete()
-        messages.success(request, f"{performance.show.name} removed from basket {basket.user.id}")
+    # Re-display buttons form with errors
+    return render_checkout_buttons(request, form)
 
-        # Redisplay checkout
-        return redirect(reverse("tickets:checkout"))
+@login_required
+@require_POST
+@transaction.atomic
+def checkout_buttons_none(request):
 
+    # Get basket
+    basket = request.user.basket
 
-class CheckoutRemoveTicketView(LoginRequiredMixin, View):
+    # Clear buttons and proceed to payment
+    basket.buttons = 0
+    basket.save()
+    return render_checkout_pay(request, basket)
 
-    @transaction.atomic
-    def get(self, request, ticket_uuid):
+@login_required
+@require_POST
+@transaction.atomic
+def checkout_buttons_update(request):
 
-        # Get basket and ticket to be removed
-        basket = request.user.basket
-        ticket = get_object_or_404(Ticket, uuid = ticket_uuid)
+    # Get basket
+    basket = request.user.basket
 
-        # Delete ticket
-        logger.info(f"{ticket.description} ticket for {ticket.performance.show.name} on {ticket.performance.date} at {ticket.performance.time} removed from basket {basket.user.id}")
-        messages.success(request, f"{ticket.description} ticket for {ticket.performance.show.name} removed from basket")
+    # Create buttons form
+    form = checkout_buttons_form(basket, request.POST)
+
+    # Check for errors
+    if form.is_valid():
+
+        # Update buttons 
+        basket.buttons = form.cleaned_data['buttons']
+        basket.save()
+        form = None
+
+    # Re-display buttons form with errors
+    return render_checkout_pay(request, basket, form)
+
+@login_required
+@require_GET
+@transaction.atomic
+def checkout_performance_remove(request, performance_uuid):
+
+    # Get basket and performance
+    basket = request.user.basket
+    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+
+    # Delete all tickets for the performance
+    for ticket in basket.tickets.filter(performance = performance):
+        logger.info(f"{ticket.description} ticket for {performance.show.name} on {performance.date} at {performance.time} removed from basket {basket.user.id}")
         ticket.delete()
+    messages.success(request, f"{performance.show.name} removed from basket {basket.user.id}")
 
-        # Redisplay checkout
-        return redirect(reverse("tickets:checkout"))
+    # Redisplay payment details
+    return render_checkout_pay(request, basket)
 
+@login_required
+@require_GET
+@transaction.atomic
+def checkout_ticket_remove(request, ticket_uuid):
 
-class CheckoutConfirmView(View):
+    # Get basket and ticket to be removed
+    basket = request.user.basket
+    ticket = get_object_or_404(Ticket, uuid = ticket_uuid)
 
-    def get(self, request, sale_uuid):
+    # Delete ticket
+    logger.info(f"{ticket.description} ticket for {ticket.performance.show.name} on {ticket.performance.date} at {ticket.performance.time} removed from basket {basket.user.id}")
+    messages.success(request, f"{ticket.description} ticket for {ticket.performance.show.name} removed from basket")
+    ticket.delete()
 
-        # Get sale
-        sale = get_object_or_404(Sale, uuid = sale_uuid)
+    # Redisplay payment details
+    return render_checkout_pay(request, basket)
 
-        # Render confirmation
-        context = {
-            'sale': sale,
-        }
-        return render(request, 'tickets/checkout_confirm.html', context)
+@login_required
+@require_GET
+@transaction.atomic
+def checkout_fringer_remove(request, fringer_uuid):
 
+    # Get basket and fringer to be removed
+    basket = request.user.basket
+    fringer = get_object_or_404(Fringer, uuid = fringer_uuid)
+
+    # Delete fringer
+    logger.info(f"eFringer {fringer.name} removed from basket {basket.user.id}")
+    messages.success(request, f"Fringer {fringer.name} removed from basket")
+    fringer.delete()
+
+    # Redisplay payment details
+    return render_checkout_pay(request, basket)
 
 @login_required
 @require_POST
@@ -760,6 +814,10 @@ def checkout_stripe(request):
             fringer.sale = sale
             fringer.save()
             logger.info(f"eFringer {fringer.name} added to sale {sale.id}")
+        sale.button = basket.buttons
+        sale.save()
+        basket.buttons = 0
+        basket.save()
 
         # Create Stripe session
         stripe.api_key = settings.STRIPE_PRIVATE_KEY
@@ -805,7 +863,7 @@ def checkout_success(request, sale_uuid):
     if sale.tickets:
         context = {
             'festival': request.festival,
-            'tickets': sale.tickets.order_by('performance__date', 'performance__time', 'performance__show__name')
+            'tickets': sale.tickets.order_by('performance__date', 'performance__time', 'performance__show__name'),.
         }
         body = render_to_string('tickets/sale_email.txt', context)
         send_mail('Tickets for ' + request.festival.title, body, settings.DEFAULT_FROM_EMAIL, [request.user.email])
@@ -837,6 +895,9 @@ def checkout_cancel(request, sale_uuid):
         fringer.sale = None
         fringer.save()
         logger.info(f"eFringer {fringer.name} returned to basket {basket.user.id}")
+    basket.buttons = sale.buttons
+    basket.save()
+    sale.buttons = 0
     sale.amount = 0
     sale.transaction_type = None
     sale.transaction_fee = 0

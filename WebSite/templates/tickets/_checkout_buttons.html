@@ -1,0 +1,35 @@
+{% load crispy_forms_tags %}
+
+{% for msg in messages %}
+    <div class="{{ msg.tags }} alert-dismissible" role="alert">
+        {{ msg }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+    </div>
+{% endfor %}
+
+<div class="alert alert-info">
+    <strong>Every audience member aged 13+ needs a Fringe Badge to enter a ticketed venue.</strong>
+    <p>
+        These badges will be available at any of the box-offices and at certain alt space venues for just &#163;{{ request.festival.button_price|floatformat:0 }}.
+        This one-off payment of just &#163;{{ request.festival.button_price|floatformat:0 }} is the only charge that Fringe TheatreFest makes towards the running of the festival.
+        All of the ticket money and the pay-what-you-will collection goes to the performers.
+    </p>
+</div>
+
+<p>
+    If you or any member of your party do not already have a fringe badge please buy them now by adding them to this purchase.
+    Buying your badges online reduces waiting time at the venue and makes everything run more smoothly.
+    You can collect your badges at the venue when you see your first show or from the central boxoffice at any time.
+</p>
+
+<div class="row">
+    <div class="col-9">{% crispy buttons_form %}</div>
+    <div class="col-3"><button class="btn btn-primary float-right" hx-post="{% url 'tickets:checkout_buttons_add' %}" hx-include="#buttons-form" hx-target="#content">Add Badges</button></div>
+</div>
+
+<p>
+    If all members of your party already have fringe badges please continue directly to the payment.
+</p>
+<button class="btn btn-primary float-right" hx-post="{% url 'tickets:checkout_buttons_none' %}" hx-include="#buttons-form" hx-target="#content">No Badges Required</button>
+
+

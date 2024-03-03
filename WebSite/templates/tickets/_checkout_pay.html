@@ -1,0 +1,112 @@
+{% load crispy_forms_tags %}
+
+{% for msg in messages %}
+    <div class="{{ msg.tags }} alert-dismissible" role="alert">
+        {{ msg }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+    </div>
+{% endfor %}
+
+<div class="row">
+
+    <div class="col col-md-6">
+
+        <div class="card mb-3">
+            <h6 class="card-header">Tickets</h6>
+            <div class="card-body">
+                {% if basket.has_tickets %}
+                    <div class="alert alert-info">
+                        Tickets bought by credit card cannot be cancelled once checkout has been completed.
+                    </div>
+                    {% for performance in basket.performances %}
+                        <div class="row">
+                            <div class="col-9"><strong>{{ performance.show }}</strong></div>
+                            <div class="col-3 text-right">&#163;{{ performance.ticket_cost }}</div>
+                            <div class="col-6">{{ performance.date | date:"D, jS M" }} at {{ performance.time }}</div>
+                            <div class="col-3"><a href="#tf-boxoffice-sale-tickets-{{ forloop.counter }}" data-toggle="collapse">{{ performance.tickets | length }} Tickets</a></div>
+                            <div class="col-3 text-right"><a href="#" hx-get="{% url 'tickets:checkout_performance_remove' performance.uuid %}" hx-target="#content">Remove</a></div>
+                            <div id="tf-boxoffice-sale-tickets-{{ forloop.counter }}" class="col-12 collapse">
+                                {% for ticket in performance.tickets %}
+                                    <div class="row">
+                                        <div class="col-1"></div>
+                                        <div class="col-3">{{ ticket.description }}</div>
+                                        <div class="col-2 text-right">{% if ticket.price %}&#163;{{ ticket.price }}{% endif %}</div>
+                                        <div class="col-3"><a href="#" hx-get="{% url 'tickets:checkout_ticket_remove' ticket.uuid %}" hx-target="#content">Remove</a></div>
+                                        <div class="col-3"></div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    There are no tickets in your basket.
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <h6 class="card-header">eFringer Vouchers</h6>
+            <div class="card-body">
+                {% if basket.has_fringers %}
+                    <table class="table table-striped table-borderless">
+                        {% for fringer in basket.fringers.all %}
+                            <tr><td class="row">
+                                <div class="col-12 col-md-8">{{ fringer.name }} ({{ fringer.description }})</div>
+                                <div class="col-10 col-md-3">&#163;{{ fringer.price }}</div>
+                                <div class="col-2 col-md-1"><a href="#" hx-get="{% url 'tickets:checkout_fringer_remove' fringer.uuid %}" hx-target="#content"><i class="fa fa-trash"></i></a></div>
+                            </td></tr>
+                        {% endfor %}
+                    </table>
+                {% else %}
+                    There are no eFringer Vouchers in your basket.
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <h6 class="card-header">Badges</h6>
+            <div class="card-body">
+                {% crispy buttons_form %}
+                <button class="btn btn-primary" hx-post="{% url 'tickets:checkout_buttons_update' %}" hx-include="#buttons-form" hx-target="#content">Update Buttons</button>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="col-12 col-md-6">
+
+        <div class="card mb-3">
+            <h6 class="card-header">Summary</h6>
+            <div class="card-body">
+                {% if not basket.is_empty %}
+                    <form method="POST" action="{% url 'tickets:checkout_stripe' %}">
+                        {% csrf_token %}
+                        <table class="table">
+                            <tr>
+                                <td>Tickets</td>
+                                <td>&#163;{{ basket.ticket_cost }}</td>
+                            </tr>
+                            <tr>
+                                <td>eFringers</td>
+                                <td>&#163;{{ basket.fringer_cost }}</td>
+                            </tr>
+                            <tr>
+                                <td>Badges</td>
+                                <td>&#163;{{ basket.button_cost }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Total</strong></td>
+                                <td><strong>&#163;{{ basket.total_cost }}</strong></td>
+                            </tr>
+                        </table>
+                        <button class="btn btn-primary" type="submit">Pay with Card</button>
+                    </form>
+                {% else %}
+                    Your basket is empty.
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+</div>

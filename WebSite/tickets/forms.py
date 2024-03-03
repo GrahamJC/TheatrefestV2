@@ -52,3 +52,8 @@ class BuyFringerForm(forms.Form):
         if Fringer.objects.filter(user = self.user, name = name).exists():
             raise forms.ValidationError("Name has already been used")
         return name
+
+
+class CheckoutButtonsForm(forms.Form):
+
+    buttons = forms.IntegerField(label='Badges')

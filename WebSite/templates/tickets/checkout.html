@@ -1,117 +1,14 @@
 {% extends "base.html" %}
 
 {% block basket %}<!-- Hide basket -->{% endblock %}
+{% block messages %}<!-- Hide messages -->{% endblock %}
 
 {% block pagetitle %}Checkout{% endblock %}
 
 {% block content %}
 
-    <div  id="tf-tickets-checkout">
-
-        <div class="row">
-
-            <div class="col col-md-6">
-                <div class="card mb-3">
-                    <h6 class="card-header">Tickets</h6>
-                    <div class="card-body">
-                        {% if basket.has_tickets %}
-                            {% for performance in basket.performances %}
-                                <div class="row">
-                                    <div class="col-9"><strong>{{ performance.show }}</strong></div>
-                                    <div class="col-3 text-right">&#163;{{ performance.ticket_cost }}</div>
-                                    <div class="col-6">{{ performance.date | date:"D, jS M" }} at {{ performance.time }}</div>
-                                    <div class="col-3"><a href="#tf-boxoffice-sale-tickets-{{ forloop.counter }}" data-toggle="collapse">{{ performance.tickets | length }} Tickets</a></div>
-                                    <div class="col-3 text-right"><a href="{% url 'tickets:checkout_remove_performance' performance.uuid %}">Remove</a></div>
-                                    <div id="tf-boxoffice-sale-tickets-{{ forloop.counter }}" class="col-12 collapse">
-                                        {% for ticket in performance.tickets %}
-                                            <div class="row">
-                                                <div class="col-1"></div>
-                                                <div class="col-3">{{ ticket.description }}</div>
-                                                <div class="col-2 text-right">{% if ticket.price %}&#163;{{ ticket.price }}{% endif %}</div>
-                                                <div class="col-3"><a href="{% url 'tickets:checkout_remove_ticket' ticket.uuid %}">Remove</a></div>
-                                                <div class="col-3"></div>
-                                            </div>
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        {% else %}
-                            There are no tickets in your basket.
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12 col-md-6">
-                <div class="card mb-3">
-                    <h6 class="card-header">eFringer Vouchers</h6>
-                    <div class="card-body">
-                        {% if basket.has_fringers %}
-                            <table class="table table-striped table-borderless">
-                                {% for fringer in basket.fringers.all %}
-                                    <tr><td class="row">
-                                        <div class="col-12 col-md-8">{{ fringer.name }} ({{ fringer.description }})</div>
-                                        <div class="col-10 col-md-3">&#163;{{ fringer.price }}</div>
-                                        <div class="col-2 col-md-1"><a href="{% url 'tickets:checkout_remove_fringer' fringer.uuid %}"><i class="fa fa-trash"></i></a></div>
-                                    </td></tr>
-                                {% endfor %}
-                            </table>
-                        {% else %}
-                            There are no eFringer Vouchers in your basket.
-                        {% endif %}
-                    </div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <div class="card">
-
-            <h6 class="card-header">Summary</h6>
-            <div class="card-body">
-
-                <div class="row">
-
-                    <div class="col-12 col-sm-6">
-                        <div class="alert alert-info">
-                            <ul>
-                                <li>Tickets bought by credit card cannot be cancelled once checkout has been completed.</li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <div class="col-12 col-sm-6">
-                        {% if not basket.is_empty %}
-                            <form method="POST" action="{% url 'tickets:checkout_stripe' %}">
-                                {% csrf_token %}
-                                <table class="table">
-                                    <tr>
-                                        <td>Tickets</td>
-                                        <td>&#163;{{ basket.ticket_cost }}</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Fringers</td>
-                                        <td>&#163;{{ basket.fringer_cost }}</td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>Total</strong></td>
-                                        <td><strong>&#163;{{ basket.total_cost }}</strong></td>
-                                    </tr>
-                                </table>
-                                <button class="btn btn-primary" type="submit">Pay with Card</button>
-                            </form>
-                        {% else %}
-                            Your basket is empty.
-                        {% endif %}
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
+    <div id="content">
+        {% include 'tickets/_checkout_buttons.html' %}
     </div>
 
 {% endblock %}

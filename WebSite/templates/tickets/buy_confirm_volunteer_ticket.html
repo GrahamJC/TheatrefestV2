@@ -10,7 +10,6 @@
         <p><b>This ticket is confirmed and will not appear in your basket.</b></p>
         <p>What would you like to do next?</p>
         <ul>
-            <li><a href="{% url 'tickets:checkout' %}">Go to the checkout</a></li>
             <li><a href="{% url 'tickets:buy' performance.uuid %}">Buy more tickets for this performance</a></li>
             <li><a href="{% url 'program:shows' %}">Find another show</a></li>
             <li><a href="{% url 'tickets:myaccount' %}">Manage my account</a></li>

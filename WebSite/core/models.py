@@ -115,6 +115,7 @@ class User(TimeStampedModel, AbstractBaseUser, PermissionsMixin):
     is_boxoffice = models.BooleanField(default=False)
     is_venue = models.BooleanField(default=False)
     is_volunteer = models.BooleanField(default=False)
+    buttons_issued = models.IntegerField(blank = True, default = 0)
 
     class Meta:
         unique_together = ('festival', 'email')
@@ -143,6 +144,10 @@ class User(TimeStampedModel, AbstractBaseUser, PermissionsMixin):
     @property
     def is_staff(self):
         return self.is_system_admin
+
+    @property
+    def buttons_purchased(self):
+        return sum(s.buttons for s in self.sales.filter(completed__isnull=True))
 
     def get_full_name(self):
         return f'{self.first_name} {self.last_name}'
