@@ -863,7 +863,7 @@ def checkout_success(request, sale_uuid):
     if sale.tickets:
         context = {
             'festival': request.festival,
-            'tickets': sale.tickets.order_by('performance__date', 'performance__time', 'performance__show__name'),.
+            'tickets': sale.tickets.order_by('performance__date', 'performance__time', 'performance__show__name'),
         }
         body = render_to_string('tickets/sale_email.txt', context)
         send_mail('Tickets for ' + request.festival.title, body, settings.DEFAULT_FROM_EMAIL, [request.user.email])
