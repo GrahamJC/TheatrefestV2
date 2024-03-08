@@ -43,8 +43,8 @@
                             {% endfor %}
                         </div>
                         {% if vp.venue.sponsor %}
-                            <div class="tf-sponsor-name text-left" style="{% if vp.venue.sponsor.background %}background-color: {{ vp.venue.sponsor.background }};{% endif %}">
-                                <a href="{{ vp.venue.sponsor.url }}" target="_blank"  style="{% if vp.venue.sponsor.color %}color: {{ vp.venue.sponsor.color }};{% endif %}">
+                            <div class="tf-sponsor-name text-left" {% if vp.venue.sponsor.background %}style="background-color: {{ vp.venue.sponsor.background }};"{% endif %}>
+                                <a href="{{ vp.venue.sponsor.website }}" target="_blank"  {% if vp.venue.sponsor.color %}style="color: {{ vp.venue.sponsor.color }};"{% endif %}>
                                     {% if vp.venue.sponsor.image %}<img class="mt-2 mb-2" style="width: 100%" src="{{ vp.venue.sponsor.image.url }}" />{% endif %}
                                 </a>
                             </div>
