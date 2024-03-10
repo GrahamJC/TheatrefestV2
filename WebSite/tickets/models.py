@@ -44,7 +44,7 @@ class Sale(TimeStampedModel):
     amount = models.DecimalField(blank = True, default = 0, max_digits = 5, decimal_places = 2)
     completed = models.DateTimeField(null = True, blank = True)
     cancelled = models.DateTimeField(null = True, blank = True)
-    transaction_ID = models.CharField(max_length = 64, null = True, blank = True)
+    transaction_ID = models.CharField(max_length = 128, null = True, blank = True)
     transaction_type = models.PositiveIntegerField(null = True, blank = True, choices = TRANSACTION_TYPE_CHOICES)
     transaction_fee = models.DecimalField(blank = True, default = 0, max_digits = 4, decimal_places = 2)
     notes = models.TextField(blank = True, default = '')
