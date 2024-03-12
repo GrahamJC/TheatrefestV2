@@ -24,14 +24,14 @@
                             <div class="col-3 text-right">&#163;{{ performance.ticket_cost }}</div>
                             <div class="col-6">{{ performance.date | date:"D, jS M" }} at {{ performance.time }}</div>
                             <div class="col-3"><a href="#tf-boxoffice-sale-tickets-{{ forloop.counter }}" data-toggle="collapse">{{ performance.tickets | length }} Tickets</a></div>
-                            <div class="col-3 text-right"><a href="#" hx-get="{% url 'tickets:checkout_performance_remove' performance.uuid %}" hx-target="#content">Remove</a></div>
+                            <div class="col-3 text-right"><a href="#" hx-post="{% url 'tickets:checkout_performance_remove' performance.uuid %}" hx-target="#content">Remove</a></div>
                             <div id="tf-boxoffice-sale-tickets-{{ forloop.counter }}" class="col-12 collapse">
                                 {% for ticket in performance.tickets %}
                                     <div class="row">
                                         <div class="col-1"></div>
                                         <div class="col-3">{{ ticket.description }}</div>
                                         <div class="col-2 text-right">{% if ticket.price %}&#163;{{ ticket.price }}{% endif %}</div>
-                                        <div class="col-3"><a href="#" hx-get="{% url 'tickets:checkout_ticket_remove' ticket.uuid %}" hx-target="#content">Remove</a></div>
+                                        <div class="col-3"><a href="#" hx-post="{% url 'tickets:checkout_ticket_remove' ticket.uuid %}" hx-target="#content">Remove</a></div>
                                         <div class="col-3"></div>
                                     </div>
                                 {% endfor %}
@@ -53,7 +53,7 @@
                             <tr><td class="row">
                                 <div class="col-12 col-md-8">{{ fringer.name }} ({{ fringer.description }})</div>
                                 <div class="col-10 col-md-3">&#163;{{ fringer.price }}</div>
-                                <div class="col-2 col-md-1"><a href="#" hx-get="{% url 'tickets:checkout_fringer_remove' fringer.uuid %}" hx-target="#content"><i class="fa fa-trash"></i></a></div>
+                                <div class="col-2 col-md-1"><a href="#" hx-post="{% url 'tickets:checkout_fringer_remove' fringer.uuid %}" hx-target="#content"><i class="fa fa-trash"></i></a></div>
                             </td></tr>
                         {% endfor %}
                     </table>

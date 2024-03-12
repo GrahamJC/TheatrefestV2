@@ -12,7 +12,7 @@
         {% if fringers %}
             <p>Select the eFringer credits you would like to use and then click on Confirm to make the donation.</p>
 
-            <form method="post">
+            <form method="post" action="{% url 'tickets:payw_donate' show.uuid %}">
                 {% csrf_token %}
                 <table class="table table-striped">
                     {% for fringer in fringers %}

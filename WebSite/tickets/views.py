@@ -606,77 +606,74 @@ def buy_volunteer_use_confirm(request, performance_uuid):
     }
     return render(request, "tickets/buy_volunteer_use_confirm.html", context)
 
-class PAYWView(LoginRequiredMixin, View):
+# PAYW
+@require_GET
+@login_required
+def payw(request, show_uuid):
 
-    def get(self, request, show_uuid):
+    # Get show details
+    show = get_object_or_404(Show, uuid = show_uuid)
 
-        # Get show details
-        show = get_object_or_404(Show, uuid = show_uuid)
+    # Get fringers available
+    fringers = Fringer.get_available(request.user)
 
-        # Get fringers available
-        fringers = Fringer.get_available(request.user)
+    # Display PAYW page
+    context = {
+        'show': show,
+        'fringers': fringers,
+    }
+    return render(request, "tickets/payw.html", context)
 
-        # Display PAYW page
-        context = {
-            'show': show,
-            'fringers': fringers,
-        }
-        return render(request, "tickets/payw.html", context)
+@require_POST
+@login_required
+@transaction.atomic
+def payw_donate(request, show_uuid):
 
-    @transaction.atomic
-    def post(self, request, show_uuid):
+    # Get show details
+    show = get_object_or_404(Show, uuid = show_uuid)
 
-        # Get show details
-        show = get_object_or_404(Show, uuid = show_uuid)
+    # Check if any fringers are selected
+    fringer_ids = request.POST.getlist('fringer_id')
+    if fringer_ids:
 
-        # Get the requested action
-        action = request.POST.get("action")
+        # Create a sale
+        sale = Sale(
+            festival = request.festival,
+            user = request.user,
+            customer = request.user.email,
+            completed = timezone.now(),
+        )
+        sale.save()
+        logger.info(f"Sale { sale.id } crfeated for eFringer PAYW donation to { show.name }")
 
-        # Donate eFfringer credits
-        if action == "UseFringers":
+        # Create donations for each fringer seleted
+        for fringer_id in fringer_ids:
 
-            # Check if any fringers are selected
-            fringer_ids = request.POST.getlist('fringer_id')
-            if fringer_ids:
+            # Get fringer and donate to this show
+            fringer = Fringer.objects.get(pk = int(fringer_id))
+            payw = PayAsYouWill(
+                sale = sale,
+                show = show,
+                fringer = fringer,
+                amount = fringer.ticket_type.payment,
+            )
+            payw.save()
 
-                # Create a sale
-                sale = Sale(
-                    festival = request.festival,
-                    user = request.user,
-                    customer = request.user.email,
-                    completed = timezone.now(),
-                )
-                sale.save()
-                logger.info(f"Sale { sale.id } crfeated for eFringer PAYW donation to { show.name }")
+            # Confirm donation
+            logger.info(f"eFringer {fringer.name} PAYW donation added to sale { sale.id }")
+            messages.success(request, f"eFringer {fringer.name} credit donated to { show.name }")
 
-                # Create donations for each fringer seleted
-                for fringer_id in fringer_ids:
-
-                    # Get fringer and donate to this show
-                    fringer = Fringer.objects.get(pk = int(fringer_id))
-                    payw = PayAsYouWill(
-                        sale = sale,
-                        show = show,
-                        fringer = fringer,
-                        amount = fringer.ticket_type.payment,
-                    )
-                    payw.save()
-
-                    # Confirm donation
-                    logger.info(f"eFringer {fringer.name} PAYW donation added to sale { sale.id }")
-                    messages.success(request, f"eFringer {fringer.name} credit donated to { show.name }")
-
-                # Return to show page
-                return redirect(reverse("program:show", args=[show.uuid]))
-            
-        # No fringers selected so redisplay
-        messages.warning(request, f"No fringers selected for donation")
-        fringers = Fringer.get_available(request.user)
-        context = {
-            'show': show,
-            'fringers': fringers,
-        }
-        return render(request, "tickets/payw.html", context)
+        # Return to show page
+        return redirect(reverse("program:show", args=[show.uuid]))
+        
+    # No fringers selected so redisplay
+    messages.warning(request, f"No fringers selected for donation")
+    fringers = Fringer.get_available(request.user)
+    context = {
+        'show': show,
+        'fringers': fringers,
+    }
+    return render(request, "tickets/payw.html", context)
 
 # Checkout
 def checkout_buttons_form(basket, post_data=None):
@@ -784,7 +781,8 @@ def checkout_buttons_update(request):
     return render_checkout_pay(request, basket, form)
 
 @login_required
-@require_GET
+@require_POST
+@csrf_exempt
 @transaction.atomic
 def checkout_performance_remove(request, performance_uuid):
 
@@ -802,7 +800,8 @@ def checkout_performance_remove(request, performance_uuid):
     return render_checkout_pay(request, basket)
 
 @login_required
-@require_GET
+@require_POST
+@csrf_exempt
 @transaction.atomic
 def checkout_ticket_remove(request, ticket_uuid):
 
@@ -819,7 +818,8 @@ def checkout_ticket_remove(request, ticket_uuid):
     return render_checkout_pay(request, basket)
 
 @login_required
-@require_GET
+@require_POST
+@csrf_exempt
 @transaction.atomic
 def checkout_fringer_remove(request, fringer_uuid):
 
@@ -915,7 +915,6 @@ def checkout_stripe(request):
         sale.save()
 
     return redirect(session.url, code=303)
-
 
 @login_required
 @require_GET
@@ -1054,152 +1053,150 @@ from reportlab.lib.pagesizes import A4, portrait
 from reportlab.lib.units import cm
 from reportlab.lib import colors
 
+@require_GET
+@login_required
+def print_sale(request, sale_uuid):
 
-class PrintSaleView(LoginRequiredMixin, View):
+    # Get sale to be printed
+    sale = get_object_or_404(Sale, uuid = sale_uuid)
 
-    def get(self, request, sale_uuid):
+    # Create receipt as a Platypus story
+    response = HttpResponse(content_type = "application/pdf")
+    response["Content-Disposition"] = f"filename=sale{sale.id}.pdf"
+    doc = SimpleDocTemplate(
+        response,
+        pagesize = portrait(A4),
+        leftMargin = 2.5*cm,
+        rightMargin = 2.5*cm,
+        topMargin = 2.5*cm,
+        bottomMargin = 2.5*cm,
+    )
+    styles = getSampleStyleSheet()
+    story = []
 
-        # Get sale to be printed
-        sale = get_object_or_404(Sale, uuid = sale_uuid)
+    # Festival banner
+    if request.festival.banner:
+        banner = Image(request.festival.banner.get_absolute_path(), width = 18*cm, height = 4*cm)
+        banner.hAlign = 'CENTER'
+        story.append(banner)
+        story.append(Spacer(1, 1*cm))
 
-        # Create receipt as a Platypus story
-        response = HttpResponse(content_type = "application/pdf")
-        response["Content-Disposition"] = f"filename=sale{sale.id}.pdf"
-        doc = SimpleDocTemplate(
-            response,
-            pagesize = portrait(A4),
-            leftMargin = 2.5*cm,
-            rightMargin = 2.5*cm,
-            topMargin = 2.5*cm,
-            bottomMargin = 2.5*cm,
-        )
-        styles = getSampleStyleSheet()
-        story = []
+    # Customer and sale number
+    table = Table(
+        (
+            (Paragraph("<para><b>Customer:</b></para>", styles['Normal']), sale.customer),
+            (Paragraph("<para><b>Sale no:</b></para>", styles['Normal']), sale.id),
+        ),
+        colWidths = (4*cm, 12*cm),
+        hAlign = 'LEFT'
+    )
+    story.append(table)
+    story.append(Spacer(1, 0.5*cm))
 
-        # Festival banner
-        if request.festival.banner:
-            banner = Image(request.festival.banner.get_absolute_path(), width = 18*cm, height = 4*cm)
-            banner.hAlign = 'CENTER'
-            story.append(banner)
-            story.append(Spacer(1, 1*cm))
-
-        # Customer and sale number
-        table = Table(
-            (
-                (Paragraph("<para><b>Customer:</b></para>", styles['Normal']), sale.customer),
-                (Paragraph("<para><b>Sale no:</b></para>", styles['Normal']), sale.id),
-            ),
-            colWidths = (4*cm, 12*cm),
-            hAlign = 'LEFT'
-        )
+    # Fringers
+    if sale.fringers.count():
+        tableData = []
+        for fringer in sale.fringers.all():
+            tableData.append(("eFringer", fringer.name, fringer.description, f"£{fringer.price}"))
+            table = Table(
+                tableData,
+                colWidths = (4*cm, 4*cm, 4*cm, 4*cm),
+                hAlign = 'LEFT',
+                style = (
+                    ('ALIGN', (3, 0), (3, -1), 'RIGHT'),
+                )
+            )
         story.append(table)
         story.append(Spacer(1, 0.5*cm))
 
-        # Fringers
-        if sale.fringers.count():
+    # Tickets
+    if sale.tickets:
+        is_first = True
+        for performance in sale.ticket_performances:
+            if not is_first:
+                story.append(Spacer(1, 0.3*cm))
+            is_first = False
             tableData = []
-            for fringer in sale.fringers.all():
-                tableData.append(("eFringer", fringer.name, fringer.description, f"£{fringer.price}"))
-                table = Table(
-                    tableData,
-                    colWidths = (4*cm, 4*cm, 4*cm, 4*cm),
-                    hAlign = 'LEFT',
-                    style = (
-                        ('ALIGN', (3, 0), (3, -1), 'RIGHT'),
-                    )
+            tableData.append((Paragraph(f"<para>{performance['date']:%a, %e %b} at {performance['time']:%I:%M %p} - <b>{performance['show']}</b></para>", styles['Normal']), "", "", ""))
+            for ticket in performance['tickets']:
+                tableData.append((f"{ticket['id']}", "", ticket['description'], f"£{ticket['cost']}"))
+            table = Table(
+                tableData,
+                colWidths = (4*cm, 4*cm, 4*cm, 4*cm),
+                hAlign = 'LEFT',
+                style = (
+                    ('SPAN', (0, 0), (3, 0)),
+                    ('ALIGN', (0, 1), (0, -1), 'RIGHT'),
+                    ('ALIGN', (3, 1), (3, -1), 'RIGHT'),
                 )
+            )
             story.append(table)
-            story.append(Spacer(1, 0.5*cm))
+        story.append(Spacer(1, 0.5*cm))
 
-        # Tickets
-        if sale.tickets:
-            is_first = True
-            for performance in sale.ticket_performances:
-                if not is_first:
-                    story.append(Spacer(1, 0.3*cm))
-                is_first = False
-                tableData = []
-                tableData.append((Paragraph(f"<para>{performance['date']:%a, %e %b} at {performance['time']:%I:%M %p} - <b>{performance['show']}</b></para>", styles['Normal']), "", "", ""))
-                for ticket in performance['tickets']:
-                    tableData.append((f"{ticket['id']}", "", ticket['description'], f"£{ticket['cost']}"))
-                table = Table(
-                    tableData,
-                    colWidths = (4*cm, 4*cm, 4*cm, 4*cm),
-                    hAlign = 'LEFT',
-                    style = (
-                        ('SPAN', (0, 0), (3, 0)),
-                        ('ALIGN', (0, 1), (0, -1), 'RIGHT'),
-                        ('ALIGN', (3, 1), (3, -1), 'RIGHT'),
-                    )
-                )
-                story.append(table)
-            story.append(Spacer(1, 0.5*cm))
-
-        # Total
-        table = Table(
-            (
-                ("", Paragraph("<para><b>Total:</b></para>", styles['Normal']), f"£{sale.amount}"),
-            ),
-            colWidths = (8*cm, 4*cm, 4*cm),
-            hAlign = 'LEFT',
-            style = (
-                ('ALIGN', (2, 0), (2, 0), 'RIGHT'),
-            )
+    # Total
+    table = Table(
+        (
+            ("", Paragraph("<para><b>Total:</b></para>", styles['Normal']), f"£{sale.amount}"),
+        ),
+        colWidths = (8*cm, 4*cm, 4*cm),
+        hAlign = 'LEFT',
+        style = (
+            ('ALIGN', (2, 0), (2, 0), 'RIGHT'),
         )
-        story.append(table)
+    )
+    story.append(table)
 
-        # Create PDF document and return it
-        doc.build(story)
-        return response
+    # Create PDF document and return it
+    doc.build(story)
+    return response
 
+@require_GET
+@login_required
+def print_performance(request, performance_uuid):
 
-class PrintPerformanceView(LoginRequiredMixin, View):
+    # Get performance to be printed
+    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
 
-    def get(self, request, performance_uuid):
+    # Create a Platypus story
+    response = HttpResponse(content_type = "application/pdf")
+    response["Content-Disposition"] = f"filename=performance{performance.id}.pdf"
+    doc = SimpleDocTemplate(
+        response,
+        pagesize = portrait(A4),
+        leftMargin = 2.5*cm,
+        rightMargin = 2.5*cm,
+        topMargin = 2.5*cm,
+        bottomMargin = 2.5*cm,
+    )
+    styles = getSampleStyleSheet()
+    story = []
 
-        # Get performance to be printed
-        performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+    # Festival banner
+    if request.festival.banner:
+        banner = Image(request.festival.banner.get_absolute_path(), width = 18*cm, height = 4*cm)
+        banner.hAlign = 'CENTER'
+        story.append(banner)
+        story.append(Spacer(1, 1*cm))
 
-        # Create a Platypus story
-        response = HttpResponse(content_type = "application/pdf")
-        response["Content-Disposition"] = f"filename=performance{performance.id}.pdf"
-        doc = SimpleDocTemplate(
-            response,
-            pagesize = portrait(A4),
-            leftMargin = 2.5*cm,
-            rightMargin = 2.5*cm,
-            topMargin = 2.5*cm,
-            bottomMargin = 2.5*cm,
+    # Tickets
+    tableData = []
+    tableData.append((Paragraph(f"<para><b>{performance.show.name}</b></para>", styles['Normal']), "", "", ""))
+    tableData.append((f"{performance.date:%a, %e %b} at {performance.time:%I:%M %p}", "", "", ""))
+    for ticket in request.user.tickets.filter(performance_id = performance.id):
+        tableData.append((f"{ticket.id}", "", ticket.description, f"£{ticket.price}"))
+    table = Table(
+        tableData,
+        colWidths = (4*cm, 4*cm, 4*cm, 4*cm),
+        hAlign = 'LEFT',
+        style = (
+            ('SPAN', (0, 0), (3, 0)),
+            ('SPAN', (0, 1), (3, 1)),
+            ('ALIGN', (0, 2), (0, -1), 'RIGHT'),
+            ('ALIGN', (3, 2), (3, -1), 'RIGHT'),
         )
-        styles = getSampleStyleSheet()
-        story = []
+    )
+    story.append(table)
 
-        # Festival banner
-        if request.festival.banner:
-            banner = Image(request.festival.banner.get_absolute_path(), width = 18*cm, height = 4*cm)
-            banner.hAlign = 'CENTER'
-            story.append(banner)
-            story.append(Spacer(1, 1*cm))
-
-        # Tickets
-        tableData = []
-        tableData.append((Paragraph(f"<para><b>{performance.show.name}</b></para>", styles['Normal']), "", "", ""))
-        tableData.append((f"{performance.date:%a, %e %b} at {performance.time:%I:%M %p}", "", "", ""))
-        for ticket in request.user.tickets.filter(performance_id = performance.id):
-            tableData.append((f"{ticket.id}", "", ticket.description, f"£{ticket.price}"))
-        table = Table(
-            tableData,
-            colWidths = (4*cm, 4*cm, 4*cm, 4*cm),
-            hAlign = 'LEFT',
-            style = (
-                ('SPAN', (0, 0), (3, 0)),
-                ('SPAN', (0, 1), (3, 1)),
-                ('ALIGN', (0, 2), (0, -1), 'RIGHT'),
-                ('ALIGN', (3, 2), (3, -1), 'RIGHT'),
-            )
-        )
-        story.append(table)
-
-        # Create PDF document and return it
-        doc.build(story)
-        return response
+    # Create PDF document and return it
+    doc.build(story)
+    return response
