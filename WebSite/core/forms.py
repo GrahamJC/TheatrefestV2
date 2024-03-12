@@ -111,7 +111,7 @@ class MultiForm():
         # Create forms
         for form_name, form_class in self.form_classes.items():
             form_args, form_kwargs = self.get_form_args_kwargs(form_name, args, kwargs)
-            self.forms[form_name] = form_class(data, files, *form_args, **form_kwargs)
+            self.forms[form_name] = form_class(data=data, files=files, *form_args, **form_kwargs)
 
     def get_form_args_kwargs(self, form_name, args, kwargs):
 

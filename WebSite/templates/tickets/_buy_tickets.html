@@ -1,0 +1,35 @@
+{% load widget_tweaks %}
+
+{% include '_tab_messages.html' %}
+
+<div class="row" hx-target="#tickets-tab-content">
+    <div class="col-12 col-md-6 mb-2">
+        <div class="card">
+            <h6 class="card-header">Buy Tickets</h6>
+            <div class="card-body">
+                <form id="tickets-form" class="form-inline" method="post">
+                    {% csrf_token %}
+                    {{ ticket_formset.management_form }}
+                    <table class="table table-striped">
+                        {% for form in ticket_formset.forms %}
+                            <tr>
+                                <td>{{ form.id }} {{form.name}} <p class="form-control-plaintext">{{ form.name.value }}</p></td>
+                                <td><p class="form-control-plaintext">&#163;{{ form.price.value|floatformat }}</p></td>
+                                <td>{{ form.quantity | add_class:'form-control' }}</td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </form>
+                <button class="btn btn-primary" hx-post="{% url 'tickets:buy_tickets_add' performance.uuid %}" hx-include="#tickets-form">Add to Basket</button>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 mb-2">
+        <div class="alert alert-info">
+            <ul>
+                <li>Tickets are added to your basket but are not confirmed until they have been paid for at the checkout.</li>
+                <li>You can add tickets for multiple performances and pay for them all together to minimise the total booking fee.</li>
+            </ul>
+        </div>
+    </div>
+</div>

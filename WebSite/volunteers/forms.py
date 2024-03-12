@@ -206,7 +206,7 @@ class VolunteerRolesForm(forms.ModelForm):
     def __init__(self, festival, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.instance.festival = festival
-        self.fields['roles'].queryset = Role.objects.filter(festival=self.festival)
+        self.fields['roles'].queryset = Role.objects.filter(festival=self.instance.festival)
 
 
 class AdminVolunteerForm(MultiModelForm):

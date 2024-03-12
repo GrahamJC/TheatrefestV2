@@ -26,6 +26,8 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Field, HTML, Submit, Button, Row, Column
 from crispy_forms.bootstrap import FormActions, TabHolder, Tab, Div
 
+from django_htmx.http import HttpResponseClientRedirect
+
 from .models import Sale, Refund, Basket, FringerType, Fringer, TicketType, Ticket, Donation, PayAsYouWill
 from .forms import BuyTicketForm, RenameFringerForm, BuyFringerForm, CheckoutButtonsForm
 from program.models import Show, ShowPerformance
@@ -39,502 +41,570 @@ import stripe
 stripe.api_key = settings.STRIPE_PRIVATE_KEY
 
 
-class MyAccountView(LoginRequiredMixin, View):
+# MyAccount
+def myaccount_fringer_formset(user, post_data=None):
+    FringerFormSet = modelformset_factory(Fringer, form = RenameFringerForm, extra = 0)
+    formset = FringerFormSet(post_data, queryset = user.fringers.exclude(sale__completed__isnull = True))
+    return formset
 
-    def _create_fringer_formset(self, user, post_data=None):
-        FringerFormSet = modelformset_factory(Fringer, form = RenameFringerForm, extra = 0)
-        formset = FringerFormSet(post_data, queryset = user.fringers.exclude(sale__completed__isnull = True))
-        return formset
+def myaccount_buy_fringer_form(festival, user, post_data=None):
+    fringer_types = FringerType.objects.filter(festival=festival, is_online=True)
+    form = BuyFringerForm(user, fringer_types, post_data)
+    return form
 
-    def _create_buy_fringer_form(self, fringer_types, user, post_data=None):
-        form = BuyFringerForm(user, fringer_types, post_data)
-        return form
+def myaccount_tickets_context(request):
 
-    def _get_context(self, request, tab, use_fringer_formset, buy_fringer_form):
+    # Get online sales status
+    sales_closed = request.festival.online_sales_close and (request.now.date() > request.festival.online_sales_close)
+    sales_open = request.festival.online_sales_open and (request.now.date() >= request.festival.online_sales_open) and not sales_closed
 
-        # Get tickets grouped by performance
-        performances_current = []
-        performances_past = []
-        for ticket in request.user.tickets.filter(sale__completed__isnull = False, refund__isnull = True).order_by('performance__date', 'performance__time', 'performance__show__name').values('performance_id').distinct():
+    # Get tickets grouped by performance
+    performances_current = []
+    performances_past = []
+    for ticket in request.user.tickets.filter(sale__completed__isnull = False, refund__isnull = True).order_by('performance__date', 'performance__time', 'performance__show__name').values('performance_id').distinct():
 
-            # Get list of performances and then get toickets for each performance
-            performance = ShowPerformance.objects.get(pk = ticket['performance_id'])
-            tickets = request.user.tickets.filter(performance_id = ticket['performance_id'], sale__completed__isnull = False, refund__isnull = True)
-            p = {
-                'id': performance.id,
-                'uuid': performance.uuid,
-                'show': performance.show.name,
-                'date' : performance.date,
-                'time': performance.time,
-                'tickets': [{'id': t.id, 'uuid': t.uuid, 'description': t.type.name, 'cost': t.type.price, 'fringer_name': (t.fringer.name if t.fringer else None)} for t in tickets],
-            }
-
-            # Ok to compare naive datetimes since both are local
-            if datetime.combine(performance.date, performance.time) >= request.now:
-                performances_current.append(p)
-            else:
-                performances_past.append(p)
-
-        # Volunteer tickets
-        volunteer_tickets =  request.user.tickets.filter(type=request.festival.volunteer_ticket_type).order_by('performance__date', 'performance__time', 'performance__show__name')
-
-        # Get online sales status
-        sales_closed = request.festival.online_sales_close and (request.now.date() > request.festival.online_sales_close)
-        sales_open = request.festival.online_sales_open and (request.now.date() >= request.festival.online_sales_open) and not sales_closed
-        context = {
-            'sales_closed': sales_closed,
-            'sales_open': sales_open,
-            'sales_open_date': request.festival.online_sales_open,
-            'tab': 'tickets',
-            'performances_current': performances_current,
-            'performances_past': performances_past,
-            'basket': request.user.basket,
-            'use_fringer_formset': use_fringer_formset,
-            'buy_fringer_form': buy_fringer_form,
-            'volunteer_earned': request.user.volunteer.comps_earned if request.user.is_volunteer else 0,
-            'volunteer_available': request.user.volunteer.comps_available if request.user.is_volunteer else 0,
-            'volunteer_tickets': volunteer_tickets,
+        # Get list of performances and then get toickets for each performance
+        performance = ShowPerformance.objects.get(pk = ticket['performance_id'])
+        tickets = request.user.tickets.filter(performance_id = ticket['performance_id'], sale__completed__isnull = False, refund__isnull = True)
+        p = {
+            'id': performance.id,
+            'uuid': performance.uuid,
+            'show': performance.show.name,
+            'date' : performance.date,
+            'time': performance.time,
+            'tickets': [{'id': t.id, 'uuid': t.uuid, 'description': t.type.name, 'cost': t.type.price, 'fringer_name': (t.fringer.name if t.fringer else None)} for t in tickets],
         }
-        return context
 
-    def get(self, request):
-
-        # Create fringer formset
-        use_fringer_formset = self._create_fringer_formset(request.user)
-
-        # Get fringer types and create buy form
-        fringer_types = FringerType.objects.filter(festival=request.festival, is_online=True)
-        buy_fringer_form = self._create_buy_fringer_form(fringer_types, request.user)
-
-        # Display tickets and fringers
-        context = self._get_context(request, 'tickets', use_fringer_formset, buy_fringer_form)
-        return render(request, 'tickets/myaccount.html', context)
-
-    @transaction.atomic
-    def post(self, request):
-
-        # Get the action and basket
-        action = request.POST.get("action")
-        basket = request.user.basket
-        fringer_types = FringerType.objects.filter(festival=request.festival, is_online=True)
-        use_fringer_formset = None
-        buy_fringer_form = None
-
-        # Check for rename
-        if action == "RenameFringers":
-
-            # Create fringer formset
-            use_fringer_formset = self._create_fringer_formset(request.user, request.POST)
-
-            # Check for errors
-            if use_fringer_formset.is_valid():
-
-                # Save changes
-                for fringer in use_fringer_formset.save():
-                    logger.info(f"eFringer renamed to {fringer.name}")
-                    messages.success(request, f"eFringer renamed to {fringer.name}")
-
-                # Reset formset
-                use_fringer_formset = None
-
-        # Check for buying
-        elif action == "AddFringers":
-
-            # Get fringer types and create form
-            buy_fringer_form = self._create_buy_fringer_form(fringer_types, request.user, request.POST)
-
-            # Check for errors
-            if buy_fringer_form.is_valid():
-
-                # Get fringer type
-                buy_type = get_object_or_404(FringerType, pk = int(buy_fringer_form.cleaned_data['type']))
-                buy_name = buy_fringer_form.cleaned_data['name']
-                if not buy_name:
-                    fringer_count = Fringer.objects.filter(user = request.user).count()
-                    buy_name = f"eFringer{fringer_count + 1}"
-
-                # Create new fringer and add to basket
-                fringer = Fringer(
-                    user = request.user,
-                    type = buy_type,
-                    name = buy_name if buy_name else buy_type.name,
-                    basket = basket,
-                )
-                fringer.save()
-                logger.info(f"eFringer {fringer.name} ({buy_type.name}) added to basket")
-                messages.success(request, f"Fringer {fringer.name} ({buy_type.name}) added to basket")
-
-                # Confirm purchase
-                return redirect(reverse('tickets:myaccount_confirm_fringers'))
-
-        # Get tickets grouped by performance
-        performances_current, performances_past = self._get_performances(request.user)
-
-        # Create formset and buy form if not already done
-        if not use_fringer_formset:
-            use_fringer_formset = self._create_fringer_formset(request.user)
-        if not buy_fringer_form:
-            buy_fringer_form = self._create_buy_fringer_form(fringer_types, request.user)
-
-        # Redisplay with confirmation
-        context = self._get_context(request, 'fringers', use_fringer_formset, buy_fringer_form)
-        return render(request, 'tickets/myaccount.html', context)
-
-
-class MyAccountConfirmFringersView(View):
-
-    def get(self, request):
-
-        # Render confirmation
-        return render(request, 'tickets/myaccount_confirm_fringers.html')
-
-
-class BuyView(LoginRequiredMixin, View):
-
-    def get_ticket_formset(self, ticket_types, post_data=None):
-        TicketFormset = formset_factory(BuyTicketForm, extra = 0)
-        initial_data = [{'id': t.id, 'name': t.name, 'price': t.price, 'quantity': 0} for t in ticket_types]
-        return TicketFormset(post_data, initial = initial_data)
-
-    def _create_buy_fringer_form(self, fringer_types, user, post_data=None):
-        form = BuyFringerForm(user, fringer_types, post_data)
-        return form
-
-    def get(self, request, performance_uuid):
-
-        # Get basket and performance
-        basket = request.user.basket
-        performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
-        ticket_types = TicketType.objects.filter(festival=request.festival, is_online = True)
-        fringer_types = FringerType.objects.filter(festival=request.festival, is_online=True)
-
-        # Check if ticket sales are still open
-        if performance.has_close_checkpoint:
-            return redirect(reverse('tickets:buy_closed', args = [performance.uuid]))
-
-        # Create buy ticket formset
-        ticket_formset = self.get_ticket_formset(ticket_types)
-
-        # Get fringers available for this perfromance
-        fringers = Fringer.get_available(request.user, performance)
-
-        # Create buy fringer form
-        buy_fringer_form = self._create_buy_fringer_form(fringer_types, request.user)
-
-        # Volunteer tickets
-        if request.user.is_volunteer:
-            volunteer_available = request.user.volunteer.comps_available
-            volunteer_used = request.user.tickets.filter(performance=performance, type=request.festival.volunteer_ticket_type)
+        # Ok to compare naive datetimes since both are local
+        if datetime.combine(performance.date, performance.time) >= request.now:
+            performances_current.append(p)
         else:
-            volunteer_available = 0
-            volunteer_used = True
+            performances_past.append(p)
 
-        # Display buy page
-        context = {
-            'tab': 'tickets',
-            'basket': basket,
-            'performance': performance,
-            'ticket_formset': ticket_formset,
-            'fringers': fringers,
-            'buy_fringer_form': buy_fringer_form,
-            'volunteer_available': volunteer_available,
-            'volunteer_used': volunteer_used,
-        }
-        return render(request, "tickets/buy.html", context)
+    # Create context and return it
+    return {
+        'sales_closed': sales_closed,
+        'sales_open': sales_open,
+        'sales_open_date': request.festival.online_sales_open,
+        'performances_current': performances_current,
+        'performances_past': performances_past,
+        'basket': request.user.basket,
+    }
 
-    @transaction.atomic
-    def post(self, request, performance_uuid):
+def myaccount_fringers_context(request, fringer_formset=None, buy_fringer_form=None):
 
-        # Get basket, performance and ticket/fringer types
-        basket = request.user.basket
-        performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
-        ticket_types = TicketType.objects.filter(festival=request.festival, is_online = True)
-        fringer_types = FringerType.objects.filter(festival=request.festival, is_online=True)
+    # Get online sales status
+    sales_closed = request.festival.online_sales_close and (request.now.date() > request.festival.online_sales_close)
+    sales_open = request.festival.online_sales_open and (request.now.date() >= request.festival.online_sales_open) and not sales_closed
 
-        # Get the requested action
-        action = request.POST.get("action")
-        tab = 'tickets'
+    # Create context and return it
+    return {
+        'sales_closed': sales_closed,
+        'sales_open': sales_open,
+        'sales_open_date': request.festival.online_sales_open,
+        'fringer_formset': fringer_formset or myaccount_fringer_formset(request.user),
+        'buy_fringer_form': buy_fringer_form or myaccount_buy_fringer_form(request.festival, request.user),
+    }
 
-        # Add tickets to basket
-        if action == "AddTickets":
+def myaccount_volunteer_context(request):
 
-            # Create ticket type formset
-            ticket_formset = self.get_ticket_formset(ticket_types, request.POST)
+    # Volunteer tickets
+    volunteer_tickets =  request.user.tickets.filter(type=request.festival.volunteer_ticket_type).order_by('performance__date', 'performance__time', 'performance__show__name')
+    return {
+        'volunteer_earned': request.user.volunteer.comps_earned if request.user.is_volunteer else 0,
+        'volunteer_available': request.user.volunteer.comps_available if request.user.is_volunteer else 0,
+        'volunteer_tickets': volunteer_tickets,
+    }
 
-            # Check for errors
-            if ticket_formset.is_valid():
+def myaccount_context(request, tab, fringer_formset=None, buy_fringer_form=None):
 
-                # Get total number of tickets being purchased
-                tickets_requested = sum([f.cleaned_data['quantity'] for f in ticket_formset])
-                if (tickets_requested > 0) and (tickets_requested <= performance.tickets_available()):
+    # Create context and return it
+    context = myaccount_tickets_context(request)
+    context.update(myaccount_fringers_context(request, fringer_formset, buy_fringer_form))
+    context.update(myaccount_volunteer_context(request))
+    context['tab'] = tab
+    return context
 
-                    # Process ticket types
-                    for form in ticket_formset:
+def myaccount_render_tickets(request):
 
-                        # Get ticket type and quantity                
-                        ticket_type = get_object_or_404(TicketType, pk =  form.cleaned_data['id'])
-                        quantity = form.cleaned_data['quantity']
+    # Create context and render ticket tab content
+    context = myaccount_tickets_context(request)
+    context['tab_messages'] = True
+    return render(request, 'tickets/_myaccount_tickets.html', context)
 
-                        # Create tickets and add to basket
-                        if quantity > 0:
-                            for i in range(0, quantity):
-                                ticket = Ticket(
-                                    performance = performance,
-                                    type = ticket_type,
-                                    user = request.user,
-                                    basket = basket,
-                                )
-                                ticket.save()
+def myaccount_render_fringers(request, fringer_formset=None, buy_fringer_form=None):
 
-                            # Confirm purchase
-                            logger.info(f"{quantity} x {ticket_type.name} tickets for {performance.show.name} on {performance.date} at {performance.time} added to basket")
-                            messages.success(request, f"{quantity} x {ticket_type.name} tickets added to basket.")
+    # Create context and render ticket tab content
+    context = myaccount_fringers_context(request, fringer_formset, buy_fringer_form)
+    context['tab_messages'] = True
+    return render(request, 'tickets/_myaccount_fringers.html', context)
 
-                    # Confirm purchase
-                    return redirect(reverse('tickets:buy_confirm_tickets', args = [performance.uuid]))
+@require_GET
+@login_required
+def myaccount(request):
 
-                # Insufficient tickets available
-                else:
-                    available = performance.tickets_available()
-                    logger.info(f"Insufficient tickets ({tickets_requested} requested, {available} available) for {performance.show.name} on {performance.date} at {performance.time}")
-                    messages.error(request, f"There are only {available} tickets available for this perfromance.")
+    # Render full page with Tickets tab selected
+    context = myaccount_context(request, 'tickets')
+    return render(request, 'tickets/myaccount.html', context)
 
-            # Reset buy fringer form
-            buy_fringer_form = self._create_buy_fringer_form(fringer_types, request.user)
-            tab = 'tickets'
+@require_POST
+@login_required
+@csrf_exempt
+@transaction.atomic
+def myaccount_ticket_cancel(request, ticket_uuid):
 
-        # Use fringer credits
-        elif action == "UseFringers":
+    # Get ticket to be cancelled
+    ticket = get_object_or_404(Ticket, uuid = ticket_uuid)
 
-            # Check if there are still enough tickets available
-            tickets_requested = len(request.POST.getlist('fringer_id'))
-            if (tickets_requested > 0) and (tickets_requested <= performance.tickets_available()):
+    # Create a refund and add the ticket
+    refund = Refund(
+        festival = request.festival,
+        user = request.user,
+        customer = request.user.email,
+        completed = timezone.now(),
+    )
+    refund.save()
+    ticket.refund = refund
+    ticket.save()
+    logger.info(f"{ticket.description} ticket for {ticket.performance.show.name} on {ticket.performance.date} at {ticket.performance.time} cancelled")
+    messages.success(request, f"{ticket.description} ticket for {ticket.performance.show.name} cancelled")
 
-                # Create a sale
-                sale = Sale(
-                    festival = request.festival,
-                    user = request.user,
-                    customer = request.user.email,
-                    completed = timezone.now(),
-                )
-                sale.save()
+    # Render updated tickets
+    return myaccount_render_tickets(request)
 
-                # Process each checked fringer
-                for fringer_id in request.POST.getlist('fringer_id'):
+@require_POST
+@login_required
+@transaction.atomic
+def myaccount_fringers_rename(request):
 
-                    # Get fringer and double check that it has not been used for this performance
-                    fringer = Fringer.objects.get(pk = int(fringer_id))
-                    if fringer.is_available(performance):
+    # Create fringers formset and check for errors
+    fringer_formset = myaccount_fringer_formset(request.user, request.POST)
+    if fringer_formset.is_valid():
 
-                        # Create ticket and add to sale
+        # Save changes
+        for fringer in fringer_formset.save():
+            logger.info(f"eFringer renamed to {fringer.name}")
+            messages.success(request, f"eFringer renamed to {fringer.name}")
+
+        # Clear formset
+        fringer_formset = None
+
+    else:
+        messages.error(request, f"Please correct the errors shown and try again")
+
+    # Render updated fringers
+    return myaccount_render_fringers(request, fringer_formset, None)
+
+@require_POST
+@login_required
+@transaction.atomic
+def myaccount_fringers_buy(request):
+
+    # Get basket
+    basket = request.user.basket
+
+    # Create form and check for errors
+    buy_fringer_form = myaccount_buy_fringer_form(request.festival, request.user, request.POST)
+    if buy_fringer_form.is_valid():
+
+        # Get fringer type
+        buy_type = get_object_or_404(FringerType, pk = int(buy_fringer_form.cleaned_data['type']))
+        buy_name = buy_fringer_form.cleaned_data['name']
+        if not buy_name:
+            fringer_count = Fringer.objects.filter(user = request.user).count()
+            buy_name = f"eFringer{fringer_count + 1}"
+
+        # Create new fringer and add to basket
+        fringer = Fringer(
+            user = request.user,
+            type = buy_type,
+            name = buy_name if buy_name else buy_type.name,
+            basket = basket,
+        )
+        fringer.save()
+        logger.info(f"eFringer {fringer.name} ({buy_type.name}) added to basket")
+        messages.success(request, f"Fringer {fringer.name} ({buy_type.name}) added to basket")
+
+        # Confirm purchase
+        return HttpResponseClientRedirect(reverse('tickets:myaccount_fringers_confirm'))
+
+    else:
+        messages.error(request, f"Please correct the errors shown and try again")
+
+    # Render updated fringers
+    return myaccount_render_fringers(request, None, buy_fringer_form)
+
+@require_GET
+@login_required
+def myaccount_fringers_confirm(request):
+    return render(request, 'tickets/myaccount_fringers_confirm.html')
+
+# Buy tickets
+def buy_ticket_formset(request, post_data=None):
+
+    # Get ticket types
+    ticket_types = TicketType.objects.filter(festival=request.festival, is_online = True)
+
+    # Create formset and return it
+    TicketFormset = formset_factory(BuyTicketForm, extra = 0)
+    initial_data = [{'id': t.id, 'name': t.name, 'price': t.price, 'quantity': 0} for t in ticket_types]
+    return TicketFormset(post_data, initial = initial_data)
+
+def buy_fringer_form(request, post_data=None):
+
+    # Get fringer types
+    fringer_types = FringerType.objects.filter(festival=request.festival, is_online=True)
+
+    # Create form and return it
+    form = BuyFringerForm(request.user, fringer_types, post_data)
+    return form
+
+def buy_tickets_context(request, performance, ticket_formset=None):
+
+    # Create context and return it
+    return {
+        'performance': performance,
+        'ticket_formset': ticket_formset or buy_ticket_formset(request),
+    }
+
+def buy_fringers_context(request, performance, fringer_form=None):
+
+    # Get fringers available for this perfromance
+    fringers = Fringer.get_available(request.user, performance)
+
+    # Create context and return it
+    return {
+        'performance': performance,
+        'fringers': fringers,
+        'buy_fringer_form': fringer_form or buy_fringer_form(request),
+    }
+
+def buy_volunteer_context(request, performance):
+
+    # Get volunteer ticket info
+    volunteer_available = request.user.volunteer.comps_available
+    volunteer_used = request.user.tickets.filter(performance=performance, type=request.festival.volunteer_ticket_type)
+
+    # Create context and return it
+    return {
+        'performance': performance,
+        'volunteer_available': volunteer_available,
+        'volunteer_used': volunteer_used,
+    }
+
+def buy_render_tickets(request, performance, ticket_formset=None):
+
+    # Create context and render tickets tab
+    context = buy_tickets_context(request, performance, ticket_formset)
+    context['tab_messages'] = True
+    return render(request, "tickets/_buy_tickets.html", context)
+
+def buy_render_fringers(request, performance, fringer_form=None):
+
+    # Create context and render fringers tab
+    context = buy_fringers_context(request, performance, fringer_form)
+    context['tab_messages'] = True
+    return render(request, "tickets/_buy_fringers.html", context)
+
+def buy_render_volunteer(request, performance):
+
+    # Create context and render volunteer tab
+    context = buy_volunteer_context(request, performance)
+    context['tab_messages'] = True
+    return render(request, "tickets/_buy_fringers.html", context)
+
+@require_GET
+@login_required
+def buy(request, performance_uuid):
+
+    # Get performance
+    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+
+    # Check if ticket sales are still open
+    if performance.has_close_checkpoint:
+        return redirect(reverse('tickets:buy_closed', args = [performance.uuid]))
+
+    # Create context and display page with tickets tab active
+    context = buy_tickets_context(request, performance)
+    context.update(buy_fringers_context(request, performance))
+    if request.user.is_volunteer:
+        context.update(buy_volunteer_context(request, performance))
+    context['tab'] = 'tickets'
+    return render(request, "tickets/buy.html", context)
+
+@require_GET
+@login_required
+def buy_closed(request, performance_uuid):
+
+    # Get basket and performance
+    basket = request.user.basket
+    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+
+    # Display closed page
+    context = {
+        'basket': basket,
+        'performance': performance,
+    }
+    return render(request, "tickets/buy_closed.html", context)
+
+@require_POST
+@login_required
+@transaction.atomic
+def buy_tickets_add(request, performance_uuid):
+
+    # Get basket and performance
+    basket = request.user.basket
+    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+
+    # Create ticket formset and check for errors
+    ticket_formset = buy_ticket_formset(request, request.POST)
+
+    # Check for errors
+    if ticket_formset.is_valid():
+
+        # Get total number of tickets being purchased
+        tickets_requested = sum([f.cleaned_data['quantity'] for f in ticket_formset])
+        if (tickets_requested > 0) and (tickets_requested <= performance.tickets_available()):
+
+            # Process ticket types
+            for form in ticket_formset:
+
+                # Get ticket type and quantity                
+                ticket_type = get_object_or_404(TicketType, pk =  form.cleaned_data['id'])
+                quantity = form.cleaned_data['quantity']
+
+                # Create tickets and add to basket
+                if quantity > 0:
+                    for i in range(0, quantity):
                         ticket = Ticket(
-                            user = request.user,
                             performance = performance,
-                            type = fringer.type.ticket_type,
-                            fringer = fringer,
-                            sale = sale,
+                            type = ticket_type,
+                            user = request.user,
+                            basket = basket,
                         )
                         ticket.save()
 
-                        # Confirm purchase
-                        logger.info(f"Ticket for {performance.show.name} on {performance.date} at {performance.time} purchased with eFringer {fringer.name}")
-                        messages.success(request, f"Ticket purchased with eFringer {fringer.name}")
+                    # Confirm purchase
+                    logger.info(f"{quantity} x {ticket_type.name} tickets for {performance.show.name} on {performance.date} at {performance.time} added to basket")
+                    messages.success(request, f"{quantity} x {ticket_type.name} tickets added to basket.")
 
-                    else:
-                        # Fringer already used for this performance
-                        logger.warn(f"eFringer {fringer.name} already used for this perfromance")
+            # Confirm purchase
+            return HttpResponseClientRedirect(reverse('tickets:buy_tickets_confirm', args = [performance.uuid]))
 
-                # Confirm purchase
-                return redirect(reverse('tickets:buy_confirm_fringer_tickets', args = [performance.uuid]))
+        # Insufficient tickets available
+        else:
+            available = performance.tickets_available()
+            logger.info(f"Insufficient tickets ({tickets_requested} requested, {available} available) for {performance.show.name} on {performance.date} at {performance.time}")
+            messages.error(request, f"There are only {available} tickets available for this perfromance.")
 
-            # Insufficient tickets available
-            else:
-                available = performance.tickets_available()
-                logger.info(f"Insufficient tickets ({tickets_requested} requested, {available} available) for {performance.show.name} on {performance.date} at {performance.time}")
-                messages.error(request, f"There are only {available} tickets available for this perfromance.")
+    else:
+        messages.error(request, f"Please correct the errors below and try again.")
 
-            # Reset ticket formset and buy fringer form
-            ticket_formset = self.get_ticket_formset(ticket_types)
-            buy_fringer_form = self._create_buy_fringer_form(fringer_types, request.user)
-            tab = 'fringers'
+    # Render updated tickets tab
+    return buy_render_tickets(request, performance, ticket_formset)
 
-        # Add fringer vouchers to basket
-        elif action == "AddFringers":
+@require_GET
+@login_required
+def buy_tickets_add_confirm(request, performance_uuid):
 
-            # Create buy fringer form
-            buy_fringer_form = self._create_buy_fringer_form(fringer_types, request.user, request.POST)
+    # Get basket and performance
+    basket = request.user.basket
+    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
 
-            # Check for errors
-            if buy_fringer_form.is_valid():
+    # Display confirmation
+    context = {
+        'basket': basket,
+        'performance': performance,
+    }
+    return render(request, "tickets/buy_tickets_add_confirm.html", context)
 
-                # Get fringer type and name
-                fringer_type = get_object_or_404(FringerType, pk = int(buy_fringer_form.cleaned_data['type']))
-                fringer_name = buy_fringer_form.cleaned_data['name']
-                if not fringer_name:
-                    fringer_count = Fringer.objects.filter(user = request.user).count()
-                    fringer_name = f"eFringer{fringer_count + 1}"
+@require_POST
+@login_required
+@transaction.atomic
+def buy_fringers_use(request, performance_uuid):
 
-                # Create new fringer and add to basket
-                fringer = Fringer(
-                    user = request.user,
-                    type = fringer_type,
-                    name = fringer_name,
-                    basket = basket,
-                )
-                fringer.save()
-                logger.info(f"eFringer {fringer.name} ({fringer.description}) added to basket")
-                messages.success(request, f"eFringer {fringer.name} ({fringer.description}) added to basket")
+    # Get basket and performance
+    basket = request.user.basket
+    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
 
-                # Confirm purchase
-                return redirect(reverse('tickets:buy_confirm_fringers', args = [performance.uuid]))
+    # Check if there are still enough tickets available
+    tickets_requested = len(request.POST.getlist('fringer_id'))
+    if (tickets_requested > 0) and (tickets_requested <= performance.tickets_available()):
 
-            # Reset ticket formset
-            ticket_formset = self.get_ticket_formset(ticket_types, None)
-            tab = 'fringers'
+        # Create a sale
+        sale = Sale(
+            festival = request.festival,
+            user = request.user,
+            customer = request.user.email,
+            completed = timezone.now(),
+        )
+        sale.save()
 
-        # Use fringer credits
-        elif action == "UseVolunteer":
+        # Process each checked fringer
+        for fringer_id in request.POST.getlist('fringer_id'):
 
-            # Check if there are still enough tickets available
-            if (performance.tickets_available() > 0):
+            # Get fringer and double check that it has not been used for this performance
+            fringer = Fringer.objects.get(pk = int(fringer_id))
+            if fringer.is_available(performance):
 
-                # Create a sale
-                sale = Sale(
-                    festival = request.festival,
-                    user = request.user,
-                    customer = request.user.email,
-                    completed = timezone.now(),
-                )
-                sale.save()
-
-                # Add volunteer ticket to sale
+                # Create ticket and add to sale
                 ticket = Ticket(
                     user = request.user,
                     performance = performance,
-                    type = request.festival.volunteer_ticket_type,
+                    type = fringer.type.ticket_type,
+                    fringer = fringer,
                     sale = sale,
                 )
                 ticket.save()
 
                 # Confirm purchase
-                logger.info(f"Ticket for {performance.show.name} on {performance.date} at {performance.time} purchased using volunteer credit.")
-                messages.success(request, f"Volunteer ticket used")
+                logger.info(f"Ticket for {performance.show.name} on {performance.date} at {performance.time} purchased with eFringer {fringer.name}")
+                messages.success(request, f"Ticket purchased with eFringer {fringer.name}")
 
-                # Confirm purchase
-                return redirect(reverse('tickets:buy_confirm_volunteer_ticket', args = [performance.uuid]))
-
-            # Insufficient tickets available
             else:
-                logger.info(f"Insufficient tickets (1 requested, {performance.tickets_available()} available) for {performance.show.name} on {performance.date} at {performance.time}")
-                messages.error(request, f"There are no tickets available for this perfromance.")
+                # Fringer already used for this performance
+                logger.warn(f"eFringer {fringer.name} already used for this perfromance")
 
-            # Redisplay
-            tab = 'volunteers'
+        # Confirm purchase
+        return HttpResponseClientRedirect(reverse('tickets:buy_fringers_use_confirm', args = [performance.uuid]))
 
-        # Get fringers available for this performance
-        fringers = Fringer.get_available(request.user, performance)
+    # Insufficient tickets available
+    else:
+        available = performance.tickets_available()
+        logger.info(f"Insufficient tickets ({tickets_requested} requested, {available} available) for {performance.show.name} on {performance.date} at {performance.time}")
+        messages.error(request, f"There are only {available} tickets available for this perfromance.")
 
-        # Volunteer tickets
-        if request.user.is_volunteer:
-            volunteer_available = request.user.volunteer.comps_available
-            volunteer_used = request.user.tickets.filter(performance=performance, type=request.festival.volunteer_ticket_type)
-        else:
-            volunteer_available = 0
-            volunteer_used = True
+    # Render updated fringers tab content
+    return buy_render_fringers(request, performance)
 
-        # Display buy page
-        context = {
-            'tab': tab,
-            'basket': basket,
-            'performance': performance,
-            'ticket_formset': ticket_formset,
-            'fringers': fringers,
-            'buy_fringer_form': buy_fringer_form,
-            'volunteer_available': volunteer_available,
-            'volunteer_used': volunteer_used,
-        }
-        return render(request, "tickets/buy.html", context)
+@require_GET
+@login_required
+def buy_fringers_use_confirm(request, performance_uuid):
 
+    # Get basket and performance
+    basket = request.user.basket
+    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
 
-class BuyClosedView(LoginRequiredMixin, View):
+    # Display confirmation
+    context = {
+        'basket': basket,
+        'performance': performance,
+    }
+    return render(request, "tickets/buy_fringers_use_confirm.html", context)
 
-    def get(self, request, performance_uuid):
+@require_POST
+@login_required
+@transaction.atomic
+def buy_fringers_add(request, performance_uuid):
 
-        # Get basket and performance
-        basket = request.user.basket
-        performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+    # Get basket and performance
+    basket = request.user.basket
+    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
 
-        # Display closed page
-        context = {
-            'basket': basket,
-            'performance': performance,
-        }
-        return render(request, "tickets/buy_closed.html", context)
+    # Create buy fringer form
+    fringer_form = buy_fringer_form(request, request.POST)
 
+    # Check for errors
+    if fringer_form.is_valid():
 
-class BuyConfirmTicketsView(LoginRequiredMixin, View):
+        # Get fringer type and name
+        fringer_type = get_object_or_404(FringerType, pk = int(fringer_form.cleaned_data['type']))
+        fringer_name = fringer_form.cleaned_data['name']
+        if not fringer_name:
+            fringer_count = Fringer.objects.filter(user = request.user).count()
+            fringer_name = f"eFringer{fringer_count + 1}"
 
-    def get(self, request, performance_uuid):
+        # Create new fringer and add to basket
+        fringer = Fringer(
+            user = request.user,
+            type = fringer_type,
+            name = fringer_name,
+            basket = basket,
+        )
+        fringer.save()
+        logger.info(f"eFringer {fringer.name} ({fringer.description}) added to basket")
+        messages.success(request, f"eFringer {fringer.name} ({fringer.description}) added to basket")
 
-        # Get basket and performance
-        basket = request.user.basket
-        performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+        # Confirm purchase
+        return HttpResponseClientRedirect(reverse('tickets:buy_fringers_add_confirm', args = [performance.uuid]))
 
-        # Display confirmation
-        context = {
-            'basket': basket,
-            'performance': performance,
-        }
-        return render(request, "tickets/buy_confirm_tickets.html", context)
+    # Render updated fringers tab content
+    return buy_render_fringers(request, performance, fringer_form)
 
+@require_GET
+@login_required
+def buy_fringers_add_confirm(request, performance_uuid):
 
-class BuyConfirmFringerTicketsView(LoginRequiredMixin, View):
+    # Get basket and performance
+    basket = request.user.basket
+    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
 
-    def get(self, request, performance_uuid):
+    # Display confirmation
+    context = {
+        'basket': basket,
+        'performance': performance,
+    }
+    return render(request, "tickets/buy_fringers_add_confirm.html", context)
 
-        # Get basket and performance
-        basket = request.user.basket
-        performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+@require_POST
+@login_required
+@transaction.atomic
+def buy_volunteer_use(request, performance_uuid):
 
-        # Display confirmation
-        context = {
-            'basket': basket,
-            'performance': performance,
-        }
-        return render(request, "tickets/buy_confirm_fringer_tickets.html", context)
+    # Get basket and performance
+    basket = request.user.basket
+    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
 
+    # Check if there are still enough tickets available
+    if (performance.tickets_available() > 0):
 
-class BuyConfirmFringersView(LoginRequiredMixin, View):
+        # Create a sale
+        sale = Sale(
+            festival = request.festival,
+            user = request.user,
+            customer = request.user.email,
+            completed = timezone.now(),
+        )
+        sale.save()
 
-    def get(self, request, performance_uuid):
+        # Add volunteer ticket to sale
+        ticket = Ticket(
+            user = request.user,
+            performance = performance,
+            type = request.festival.volunteer_ticket_type,
+            sale = sale,
+        )
+        ticket.save()
 
-        # Get basket and performance
-        basket = request.user.basket
-        performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+        # Confirm purchase
+        logger.info(f"Ticket for {performance.show.name} on {performance.date} at {performance.time} purchased using volunteer credit.")
+        messages.success(request, f"Volunteer ticket used")
 
-        # Display confirmation
-        context = {
-            'basket': basket,
-            'performance': performance,
-        }
-        return render(request, "tickets/buy_confirm_fringers.html", context)
+        # Confirm purchase
+        return HttpResponseClientRedirect(reverse('tickets:buy_volunteer_use_confirm', args = [performance.uuid]))
 
+    # Insufficient tickets available
+    else:
+        logger.info(f"Insufficient tickets (1 requested, {performance.tickets_available()} available) for {performance.show.name} on {performance.date} at {performance.time}")
+        messages.error(request, f"There are no tickets available for this perfromance.")
 
-class BuyConfirmVolunteerTicketView(LoginRequiredMixin, View):
+    # Render updated volunteer tab content
+    return buy_render_volunteer(request, performance)
 
-    def get(self, request, performance_uuid):
+@require_GET
+@login_required
+def buy_volunteer_use_confirm(request, performance_uuid):
 
-        # Get basket and performance
-        basket = request.user.basket
-        performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+    # Get basket and performance
+    basket = request.user.basket
+    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
 
-        # Display confirmation
-        context = {
-            'basket': basket,
-            'performance': performance,
-        }
-        return render(request, "tickets/buy_confirm_volunteer_ticket.html", context)
-
+    # Display confirmation
+    context = {
+        'basket': basket,
+        'performance': performance,
+    }
+    return render(request, "tickets/buy_volunteer_use_confirm.html", context)
 
 class PAYWView(LoginRequiredMixin, View):
 
@@ -911,29 +981,6 @@ def checkout_cancel(request, sale_uuid):
         'basket': basket
     }
     return render(request, "tickets/checkout.html", context)
-
-@transaction.atomic
-@login_required
-def ticket_cancel(request, ticket_uuid):
-
-    # Get ticket to be cancelled
-    ticket = get_object_or_404(Ticket, uuid = ticket_uuid)
-
-    # Create a refund and add the ticket
-    refund = Refund(
-        festival = request.festival,
-        user = request.user,
-        customer = request.user.email,
-        completed = timezone.now(),
-    )
-    refund.save()
-    ticket.refund = refund
-    ticket.save()
-    logger.info(f"{ticket.description} ticket for {ticket.performance.show.name} on {ticket.performance.date} at {ticket.performance.time} cancelled")
-    messages.success(request, f"{ticket.description} ticket for {ticket.performance.show.name} cancelled")
-
-    # Redisplay tickets
-    return redirect(reverse("tickets:myaccount"))
 
 @require_GET
 def donations(request):

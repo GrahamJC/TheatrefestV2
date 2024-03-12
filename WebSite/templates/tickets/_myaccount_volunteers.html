@@ -1,0 +1,32 @@
+<div class="row">
+    <div class="col-12 col-sm-6">
+        <div class="card">
+            <h6 class="card-header">Volunteer Tickets</h6>
+            <div class="card-body">
+                {% if volunteer_earned == 0 %}
+                    <p>You have not earned any volunteer tickets yet.</p>
+                {% else %}
+                    <p>You have {{ volunteer_available }} volunteer tickets available.</p>
+                    {% if volunteer_tickets %}
+                        <p>You have used volunteer tickets for the following shows:</p>
+                        {% for ticket in volunteer_tickets %}
+                            <div>
+                                {{ ticket.performance.show.name }}<br/>
+                                &nbsp;&nbsp;{{ ticket.performance.date|date:'D, j M' }} at {{ ticket.performance.time|date:'H:i' }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6">
+        <div class="alert alert-info">
+            <ul>
+                <li>You earn credits towards volunteer tickets for each shift you work.</li>
+                <li>These credits can be used to purchase tickets to a show once sales have opened at the venue.</li>
+                <li>Volunteer tiockets can only be purchased online.</li>
+            </ul>
+        </div>
+    </div>
+</div>

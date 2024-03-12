@@ -1,0 +1,33 @@
+{% include '_tab_messages.html' %}
+
+<div class="row" hx-target="#volunteer-tab-content">
+    <div class="col-12 col-sm-6">
+        <div class="card mb-2">
+            <h6 class="card-header">Use Volunteer Ticket</h6>
+            <div class="card-body">
+                {% if volunteer_used %}
+                    <p>You have already used a volunteer ticket for this performance.</p>
+                {% elif volunteer_available == 0 %}
+                    <p>You do not have any volunteer tickets available</p>
+                {% elif not performance.has_open_checkpoint %}
+                    <p>Volunteer tickets cannot be used until venue sales are open for this performance.</p>
+                {% else %}
+                    <p>You have {{ volunteer_available }} voluteer tickets available.</p>
+                    <p>To use a volunteer ticket for this performance click the button below.</p>
+                    <form id="volunteer-form">
+                        {% csrf_token %}
+                    </form>
+                    <button class="btn btn-primary" hx-post="{% url 'tickets:buy_volunteer_use' performance.uuid %}" hx-include="#volunteer-form">Use Volunteer Ticket</button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6">
+        <div class="alert alert-info mb-2">
+            <ul>
+                <li>Only one volunteer ticket can be used per performance.</li>
+                <li>Volunteer tickets can only be used when venue sales are open.</li>
+            </ul>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,51 @@
+{% load widget_tweaks %}
+
+{% include '_tab_messages.html' %}
+
+<div class="row" hx-target="#fringers-tab-content">
+    <div class="col-12 col-sm-6">
+        <div class="card mb-2">
+            <h6 class="card-header">Use eFringer Credits</h6>
+            <div class="card-body">
+                {% if fringers %}
+                    <form id="use-fringers-form">
+                        {% csrf_token %}
+                        <p><i>eFringer Vouchers that have already been used for this performance are not shown below because each eFringer Voucher can only be used to buy one ticket per performance.</i></p>
+                        <table class="table table-striped">
+                            {% for fringer in fringers %}
+                                <tr>
+                                    <td><input type="checkbox" name="fringer_id" value="{{ fringer.id }}" /></td>
+                                    <td style="width: 100%">{{ fringer.name }} ({{ fringer.available }} credits remaining)</td>
+                                </tr>
+                            {% endfor %}
+                        </table>
+                    </form>
+                    <button class="btn btn-primary" hx-post="{% url 'tickets:buy_fringers_use' performance.uuid %}" hx-include="#use-fringers-form">Confirm</button>
+                {% else %}
+                    <p>You do not have any eFringer credits available for this performance.</p>
+                    <p><i>eFringer Vouchers that have already been used for this performance are not shown because each eFringer Voucher can only be used to buy one ticket per performance.</i></p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6">
+        <div class="card mb-2">
+            <h6 class="card-header">Buy eFringer Vouchers</h6>
+            <div class="card-body">
+                <form id="buy-fringers-form">
+                    {% csrf_token %}
+                    {% include 'bs4_form.html' with form=buy_fringer_form %}
+                </form>
+                <button class="btn btn-primary" hx-post="{% url 'tickets:buy_fringers_add' performance.uuid %}" hx-include="#buy-fringers-form">Add to Basket</button>
+            </div>
+        </div>
+        <div class="alert alert-info mb-2">
+            <ul>
+                <li>Buy an eFringer Voucher and use it to buy tickets for 6 different performances at a reduced price.</li>
+                <li>Each eFringer Voucher can only be used to purchase one ticket per performance.</li>
+                <li>An eFringer Voucher cannot be used to buy tickets until it has been paid for at the checkout.</li>
+                <li>If you have more than one eFringer Voucher you can give each one a name to make them easier to keep track of.</li>
+            </ul>
+        </div>
+    </div>
+</div>

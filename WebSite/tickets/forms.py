@@ -19,6 +19,10 @@ class RenameFringerForm(forms.ModelForm):
         model = Fringer
         fields = ('name',)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['name'].widget.attrs['size'] = 12
+
     def validate_unique(self):
         # Because 'user' is not included in the form it is normally excluded from
         # validation checks but we need to add it back for the uniqueness check

@@ -66,7 +66,7 @@ class Volunteer(TimeStampedModel):
 
     @property
     def comps_available(self):
-        return self.comps_earned - self.comps_used
+        return 4 #self.comps_earned - self.comps_used
 
     def __str__(self):
         return f'{self.user.get_full_name()}'
