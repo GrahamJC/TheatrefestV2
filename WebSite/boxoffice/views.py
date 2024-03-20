@@ -29,9 +29,9 @@ from django_htmx.http import HttpResponseClientRedirect
 
 from core.models import User
 from program.models import Show, ShowPerformance
-from tickets.models import BoxOffice, Sale, Refund, TicketType, Ticket, PayAsYouWill, FringerType, Fringer, Checkpoint
+from tickets.models import BoxOffice, Sale, Refund, TicketType, Ticket, PayAsYouWill, FringerType, Fringer, Checkpoint, BadgesIssued
 
-from .forms import CheckpointForm, SaleTicketsForm, SalePAYWForm, SaleExtrasForm, SaleForm, SaleEMailForm, RefundStartForm, TicketSearchForm
+from .forms import CheckpointForm, SaleTicketsForm, SalePAYWForm, SaleExtrasForm, SaleForm, SaleEMailForm, RefundStartForm, UserSearchForm, UserBadgesForm
 
 # Logging
 import logging
@@ -103,7 +103,7 @@ def square_callback(request):
 
     # Send e-mail receipt
     if sale.customer:
-        email_receipt(sale, sale.customer)
+        send_email_receipt(sale, sale.customer)
 
     # Display main page for new sale
     return redirect(reverse('boxoffice:main', args=[boxoffice.uuid]))
@@ -134,7 +134,7 @@ def get_checkpoints(boxoffice, date):
     # Get today's checkpoints
     return boxoffice.checkpoints.filter(created__date = date).order_by('-created')
 
-def email_receipt(sale, email):
+def send_email_receipt(sale, email):
 
     context = {
         'festival': sale.festival,
@@ -145,7 +145,8 @@ def email_receipt(sale, email):
     body = render_to_string('boxoffice/sale_email.txt', context)
     send_mail('Tickets for ' + sale.festival.title, body, settings.DEFAULT_FROM_EMAIL, [email])
 
-def create_sale_tickets_form(festival, sale, performance, post_data = None):
+# Forms
+def sale_tickets_form(festival, sale, performance, post_data = None):
 
     # Validate parameters
     assert festival
@@ -177,7 +178,7 @@ def create_sale_tickets_form(festival, sale, performance, post_data = None):
     # Return form
     return form
 
-def create_sale_payw_form(sale, show, post_data = None):
+def sale_payw_form(sale, show, post_data = None):
 
     # Validate parameters
     assert sale
@@ -203,7 +204,7 @@ def create_sale_payw_form(sale, show, post_data = None):
     # Return form
     return form
 
-def create_sale_extras_form(sale, post_data = None):
+def sale_extras_form(sale, post_data = None):
 
     # Validate parameters
     assert sale
@@ -237,7 +238,7 @@ def create_sale_extras_form(sale, post_data = None):
     # Return form
     return form
 
-def create_sale_form(sale, post_data = None):
+def sale_update_form(sale, post_data = None):
 
     # Validate parameters
     assert sale
@@ -260,7 +261,7 @@ def create_sale_form(sale, post_data = None):
     # Return form
     return form
 
-def create_sale_email_form(sale, post_data = None):
+def sale_email_form(sale, post_data = None):
 
     # Validate parameters
     assert sale
@@ -282,7 +283,7 @@ def create_sale_email_form(sale, post_data = None):
     # Return form
     return form
 
-def create_refund_start_form(post_data = None):
+def refund_start_form(post_data = None):
 
     # Create form
     form = RefundStartForm(data = post_data)
@@ -298,7 +299,7 @@ def create_refund_start_form(post_data = None):
     # Return form
     return form
 
-def create_checkpoint_form(boxoffice, checkpoint, post_data = None):
+def checkpoint_form(boxoffice, checkpoint, post_data = None):
 
     # Create form
     form = CheckpointForm(checkpoint, data = post_data)
@@ -318,14 +319,14 @@ def create_checkpoint_form(boxoffice, checkpoint, post_data = None):
     # Return form
     return form
 
-def create_ticket_search_form(boxoffice, post_data = None):
+def user_search_form(email=None, post_data = None):
 
     # Create form
-    form = TicketSearchForm(data = post_data)
+    form = UserSearchForm(email, data = post_data)
 
     # Add crispy forms helper
     form.helper = FormHelper()
-    form.helper.form_id = 'ticket-search-form'
+    form.helper.form_id = 'search-form'
     form.helper.layout = Layout(
         Field('email'),
     )
@@ -333,43 +334,27 @@ def create_ticket_search_form(boxoffice, post_data = None):
     # Return form
     return form
 
-def render_main(request, boxoffice, tab, sale=None):
+def user_badges_form(user, post_data = None):
 
-    # Render main page
-    context = {
-        # General
-        'boxoffice': boxoffice,
-        'tab': tab,
-        # Sales tab
-        'sale': sale,
-        'accordion': 'tickets',
-        'shows': Show.objects.filter(festival = request.festival, is_cancelled = False, is_ticketed = True) if sale else None,
-        'selected_show': None,
-        'performances': None,
-        'selected_performance': None,
-        'sale_tickets_form': None,
-        'shows_payw': Show.objects.filter(festival = request.festival, is_cancelled = False, is_ticketed = False) if sale else None,
-        'sale_extras_form': create_sale_extras_form(sale) if sale else None,
-        'sale_form': create_sale_form(sale) if sale else None,
-        'sales': get_sales(boxoffice, timezone.now().date()),
-        'square_intent': get_square_intent(request, boxoffice, sale),
-        # Refunds tab
-        'refund_start_form': create_refund_start_form(),
-        'refund': None,
-        'refunds': get_refunds(boxoffice, timezone.now().date()),
-        # Checkpoints tab
-        'checkpoint_form': create_checkpoint_form(boxoffice, None),
-        'checkpoints': get_checkpoints(boxoffice, timezone.now().date()),
-        # Tickets tab
-        'ticket_search_form': create_ticket_search_form(boxoffice),
-        'tickets': None,
-    }
-    return render(request, 'boxoffice/main.html', context)
+    # Don't create form if there is no user
+    if not user:
+        return None
+    
+    # Create form
+    form = UserBadgesForm(user, data = post_data)
 
-def render_sale(request, boxoffice, sale = None, accordion='tickets', show = None, performance = None, tickets_form = None, show_payw = None, payw_form = None, extras_form = None, sale_form = None):
+    # Add crispy forms helper
+    form.helper = FormHelper()
+    form.helper.form_id = 'badges-form'
+    form.helper.layout = Layout(
+        Field('issued'),
+    )
 
-    # Show and performance must match
-    assert not performance or show == performance.show
+    # Return form
+    return form
+
+# Rendering
+def sales_context(request, boxoffice, sale = None, accordion='tickets', show = None, performance = None, tickets_form = None, show_payw = None, payw_form = None, extras_form = None, sale_form = None):
 
     # Check if there is an active sale 
     if sale:
@@ -383,7 +368,6 @@ def render_sale(request, boxoffice, sale = None, accordion='tickets', show = Non
             all_sales_closed = performance.has_close_checkpoint
         context = {
             'boxoffice': boxoffice,
-            'tab': 'sales',
             'sale': sale,
             'accordion': accordion,
             'shows': Show.objects.filter(festival = request.festival, is_cancelled = False, is_ticketed = True),
@@ -392,28 +376,34 @@ def render_sale(request, boxoffice, sale = None, accordion='tickets', show = Non
             'selected_performance': performance,
             'boxoffice_sales_closed': boxoffice_sales_closed,
             'all_sales_closed': all_sales_closed,
-            'sale_tickets_form': tickets_form or create_sale_tickets_form(request.festival, sale, performance) if performance else None,
+            'sale_tickets_form': tickets_form or sale_tickets_form(request.festival, sale, performance) if performance else None,
             'shows_payw': Show.objects.filter(festival = request.festival, is_cancelled = False, is_ticketed = False),
             'selected_show_payw': show_payw,
-            'sale_payw_form': payw_form or create_sale_payw_form(sale, show_payw) if show_payw else None,
-            'sale_extras_form': extras_form or create_sale_extras_form(sale),
-            'sale_form': (sale_form or create_sale_form(sale)),
-            'sale_email_form': create_sale_email_form(sale),
+            'sale_payw_form': payw_form or sale_payw_form(sale, show_payw) if show_payw else None,
+            'sale_extras_form': extras_form or sale_extras_form(sale),
+            'sale_form': (sale_form or sale_update_form(sale)),
+            'sale_email_form': sale_email_form(sale),
             'sales': get_sales(boxoffice, timezone.now().date()),
             'square_intent': get_square_intent(request, boxoffice, sale),
         }
     else:
         context = {
             'boxoffice': boxoffice,
-            'tab': 'sales',
             'sales': get_sales(boxoffice, timezone.now().date()),
         }
-    return render(request, 'boxoffice/_main_sales.html', context)
+    return context
 
-def render_refund(request, boxoffice, refund = None, show = None, performance = None, start_form = None):
+def render_sales(request, boxoffice, sale = None, accordion='tickets', show = None, performance = None, tickets_form = None, show_payw = None, payw_form = None, extras_form = None, sale_form = None):
 
     # Show and performance must match
     assert not performance or show == performance.show
+
+    # Create context and render sales tab content
+    context = sales_context(request, boxoffice, sale, accordion, show, performance, tickets_form, show_payw, payw_form, extras_form, sale_form)
+    context['tab'] = 'sales'
+    return render(request, 'boxoffice/_main_sales.html', context)
+
+def refunds_context(request, boxoffice, refund = None, show = None, performance = None, start_form = None):
 
     # Check if there is an active refund 
     if refund:
@@ -424,7 +414,6 @@ def render_refund(request, boxoffice, refund = None, show = None, performance = 
             refund_tickets = performance.tickets.filter(sale__completed__isnull = False, refund__isnull = True).order_by('id')
         context = {
             'boxoffice': boxoffice,
-            'tab': 'refunds',
             'refund': refund,
             'shows': Show.objects.filter(festival = request.festival, is_ticketed = True),
             'selected_show': show,
@@ -436,34 +425,114 @@ def render_refund(request, boxoffice, refund = None, show = None, performance = 
     else:
         context = {
             'boxoffice': boxoffice,
-            'tab': 'refunds',
-            'refund_start_form': start_form or create_refund_start_form(),
+            'refund_start_form': start_form or refund_start_form(),
             'refunds': get_refunds(boxoffice, timezone.now().date()),
         }
+    return context
+
+def render_refunds(request, boxoffice, refund = None, show = None, performance = None, start_form = None):
+
+    # Show and performance must match
+    assert not performance or show == performance.show
+
+    # Create context and render refunds tab content
+    context = refunds_context(request, boxoffice, refund, show, performance, start_form)
+    context['tab'] = 'refunds'
     return render(request, 'boxoffice/_main_refunds.html', context)
 
-def render_checkpoint(request, boxoffice, checkpoint, checkpoint_form=None):
+def checkpoints_context(request, boxoffice, checkpoint=None, form=None):
 
-    # Render checkpoint tab content
-    context = {
+    # Create checkpoints context
+    return {
         'boxoffice': boxoffice,
-        'tab': 'checkpoints',
-        'checkpoint_form': checkpoint_form or create_checkpoint_form(boxoffice, checkpoint),
+        'checkpoint_form': form or checkpoint_form(boxoffice, checkpoint),
         'checkpoints': get_checkpoints(boxoffice, timezone.now().date()),
         'checkpoint': checkpoint,
     }
+
+def render_checkpoint(request, boxoffice, checkpoint=None, form=None):
+
+    # Render checkpoint tab content
+    context = checkpoints_context(request, boxoffice, checkpoint, form)
+    context['tab'] = 'checkpoints'
     return render(request, 'boxoffice/_main_checkpoints.html', context)
 
-def render_tickets(request, boxoffice, search_form = None, tickets=None):
+def users_context(request, boxoffice, search_form=None, email=None, user=None, badges_form=None):
 
-    # Render tickets tab content
-    context = {
+    # Get ticket info (if any)
+    performances = []
+    if email:
+
+        # Lookup tickets by customer e-mail (this is automatically set when a registered user buys
+        # tickets online so it will capture both online and box office purchases linked to the e-mail
+        # address)
+        tickets = Ticket.objects.filter(sale__festival=request.festival, sale__customer=email, sale__completed__isnull=False)
+
+        # Group tickets by performance for display
+        performances = []
+        if tickets:
+            performance = None
+            for t in tickets.order_by(Lower('performance__show__name'), 'performance__date', 'performance__time', 'id'):
+                if not performance or performance['show'] != t.performance.show.name or performance['date'] != t.performance.date or performance['time'] != t.performance.time:
+                    if performance:
+                        performances.append(performance)
+                    performance = {
+                        'show': t.performance.show.name,
+                        'date': t.performance.date,
+                        'time': t.performance.time,
+                        'tickets': []
+                    }
+                performance['tickets'].append(t)
+            performances.append(performance)
+
+    # If there is a registered user get detaiuls of badges purchased and collected
+    badges = []
+    if user:
+
+        # Purchased
+        for s in user.sales.filter(completed__isnull=False, buttons__gt=0).order_by('completed'):
+            badges.append({
+                'date': s.completed.date,
+                'location': 'Online',
+                'purchased': s.buttons,
+                'collected': 0,
+            })
+
+        # Collected
+        for bi in user.badges_issued.order_by('created'):
+            badges.append({
+                'date': s.completed.date,
+                'location': bi.boxoffice.name if bi.boxoffice else bi.venue.name,
+                'purchased': 0,
+                'collected': bi.badges,
+            })
+
+    # Create users context
+    return {
         'boxoffice': boxoffice,
-        'tab': 'tickets',
-        'ticket_search_form': search_form or create_ticket_search_form(boxoffice),
-        'tickets': tickets,
+        'search_form': search_form or user_search_form(email),
+        'user': user,
+        'badges_form': badges_form or user_badges_form(user),
+        'badges': badges,
+        'performances': performances,
     }
-    return render(request, 'boxoffice/_main_tickets.html', context)
+
+def render_users(request, boxoffice, search_form=None, email=None, user=None, badges_form=None):
+
+    # Render users tab content
+    context = users_context(request, boxoffice, search_form, email, user, badges_form)
+    context['tab'] = 'users'
+    return render(request, 'boxoffice/_main_users.html', context)
+
+def render_main(request, boxoffice, tab, sale=None):
+
+    # Create context and render main boxoffice page
+    context = sales_context(request, boxoffice, sale)
+    context.update(refunds_context(request, boxoffice))
+    context.update(checkpoints_context(request, boxoffice))
+    context.update(users_context(request, boxoffice))
+    context['tab'] = tab
+    return render(request, 'boxoffice/main.html', context)
 
 # View functions
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
@@ -527,7 +596,7 @@ def sale_start(request, boxoffice_uuid):
     logger.info(f"Sale {sale.id} started at {boxoffice.name}")
 
     # Render sales tab content
-    return render_sale(request, boxoffice, sale)
+    return render_sales(request, boxoffice, sale)
 
 @require_GET
 @login_required
@@ -545,7 +614,7 @@ def sale_show_select(request, sale_uuid):
         show = None
 
     # Render sales tab content
-    return render_sale(request, boxoffice, sale, accordion='tickets', show = show)
+    return render_sales(request, boxoffice, sale, accordion='tickets', show = show)
 
 @require_GET
 @login_required
@@ -565,7 +634,7 @@ def sale_performance_select(request, sale_uuid, show_uuid):
         performance = None
 
     # Render sales tab content
-    return render_sale(request, boxoffice, sale, accordion='tickets', show = show, performance = performance)
+    return render_sales(request, boxoffice, sale, accordion='tickets', show = show, performance = performance)
 
 @require_POST
 @login_required
@@ -581,7 +650,7 @@ def sale_tickets_add(request, sale_uuid, performance_uuid):
     performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
 
     # Process form
-    form = create_sale_tickets_form(request.festival, sale, performance, request.POST)
+    form = sale_tickets_form(request.festival, sale, performance, request.POST)
     if form.is_valid():
 
         # Check if there are sufficient tickets
@@ -613,7 +682,7 @@ def sale_tickets_add(request, sale_uuid, performance_uuid):
             form.add_error(None, f"There are only {available_tickets} tickets available for this performance.")
 
     # Render sales tab content
-    return  render_sale(request, boxoffice, sale = sale, accordion='tickets', performance = performance, tickets_form = form)
+    return  render_sales(request, boxoffice, sale = sale, accordion='tickets', performance = performance, tickets_form = form)
 
 @require_GET
 @login_required
@@ -632,7 +701,7 @@ def sale_remove_performance(request, sale_uuid, performance_uuid):
         ticket.delete()
 
     # Render updated sale
-    return render_sale(request, sale.boxoffice, sale, accordion='tickets')
+    return render_sales(request, sale.boxoffice, sale, accordion='tickets')
 
 @require_GET
 @login_required
@@ -652,7 +721,7 @@ def sale_remove_ticket(request, sale_uuid, ticket_uuid):
     ticket.delete()
 
     # Render updated sale
-    return render_sale(request, sale.boxoffice, sale, accordion='tickets')
+    return render_sales(request, sale.boxoffice, sale, accordion='tickets')
 
 @require_GET
 @login_required
@@ -670,7 +739,7 @@ def sale_show_select_payw(request, sale_uuid):
         show = None
 
     # Render sales tab content
-    return render_sale(request, boxoffice, sale, accordion='payw', show_payw = show)
+    return render_sales(request, boxoffice, sale, accordion='payw', show_payw = show)
 
 @require_POST
 @login_required
@@ -686,7 +755,7 @@ def sale_payw_add(request, sale_uuid, show_uuid):
     show = get_object_or_404(Show, uuid = show_uuid)
 
     # Process form
-    form = create_sale_payw_form(sale, show, request.POST)
+    form = sale_payw_form(sale, show, request.POST)
     if form.is_valid():
 
         # Add PAYW
@@ -704,7 +773,7 @@ def sale_payw_add(request, sale_uuid, show_uuid):
         show = None
 
     # Render sales tab content
-    return  render_sale(request, boxoffice, sale = sale, accordion='payw', show_payw = show, payw_form = form)
+    return  render_sales(request, boxoffice, sale = sale, accordion='payw', show_payw = show, payw_form = form)
 
 @require_GET
 @login_required
@@ -724,7 +793,7 @@ def sale_payw_remove(request, sale_uuid, payw_uuid):
     payw.delete()
 
     # Update sales tab content
-    return render_sale(request, sale.boxoffice, sale, accordion='payw')
+    return render_sales(request, sale.boxoffice, sale, accordion='payw')
 
 @require_POST
 @login_required
@@ -739,7 +808,7 @@ def sale_extras_update(request, sale_uuid):
     assert boxoffice
 
     # Process form
-    form = create_sale_extras_form(sale, request.POST)
+    form = sale_extras_form(sale, request.POST)
     if form.is_valid():
 
         # Update buttons
@@ -775,7 +844,7 @@ def sale_extras_update(request, sale_uuid):
         form = None
 
     # Render sales tab content
-    return  render_sale(request, boxoffice, sale = sale, accordion='extras', extras_form = form)
+    return  render_sales(request, boxoffice, sale = sale, accordion='extras', extras_form = form)
 
 @transaction.atomic
 def sale_payment(request, sale_uuid, payment_type):
@@ -787,7 +856,7 @@ def sale_payment(request, sale_uuid, payment_type):
     assert boxoffice
 
     # Process form
-    form = create_sale_form(sale, request.POST)
+    form = sale_update_form(sale, request.POST)
     if form.is_valid():
 
         # Update sale
@@ -803,7 +872,7 @@ def sale_payment(request, sale_uuid, payment_type):
         form = None
 
     # Update sales tab
-    return render_sale(request, boxoffice, sale, sale_form=form)
+    return render_sales(request, boxoffice, sale, sale_form=form)
 
 @require_POST
 @login_required
@@ -841,7 +910,7 @@ def sale_payment_cancel(request, sale_uuid):
     logger.info(f"Sale {sale.id} payment cancelled")
 
     # Update sales tab
-    return render_sale(request, boxoffice, sale)
+    return render_sales(request, boxoffice, sale)
 
 @require_GET
 @login_required
@@ -863,10 +932,10 @@ def sale_complete_cash(request, sale_uuid):
 
     # Send a receipt (if we have an e-mail address)
     if sale.customer:
-        email_receipt(sale, sale.customer)
+        send_email_receipt(sale, sale.customer)
 
     # Update sales tab
-    return render_sale(request, boxoffice, None)
+    return render_sales(request, boxoffice, None)
 
 @require_POST
 @login_required
@@ -881,7 +950,7 @@ def sale_complete_zero(request, sale_uuid):
     assert boxoffice
 
     # Process form
-    form = create_sale_form(sale, request.POST)
+    form = sale_update_form(sale, request.POST)
     if form.is_valid():
 
         # Complete sale
@@ -896,7 +965,7 @@ def sale_complete_zero(request, sale_uuid):
         form = None
 
     # Update sales tab
-    return render_sale(request, boxoffice, sale, sale_form=form)
+    return render_sales(request, boxoffice, sale, sale_form=form)
 
 @require_GET
 @login_required
@@ -922,7 +991,7 @@ def sale_cancel(request, sale_uuid):
         messages.warning(request, 'Sale cancelled')
 
     # Update sales tab
-    return render_sale(request, boxoffice, None)
+    return render_sales(request, boxoffice, None)
 
 @require_GET
 @login_required
@@ -937,7 +1006,7 @@ def sale_select(request, sale_uuid):
     assert boxoffice
 
     # Update sales tab
-    return render_sale(request, boxoffice, sale)
+    return render_sales(request, boxoffice, sale)
 
 @require_POST
 @login_required
@@ -952,7 +1021,7 @@ def sale_update(request, sale_uuid):
     assert boxoffice
 
     # Process form
-    form = create_sale_form(sale, request.POST)
+    form = sale_update_form(sale, request.POST)
     if form.is_valid():
 
         # Update sale
@@ -964,13 +1033,13 @@ def sale_update(request, sale_uuid):
 
         # If e-mail address was changed send a new receipt
         if 'email' in form.changed_data:
-            email_receipt(sale, sale.customer)
+            send_email_receipt(sale, sale.customer)
 
         # Clear form
         form = None
 
     # Update sales tab
-    return render_sale(request, boxoffice, sale, sale_form=form)
+    return render_sales(request, boxoffice, sale, sale_form=form)
 
 @require_GET
 @login_required
@@ -985,7 +1054,7 @@ def sale_close(request, sale_uuid):
     assert boxoffice
 
     # Update sales tab
-    return render_sale(request, boxoffice, None)
+    return render_sales(request, boxoffice, None)
 
 @require_POST
 @login_required
@@ -1000,11 +1069,11 @@ def sale_email(request, sale_uuid):
     assert boxoffice
 
     # Process form
-    form = create_sale_email_form(sale, request.POST)
+    form = sale_email_form(sale, request.POST)
     if form.is_valid():
 
         # Send e-mail receipt
-        email_receipt(sale, form.cleaned_data['email'])
+        send_email_receipt(sale, form.cleaned_data['email'])
         return HttpResponse('<div id=sale-email-status" class="alert alert-success">e-mail sent.</div>')
 
     # Form has errors
@@ -1018,7 +1087,7 @@ def sale_email(request, sale_uuid):
 def refund_start(request, boxoffice_uuid):
     boxoffice = get_object_or_404(BoxOffice, uuid = boxoffice_uuid)
     refund = None
-    form = create_refund_start_form(request.POST)
+    form = refund_start_form(request.POST)
     if form.is_valid():
 
         # Create new refund
@@ -1036,7 +1105,7 @@ def refund_start(request, boxoffice_uuid):
         logger.info(f"Refund {refund.id} ({refund.customer}) started at {boxoffice.name}")
 
     # Render refunds tab content
-    return render_refund(request, boxoffice, refund, start_form = form)
+    return render_refunds(request, boxoffice, refund, start_form = form)
 
 @require_GET
 @login_required
@@ -1054,7 +1123,7 @@ def refund_show_select(request, refund_uuid):
         show = None
 
     # Render refunds tab content
-    return render_refund(request, boxoffice, refund, show = show)
+    return render_refunds(request, boxoffice, refund, show = show)
 
 @require_GET
 @login_required
@@ -1074,7 +1143,7 @@ def refund_performance_select(request, refund_uuid, show_uuid):
         performance = None
 
     # Render refunds tab content
-    return render_refund(request, boxoffice, refund, show = show, performance = performance)
+    return render_refunds(request, boxoffice, refund, show = show, performance = performance)
 
 @require_GET
 @login_required
@@ -1090,7 +1159,7 @@ def refund_add_ticket(request, refund_uuid, ticket_uuid):
     ticket.save()
     if refund.completed:
         logger.warning(f"Completed refund {refund.id} updated")
-    return render_refund(request, refund.boxoffice, refund, show = ticket.performance.show, performance = ticket.performance)
+    return render_refunds(request, refund.boxoffice, refund, show = ticket.performance.show, performance = ticket.performance)
 
 @require_GET
 @login_required
@@ -1106,7 +1175,7 @@ def refund_remove_ticket(request, refund_uuid, ticket_uuid):
     ticket.save()
     if refund.completed:
         logger.warning(f"Completed refund {refund.id} updated")
-    return render_refund(request, refund.boxoffice, refund, show = performance.show, performance = performance)
+    return render_refunds(request, refund.boxoffice, refund, show = performance.show, performance = performance)
 
 @require_GET
 @login_required
@@ -1121,7 +1190,7 @@ def refund_complete(request, refund_uuid):
         refund.completed = timezone.now()
         refund.save()
         logger.info(f"Refund {refund.id} completed")
-    return render_refund(request, refund.boxoffice, refund)
+    return render_refunds(request, refund.boxoffice, refund)
 
 @require_GET
 @login_required
@@ -1136,7 +1205,7 @@ def refund_cancel(request, refund_uuid):
         logger.info(f"Refund {refund.id} cancelled")
         refund.delete()
         refund = None
-    return render_refund(request, boxoffice, None)
+    return render_refunds(request, boxoffice, None)
 
 @require_GET
 @login_required
@@ -1144,7 +1213,7 @@ def refund_cancel(request, refund_uuid):
 @transaction.atomic
 def refund_close(request, refund_uuid):
     refund = get_object_or_404(Refund, uuid = refund_uuid)
-    return render_refund(request, refund.boxoffice, None)
+    return render_refunds(request, refund.boxoffice, None)
 
 @require_GET
 @login_required
@@ -1152,7 +1221,7 @@ def refund_close(request, refund_uuid):
 @transaction.atomic
 def refund_select(request, refund_uuid):
     refund = get_object_or_404(Refund, uuid = refund_uuid)
-    return render_refund(request, refund.boxoffice, refund)
+    return render_refunds(request, refund.boxoffice, refund)
 
 # Checkpoints
 @require_POST
@@ -1165,7 +1234,7 @@ def checkpoint_add(request, boxoffice_uuid):
     boxoffice = get_object_or_404(BoxOffice, uuid = boxoffice_uuid)
 
     # Create form and validate
-    form = create_checkpoint_form(boxoffice, None, request.POST)
+    form = checkpoint_form(boxoffice, None, request.POST)
     if form.is_valid():
 
         # Add checkpoint
@@ -1216,7 +1285,7 @@ def checkpoint_update(request, checkpoint_uuid):
     assert boxoffice
 
     # Process form
-    form = create_checkpoint_form(boxoffice, checkpoint, request.POST)
+    form = checkpoint_form(boxoffice, checkpoint, request.POST)
     if form.is_valid():
 
         # Update checkpoint and clear
@@ -1248,26 +1317,50 @@ def checkpoint_cancel(request, checkpoint_uuid):
 @require_POST
 @login_required
 @user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
-def tickets_search(request, boxoffice_uuid):
+def users_search(request, boxoffice_uuid):
 
     # Get box office
     boxoffice = get_object_or_404(BoxOffice, uuid = boxoffice_uuid)
 
-    # Find tickets
-    tickets = None
-    form = create_ticket_search_form(boxoffice, request.POST)
+    # Get form and check for errors
+    email = None
+    user = None
+    form = user_search_form(None, request.POST)
     if form.is_valid():
 
-        # Get confirmed tickets
-        tickets = Ticket.objects.filter(sale__festival=boxoffice.festival, sale__completed__isnull=False)
-
-        # Filter by customer e-mail
+        # Get e-mail address and lookup registered user (if any)
         email = form.cleaned_data['email']
-        if email:
-            tickets = tickets.filter(sale__customer__iexact=email)
+        user = User.objects.get(festival=request.festival, email=email)
 
-        # Sort by show, performnce and ticket ID
-        tickets = tickets.order_by(Lower('performance__show__name'), 'performance__date', 'performance__time', 'id')[:50]
+    # Render user tab content
+    return render_users(request, boxoffice, form, email, user, None)
 
-    # Render checkpoint tab content
-    return render_tickets(request, boxoffice, form, tickets)
+@require_POST
+@login_required
+@user_passes_test(lambda u: u.is_boxoffice or u.is_admin)
+def users_badges_issued(request, boxoffice_uuid, user_uuid):
+
+    # Get box office and user
+    boxoffice = get_object_or_404(BoxOffice, uuid = boxoffice_uuid)
+    user = get_object_or_404(User, uuid = user_uuid)
+
+    # Get form and check for errors
+    form = user_badges_form(user, request.POST)
+    if form.is_valid():
+
+        # Get badges issued and record them
+        issued = form.cleaned_data['issued']
+        if issued > 0:
+            badges_issued = BadgesIssued(
+                user = user,
+                boxoffice = boxoffice,
+                badges = issued
+            )
+            badges_issued.save()
+            logger.info(f"{issued} badges issued to {user.email} at {boxoffice.name}")
+
+        # Reset form
+        form = None
+
+    # Render user tab content
+    return render_users(request, boxoffice, None, user.email, user, form)

@@ -146,9 +146,14 @@ class User(TimeStampedModel, AbstractBaseUser, PermissionsMixin):
         return self.is_system_admin
 
     @property
-    def buttons_purchased(self):
-        return sum(s.buttons for s in self.sales.filter(completed__isnull=True))
+    def badges_purchased(self):
+        return sum(s.buttons for s in self.sales.filter(completed__isnull=False))
 
+    @property
+    def badges_to_collect(self):
+        issued = sum(bi.badges for bi in self.badges_issued.all())
+        return self.badges_purchased - issued
+    
     def get_full_name(self):
         return f'{self.first_name} {self.last_name}'
 

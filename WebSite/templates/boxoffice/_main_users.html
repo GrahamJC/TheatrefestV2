@@ -1,0 +1,94 @@
+{% load crispy_forms_tags %}
+
+{% if tab == 'tickets' %}
+    {% for msg in messages %}
+        <div class="{{ msg.tags }} alert-dismissible" role="alert">
+            {{ msg }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        </div>
+    {% endfor %}
+{% endif %}
+
+<div class="row" hx-target="#users-tab-content">
+
+    <div class="col-12">
+
+        <div class="card">
+            <h6 class="card-header">Lookup</h6>
+            <div class="card-body">
+                {% crispy search_form %}
+                <button class="btn btn-primary" hx-post="{% url 'boxoffice:users_search' boxoffice.uuid %}" hx-include="#search-form">Search</button>
+            </div>
+        </div>
+
+        {% if user %}
+            <div class="card mt-5">
+                <h6 class="card-header">Online Badges to be Collected: {{user.badges_to_collect}}</h6>
+                <div class="card-body">
+                    {% crispy badges_form %}
+                    <button class="btn btn-primary" hx-post="{% url 'boxoffice:users_badges_issued' boxoffice.uuid user.uuid %}" hx-include="#badges-form">Issue Badges</button>
+                    <div class="text-right"><a href="#badge-details" data-toggle="collapse">Show Purchased and Collected</a></div>
+                    <div id="badge-details" class="collapse">
+                        <table class="table table-striped mt-3">
+                            <thead>
+                                <tr>
+                                    <th class="w-25">Date</th>
+                                    <th class="w-25">Location</th>
+                                    <th class="w-25">Purchased</th>
+                                    <th class="w-25">Collected</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for badge in badges %}
+                                <tr>
+                                    <td>{{ badge.date | date:'D, M j' }}</td>
+                                    <td>{{ badge.location }}</td>
+                                    <td>{{ badge.purchased }}</td>
+                                    <td>{{ badge.collected }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="card mt-5">
+            <h6 class="card-header">Tickets</h6>
+            <div class="card-body">
+                {% if performances %}
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th class="w-50">Show</th>
+                                <th class="w-25">Performance</th>
+                                <th class="w-25">Tickets</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for performance in performances %}
+                                <tr>
+                                    <td>{{ performance.show }}</td>
+                                    <td>{{ performance.date | date:'D' }} at {{ performance.time | time:'H:i'}}</td>
+                                    <td>
+                                        <a href="#performance-tickets-{{ forloop.counter  }}" data-toggle="collapse">{{ performance.tickets | length }}</a><br/>
+                                        <div id="performance-tickets-{{ forloop.counter  }}" class="collapse">
+                                            {% for ticket in performance.tickets %}
+                                                {{ ticket.id}}: {{ ticket.description }}<br/>
+                                            {% endfor %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>No tickets found</p>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+</div>

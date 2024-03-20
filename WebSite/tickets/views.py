@@ -863,7 +863,7 @@ def checkout_stripe(request):
     # Use a transaction to protect the conversion of basket to sale and creation of Stripe session
     with transaction.atomic():
 
-        # Move tickets and fringers from basket to sale
+        # Create sale and move tickets and fringers from basket to sale
         sale = Sale(
             festival = request.festival,
             user = request.user,
@@ -884,7 +884,7 @@ def checkout_stripe(request):
             fringer.sale = sale
             fringer.save()
             logger.info(f"eFringer {fringer.name} added to sale {sale.id}")
-        sale.button = basket.buttons
+        sale.buttons = basket.buttons
         sale.save()
         basket.buttons = 0
         basket.save()

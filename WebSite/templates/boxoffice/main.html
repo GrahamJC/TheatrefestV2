@@ -14,7 +14,7 @@
             <a id="refunds-tab" class="nav-item nav-link {% if tab == 'refunds' %}active{% endif %}" href="#refunds-tab-content" data-toggle="tab">Refunds</a>
         {% endif %}
         <a id="checkpoints-tab" class="nav-item nav-link {% if tab == 'checkpoints' %}active{% endif %}" href="#checkpoints-tab-content" data-toggle="tab">Checkpoints</a>
-        <a id="tickets-tab" class="nav-item nav-link {% if tab == 'tickets' %}active{% endif %}" href="#tickets-tab-content" data-toggle="tab">Tickets</a>
+        <a id="users-tab" class="nav-item nav-link {% if tab == 'users' %}active{% endif %}" href="#users-tab-content" data-toggle="tab">Users</a>
     </div>
 
     <div class="tab-content">
@@ -45,8 +45,8 @@
             {% include 'boxoffice/_main_checkpoints.html' %}
         </div>
 
-        <div id="tickets-tab-content" class="tab-pane {% if tab == 'tickets' %}active{% endif %}">
-            {% include 'boxoffice/_main_tickets.html' %}
+        <div id="users-tab-content" class="tab-pane {% if tab == 'users' %}active{% endif %}">
+            {% include 'boxoffice/_main_users.html' %}
         </div>
     
     </div>

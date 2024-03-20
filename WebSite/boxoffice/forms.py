@@ -97,6 +97,24 @@ class CheckpointForm(forms.Form):
             self.fields['fringers'].disabled = True
 
 
-class TicketSearchForm(forms.Form):
+class UserSearchForm(forms.Form):
 
     email = forms.EmailField(label='e-mail', required=True, widget = forms.TextInput(attrs = { 'style': 'width: 100%' }))
+
+    def __init__(self, email, *args, **kwargs):
+        if email:
+            kwargs['initial'] = {
+                'email': email,
+            }
+        super().__init__(*args, **kwargs)
+
+
+class UserBadgesForm(forms.Form):
+
+    issued = forms.IntegerField(label='Badges collected today', required=True, widget = forms.NumberInput(attrs = { 'style': 'width: 75px' }))
+
+    def __init__(self, user, *args, **kwargs):
+        kwargs['initial'] = {
+            'issued': user.badges_to_collect,
+        }
+        super().__init__(*args, **kwargs)

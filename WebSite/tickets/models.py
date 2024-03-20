@@ -448,3 +448,11 @@ class Bucket(TimeStampedModel):
     description = models.CharField(max_length = 32)
     cash = models.DecimalField(max_digits = 5, decimal_places = 2)
     fringers = models.IntegerField()
+
+
+class BadgesIssued(TimeStampedModel):
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete = models.PROTECT, related_name = 'badges_issued')
+    boxoffice = models.ForeignKey(BoxOffice, null = True, blank = True, on_delete = models.PROTECT, related_name = 'badges_issued')
+    venue = models.ForeignKey(Venue, null = True, blank = True, on_delete = models.PROTECT, related_name = 'badges_issued')
+    badges = models.IntegerField()
