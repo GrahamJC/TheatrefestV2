@@ -511,7 +511,7 @@ def users_context(request, boxoffice, search_form=None, email=None, user=None, b
     return {
         'boxoffice': boxoffice,
         'search_form': search_form or user_search_form(email),
-        'user': user,
+        'search_user': user,
         'badges_form': badges_form or user_badges_form(user),
         'badges': badges,
         'performances': performances,
@@ -1348,9 +1348,11 @@ def users_badges_issued(request, boxoffice_uuid, user_uuid):
     form = user_badges_form(user, request.POST)
     if form.is_valid():
 
-        # Get badges issued and record them
+        # Check badges issued
         issued = form.cleaned_data['issued']
-        if issued > 0:
+        if (issued > 0) and (issued <= user.badges_to_collect):
+
+            # Record details
             badges_issued = BadgesIssued(
                 user = user,
                 boxoffice = boxoffice,
@@ -1359,8 +1361,11 @@ def users_badges_issued(request, boxoffice_uuid, user_uuid):
             badges_issued.save()
             logger.info(f"{issued} badges issued to {user.email} at {boxoffice.name}")
 
-        # Reset form
-        form = None
+            # Reset form
+            form = None
+
+        else:
+            form.add_error('issued', f'Enter the number of badges issued (between 0 and {user.badges_to_collect})')
 
     # Render user tab content
     return render_users(request, boxoffice, None, user.email, user, form)

@@ -10,8 +10,8 @@
 <div class="card" hx-target="#tickets-tab-content">
 
     <div class="card-header">
-        <button class="btn btn-primary float-right" hx-get="{% url 'venue:tickets' performance.uuid 'html' %}">Refresh</button>
-        <a class="btn btn-primary float-right mr-2" href="{% url 'venue:tickets' performance.uuid 'pdf' %}" target="_blank">Print</a>
+        <button class="btn btn-primary float-right" hx-get="{% url 'venue:tickets_refresh' performance.uuid %}">Refresh</button>
+        <a class="btn btn-primary float-right mr-2" href="{% url 'venue:tickets_print' performance.uuid %}" target="_blank">Print</a>
         <h4>Tickets</h4>
     </div>
 
@@ -20,19 +20,21 @@
         <h5>Box Office and Online Sales</h5>
         <table class="table table-sm">
             <tr>
-                <th>Number</th>
+                <th class="d-none d-md-table-cell">Number</th>
                 <th>Customer</th>
-                <th>Type</th>
-                <th>Sale</th>
+                <th class="d-none d-md-table-cell">Type</th>
+                <th class="d-none d-md-table-cell">Sale</th>
                 <th>Token</th>
+                <th>Badges</th>
             </tr>
             {% for ticket in non_venue_tickets %}
                 <tr>
-                    <td>{{ ticket.id }}</td>
+                    <td class="d-none d-md-table-cell">{{ ticket.id }}</td>
                     <td>{% if ticket.user %} {{ ticket.user.username }} {%else%} {{ ticket.sale.customer }} {% endif %}</td>
-                    <td>{{ ticket.description }}</td>
-                    <td>{% if ticket.sale.boxoffice %}Box Office{% else %}Online{% endif %}</td>
-                    <td><input id="token-{{ ticket.uuid }}" type="checkbox" name="Issued" hx-get="{% url 'venue:ticket_token' ticket.uuid %}" hx-target="this" hx-swap="OuterHTML" {% if ticket.token_issued %}checked{% endif %}/></td>
+                    <td class="d-none d-md-table-cell">{{ ticket.description }}</td>
+                    <td class="d-none d-md-table-cell">{% if ticket.sale.boxoffice %}Box Office{% else %}Online{% endif %}</td>
+                    <td><input id="token-{{ ticket.uuid }}" type="checkbox" name="Issued" hx-get="{% url 'venue:tickets_token' performance.uuid ticket.uuid %}" hx-target="this" hx-swap="outerHTML" {% if ticket.token_issued %}checked{% endif %}/></td>
+                    <td>{% if ticket.user.badges_to_collect %}<a class="badges-{{ ticket.user.uuid }}" href="#responsive" onclick="show_badges_modal('{{ticket.user.uuid}}', {{ticket.user.badges_to_collect}})">{{ ticket.user.badges_to_collect }}</a>{% endif %}</td>
                 </tr>
             {% endfor %}
         </table>
@@ -40,19 +42,19 @@
         <h5>Venue Sales</h5>
         <table class="table table-sm">
             <tr>
-                <th>Number</th>
+                <th class="d-none d-md-table-cell">Number</th>
                 <th>Customer</th>
-                <th>Type</th>
-                <th>Sale</th>
+                <th class="d-none d-md-table-cell">Type</th>
+                <th class="d-none d-md-table-cell">Sale</th>
                 <th>Token</th>
             </tr>
             {% for ticket in venue_tickets %}
                 <tr>
-                    <td>{{ ticket.id }}</td>
+                    <td class="d-none d-md-table-cell">{{ ticket.id }}</td>
                     <td>{% if ticket.user %} {{ ticket.user.username }} {%else%} {{ ticket.sale.customer }} {% endif %}</td>
-                    <td>{{ ticket.description }}</td>
-                    <td>Venue</td>
-                    <td><input id="token-{{ ticket.uuid }}" type="checkbox" name="Issued" hx-get="{% url 'venue:ticket_token' ticket.uuid %}" hx-target="this" hx-swap="OuterHTML" {% if ticket.token_issued %}checked{% endif %}/></td>
+                    <td class="d-none d-md-table-cell">{{ ticket.description }}</td>
+                    <td class="d-none d-md-table-cell">Venue</td>
+                    <td><input id="token-{{ ticket.uuid }}" type="checkbox" name="Issued" hx-get="{% url 'venue:tickets_token' performance.uuid ticket.uuid %}" hx-target="none" {% if ticket.token_issued %}checked{% endif %}/></td>
                 </tr>
             {% endfor %}
         </table>
@@ -61,17 +63,17 @@
             <h5>Cancelled/Refunded Tickets</h5>
             <table class="table table-sm">
                 <tr>
-                    <th>Number</th>
+                    <th class="d-none d-md-table-cell">Number</th>
                     <th>Customer</th>
-                    <th>Type</th>
-                    <th>Sale</th>
+                    <th class="d-none d-md-table-cell">Type</th>
+                    <th class="d-none d-md-table-cell">Sale</th>
                 </tr>
                 {% for ticket in cancelled_tickets %}
                     <tr>
-                        <td>{{ ticket.id }}</td>
+                        <td class="d-none d-md-table-cell">{{ ticket.id }}</td>
                         <td>{% if ticket.user %} {{ ticket.user.username }} {% else %} {{ ticket.sale.customer }} {% endif %}</td>
-                        <td>{{ ticket.description }}</td>
-                        <td>{% if ticket.sale.boxoffice %}Box Office{% else %}Online{% endif %}</td>
+                        <td class="d-none d-md-table-cell">{{ ticket.description }}</td>
+                        <td class="d-none d-md-table-cell">{% if ticket.sale.boxoffice %}Box Office{% else %}Online{% endif %}</td>
                     </tr>
                 {% endfor %}
             </table>
@@ -80,3 +82,47 @@
     </div>
 
 </div>
+
+<div id="badges-modal" class="modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Issue Badges</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <form id="badges-form">
+                    <input id="badges-user-uuid" type="hidden" name="user-uuid"/>
+                    <p>Number of badges issued</p>
+                    <div id="badges-issued" class="form-group">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button id="badges-confirm" type="button" class="btn btn-primary" hx-post="{% url 'venue:tickets_badges' performance.uuid %}" hx-swap="none" hx-include="#badges-form" hx-on:htmx:before-request="$('#badges-modal').modal('hide')">Confirm</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script lang="JavaScript">
+    
+    function show_badges_modal(user_uuid, max_badges) {
+        $('#badges-user-uuid').val(user_uuid);
+        badges_issued = $('#badges-issued')
+        badges_issued.empty()
+        html = ''
+        for (i = 1; i <= max_badges; ++i) {
+            html +=
+                '<div class="form-check form-check-inline">\n' +
+                    '<input id="badges-issued-' + i + '" class="form-check-input" type="radio" name="issued" value="' + i + '"' + (i == max_badges ? ' checked' : '') + '>\n' +
+                    '<label class="form-check-label" for="badges-issued-' + i +'">' + i + '</label>\n' +
+                '</div>\n';
+        } 
+        badges_issued.html(html);
+        $('#badges-modal').modal('show');
+    }
+
+</script>

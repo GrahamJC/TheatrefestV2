@@ -21,12 +21,12 @@
             </div>
         </div>
 
-        {% if user %}
+        {% if search_user %}
             <div class="card mt-5">
-                <h6 class="card-header">Online Badges to be Collected: {{user.badges_to_collect}}</h6>
+                <h6 class="card-header">Online Badges to be Collected: {{search_user.badges_to_collect}}</h6>
                 <div class="card-body">
                     {% crispy badges_form %}
-                    <button class="btn btn-primary" hx-post="{% url 'boxoffice:users_badges_issued' boxoffice.uuid user.uuid %}" hx-include="#badges-form">Issue Badges</button>
+                    <button class="btn btn-primary" hx-post="{% url 'boxoffice:users_badges_issued' boxoffice.uuid search_user.uuid %}" hx-include="#badges-form">Issue Badges</button>
                     <div class="text-right"><a href="#badge-details" data-toggle="collapse">Show Purchased and Collected</a></div>
                     <div id="badge-details" class="collapse">
                         <table class="table table-striped mt-3">

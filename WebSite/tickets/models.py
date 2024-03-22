@@ -229,9 +229,13 @@ class Basket(TimeStampedModel):
         return self.fringer_count > 0
 
     @property
-    def total_count(self):
-        return self.ticket_count + self.fringer_count
+    def has_buttons(self):
+        return self.buttons > 0
 
+    @property
+    def total_count(self):
+        return self.ticket_count + self.fringer_count + self.buttons
+    
     @property
     def is_empty(self):
         return self.total_count == 0

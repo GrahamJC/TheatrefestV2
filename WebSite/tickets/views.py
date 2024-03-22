@@ -389,7 +389,7 @@ def buy_tickets_add(request, performance_uuid):
                     messages.success(request, f"{quantity} x {ticket_type.name} tickets added to basket.")
 
             # Confirm purchase
-            return HttpResponseClientRedirect(reverse('tickets:buy_tickets_confirm', args = [performance.uuid]))
+            return HttpResponseClientRedirect(reverse('tickets:buy_tickets_add_confirm', args = [performance.uuid]))
 
         # Insufficient tickets available
         else:
@@ -737,10 +737,17 @@ def checkout_buttons_add(request):
     # Check for errors
     if form.is_valid():
 
-        # Add buttons to basket and proceed to payment
-        basket.buttons = form.cleaned_data['buttons']
-        basket.save()
-        return render_checkout_pay(request, basket)
+        # Check number of badges
+        badges = form.cleaned_data['buttons']
+        if (badges > 0):
+
+            # Add buttons to basket and proceed to payment
+            basket.buttons = badges
+            basket.save()
+            return render_checkout_pay(request, basket)
+
+        else:
+            form.add_error('buttons', 'Must be greater than zero')
 
     # Re-display buttons form with errors
     return render_checkout_buttons(request, form)
@@ -772,10 +779,19 @@ def checkout_buttons_update(request):
     # Check for errors
     if form.is_valid():
 
-        # Update buttons 
-        basket.buttons = form.cleaned_data['buttons']
-        basket.save()
-        form = None
+        # Check number of badges
+        badges = form.cleaned_data['buttons']
+        if (badges >= 0):
+
+            # Update num,ber of badges in sale
+            basket.buttons = badges
+            basket.save()
+
+            #Reset form
+            form = None
+
+        else:
+            form.add_error('buttons', 'Must be zero or more')
 
     # Re-display buttons form with errors
     return render_checkout_pay(request, basket, form)

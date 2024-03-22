@@ -26,8 +26,10 @@ urlpatterns = [
     path('performance/<uuid:performance_uuid>/sale/<uuid:sale_uuid>/cancel', views.sale_cancel, name = 'sale_cancel'),
     path('performance/<uuid:performance_uuid>/sale/<uuid:sale_uuid>/update', views.sale_update, name = 'sale_update'),
     # Tickets API
-    path('performance/<uuid:performance_uuid>/tickets/<str:format>', views.tickets, name = 'tickets'),
-    path('ticket/<uuid:ticket_uuid>/token', views.ticket_token, name = 'ticket_token'),
+    path('performance/<uuid:performance_uuid>/tickets/refresh', views.tickets_refresh, name = 'tickets_refresh'),
+    path('performance/<uuid:performance_uuid>/ticket/<uuid:ticket_uuid>/token', views.tickets_token, name = 'tickets_token'),
+    path('performance/<uuid:performance_uuid>/badges', views.tickets_badges, name = 'tickets_badges'),
+    path('performance/<uuid:performance_uuid>/tickets/print', views.tickets_print, name = 'tickets_print'),
     # Info API
     path('performance/<uuid:performance_uuid>/info', views.performance_info, name = 'performance_info'),
     # Square callback

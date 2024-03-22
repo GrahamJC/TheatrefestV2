@@ -13,6 +13,7 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
 from django.views import View
 from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.csrf import csrf_exempt
 from django.forms import formset_factory, modelformset_factory
 from django.utils import timezone
 
@@ -33,8 +34,8 @@ from reportlab.lib import colors
 
 from core.models import User
 from program.models import Show, ShowPerformance, Venue
-from tickets.models import Sale, TicketType, Ticket, FringerType,  Fringer, Checkpoint
-from .forms import OpenCheckpointForm, SaleItemsForm, SaleForm, CloseCheckpointForm
+from tickets.models import Sale, TicketType, Ticket, FringerType,  Fringer, Checkpoint, BadgesIssued
+from .forms import OpenCheckpointForm, SaleItemsForm, SaleUpdateForm, CloseCheckpointForm
 
 # Logging
 import logging
@@ -119,7 +120,19 @@ def is_next(performance):
     return performance == performance.venue.get_next_performance(performance.date)
 
 
-def create_open_form(performance, post_data = None):
+# Select venue
+@require_GET
+@user_passes_test(lambda u: u.is_venue or u.is_admin)
+@login_required
+def select(request):
+    context = {
+        'venues': Venue.objects.filter(festival=request.festival, is_ticketed=True),
+    }
+    return render(request, 'venue/select.html', context)
+
+
+# Main page - open tab
+def open_form(performance, post_data = None):
 
     # Validate parameters
     assert performance
@@ -142,34 +155,92 @@ def create_open_form(performance, post_data = None):
     # Return form
     return form
 
-
-def create_close_form(performance, post_data = None):
+def open_context(request, venue, performance, form=None):
 
     # Validate parameters
     assert performance
-    assert performance.has_open_checkpoint
 
-    # Create form
-    checkpoint = performance.close_checkpoint if performance.has_close_checkpoint else None
-    form = CloseCheckpointForm(checkpoint, data = post_data)
+    # Create context
+    return {
+        'venue': venue,
+        'performance': performance,
+        'open_form': form or open_form(performance),
+    }
 
-    # Add crispy form helper
-    form.helper = FormHelper()
-    form.helper.form_id = 'close-form'
-    form.helper.layout = Layout(
-        Row(
-            Column('buttons', css_class='form-group col-md-4 mb-0'),
-            Column('fringers', css_class='form-group col-md-4 mb-0'),
-            Column('audience', css_class='form-group col-md-4 mb-0'),
-        ),
-        Field('notes'),
-    )
+def render_open(request, venue, performance, form=None):
 
-    # Return form
-    return form
+    # Validate parameters
+    assert performance
 
+    # Create context and render open tab content
+    context = open_context(request, venue, performance, form)
+    context['tab'] = 'open'
+    return render(request, "venue/_main_open.html", context)
 
-def create_sale_items_form(performance, sale, post_data = None):
+@require_POST
+@login_required
+@user_passes_test(lambda u: u.is_venue or u.is_admin)
+@transaction.atomic
+def performance_open(request, performance_uuid):
+
+    # Get performance and venue
+    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+    assert not performance.has_open_checkpoint
+    assert not performance.has_close_checkpoint
+    venue = performance.venue
+
+    # Process open form
+    form = open_form(performance, request.POST)
+    if form.is_valid():
+
+        # Create open checkpoint
+        checkpoint = Checkpoint(
+            user = request.user,
+            venue = venue,
+            open_performance = performance,
+            cash = 0,
+            buttons = form.cleaned_data['buttons'],
+            fringers = form.cleaned_data['fringers'],
+            notes = form.cleaned_data['notes'],
+        )
+        checkpoint.save()
+        logger.info(f"Open checkpoint created at {venue.name} for {performance.show.name} on {performance.date} at {performance.time}")
+        messages.success(request, 'Performance opened')
+        return HttpResponseClientRedirect(reverse('venue:main_performance', args=[venue.uuid, performance.uuid]))
+    
+    # Form has errors
+    return render_open(request, venue, performance, form)
+
+@require_POST
+@login_required
+@user_passes_test(lambda u: u.is_venue or u.is_admin)
+@transaction.atomic
+def checkpoint_update_open(request, checkpoint_uuid):
+
+    # Get checkpoint, venue and performance
+    checkpoint = get_object_or_404(Checkpoint, uuid = checkpoint_uuid)
+    venue = checkpoint.venue
+    assert venue
+    performance = checkpoint.open_performance
+    assert performance
+    assert performance.venue == venue
+
+    # Process checkpoint form
+    form = open_form(performance, request.POST)
+    if form.is_valid():
+
+        # Update checkpoint
+        checkpoint.notes = form.cleaned_data['notes']
+        checkpoint.save()
+        logger.info(f"Open checkpoint updated at {venue.name} for {performance.show.name} on {performance.date} at {performance.time}")
+        messages.success(request, "Checkpoint updated")
+        form = None
+
+    # Render page
+    return render_open(request, venue, performance, form)
+
+# Main page - sales tab
+def sale_items_form(performance, sale, post_data = None):
 
     # Validate parameters
     assert performance
@@ -216,8 +287,7 @@ def create_sale_items_form(performance, sale, post_data = None):
     # Return form
     return form
 
-
-def create_sale_form(sale, post_data=None):
+def sale_update_form(sale, post_data=None):
 
     # Validate parameters
     assert sale
@@ -227,7 +297,7 @@ def create_sale_form(sale, post_data=None):
     if sale.is_in_progress or sale.is_complete:
 
         # Create the form
-        form = SaleForm(sale, data = post_data)
+        form = SaleUpdateForm(sale, data = post_data)
 
         # Add crispy form helper
         form.helper = FormHelper()
@@ -239,59 +309,7 @@ def create_sale_form(sale, post_data=None):
     # Return form
     return form
 
-
-def render_main(request, venue, performance, sale=None, tab=None):
-
-    # Validate parameters
-    assert venue
-
-    # Get sales for current performance
-    sales = None
-    if performance:
-        if performance.has_close_checkpoint:
-            sales = venue.sales.filter(created__gte=performance.open_checkpoint.created, created__lte=performance.close_checkpoint.created, completed__isnull=False).order_by('-id')
-        elif performance.has_open_checkpoint:
-            sales = venue.sales.filter(created__gte=performance.open_checkpoint.created, completed__isnull=False).order_by('-id')
-        else:
-            sales = Sale.objects.none()
-
-    # Render page
-    context = {
-        'venue': venue,
-        'tab': tab or 'sales' if performance and performance.has_open_checkpoint else 'open',
-        'show': performance.show if performance else None,
-        'performances': ShowPerformance.objects.filter(date = request.now.date(), venue = venue, show__is_cancelled = False).order_by('time'),
-        'next_performance': venue.get_next_performance(),
-        'performance': performance,
-        'sales': sales,
-        'sale': sale,
-        'open_form': create_open_form(performance) if performance and (is_next(performance) or performance.has_open_checkpoint) else None,
-        'sale_items_form': create_sale_items_form(performance, sale) if sale else None,
-        'sale_form': create_sale_form(sale) if sale else None,
-        'close_form': create_close_form(performance) if (performance and performance.has_open_checkpoint and (is_next(performance) or performance.has_close_checkpoint)) else None,
-        'tickets': performance.tickets.order_by('id') if performance else None,
-        'available': performance.tickets_available() + (sale.tickets.count() if sale else 0) if performance else 0,
-        'square_intent': get_square_intent(request, venue, performance, sale),
-    }
-    return render(request, 'venue/main.html', context)
-
-
-def render_open(request, venue, performance, form=None):
-
-    # Validate parameters
-    assert performance
-
-    # Render open tab content
-    context = {
-        'venue': venue,
-        'performance': performance,
-        'tab': 'open',
-        'open_form': form or create_open_form(performance),
-    }
-    return render(request, "venue/_main_open.html", context)
-
-
-def render_sales(request, performance, sale, items_form=None, sale_form=None):
+def sales_context(request, performance, sale, items_form=None, update_form=None):
 
     # Validate parameters
     assert performance
@@ -305,274 +323,26 @@ def render_sales(request, performance, sale, items_form=None, sale_form=None):
     elif performance.has_open_checkpoint:
         sales = venue.sales.filter(created__gte=performance.open_checkpoint.created, completed__isnull=False).order_by('-id')
 
-    # Render sales tab content
-    context = {
+    # Create context
+    return {
         'venue': venue,
         'performance': performance,
         'tab': 'sales',
         'sales': sales,
         'sale': sale,
-        'sale_items_form': items_form or create_sale_items_form(performance, sale) if sale else None,
-        'sale_form': sale_form or create_sale_form(sale) if sale else None,
+        'sale_items_form': items_form or sale_items_form(performance, sale) if sale else None,
+        'sale_form': update_form or sale_update_form(sale) if sale else None,
         'available': performance.tickets_available() + (sale.tickets.count() if sale else 0),
         'square_intent': get_square_intent(request, venue, performance, sale),
     }
+
+def render_sales(request, performance, sale, items_form=None, update_form=None):
+
+    # Create context and render sales tab content
+    context = sales_context(request, performance, sale, items_form, update_form)
+    context['tab'] = 'sales'
     return render(request, "venue/_main_sales.html", context)
 
-
-def render_close(request, venue, performance, form=None):
-
-    # Validate parameters
-    assert performance
-
-    # Render close tab content
-    context = {
-        'venue': venue,
-        'performance': performance,
-        'tab': 'close',
-        'close_form': form or create_close_form(performance),
-    }
-    return render(request, "venue/_main_close.html", context)
-
-
-def render_tickets(request, venue, performance):
-
-    # Get tickets
-    venue_tickets = performance.tickets.filter(sale__completed__isnull = False, sale__venue = venue, refund__isnull = True).order_by('id')
-    non_venue_tickets = performance.tickets.filter(sale__completed__isnull = False, sale__venue__isnull = True, refund__isnull = True).order_by('id')
-    cancelled_tickets = performance.tickets.filter(refund__isnull = False).order_by('id')
-
-    # Render tickets
-    context = {
-        'venue': venue,
-        'performance': performance,
-        'tab': 'tickets',
-        'venue_tickets': venue_tickets,
-        'non_venue_tickets': non_venue_tickets,
-        'cancelled_tickets': cancelled_tickets,
-    }
-    return render(request, "venue/_main_tickets.html", context)
-
-
-def render_info(request, performance):
-
-    # Validate parameters
-    assert performance
-
-    # Render information tab content
-    context = {
-        'show': performance.show if performance else None,
-        'performance': performance,
-        'tab': 'info',
-    }
-    return render(request, "venue/_main_info.html", context)
-
-
-# View functions
-@require_GET
-@user_passes_test(lambda u: u.is_venue or u.is_admin)
-@login_required
-def select(request):
-    context = {
-        'venues': Venue.objects.filter(festival=request.festival, is_ticketed=True),
-    }
-    return render(request, 'venue/select.html', context)
-
-   
-@require_GET
-@user_passes_test(lambda u: u.is_venue or u.is_admin)
-@login_required
-@transaction.atomic
-def main(request, venue_uuid):
-
-    # Get venue and performance taking the first of:
-    #   The next performance (i.e. the first performance with no close checkpoint)
-    #   The last performance
-    venue = get_object_or_404(Venue, uuid = venue_uuid)
-    performance = venue.get_next_performance(request.now.date()) or venue.get_last_performance(request.now.date())
-
-    # Delete any imcomplete sales for this venue
-    for sale in venue.sales.filter(user_id=request.user.id, completed__isnull=True, cancelled__isnull=True):
-        if sale.is_empty:
-            logger.info(f"Sale {sale.id} auto-deleted (venue {venue.name})")
-            sale.delete()
-        else:
-            sale.cancelled = timezone.now()
-            sale.save()
-            logger.info(f"Sale {sale.id} auto-cancelled")
-
-    # Render page
-    return render_main(request, venue, performance)
-
-   
-@require_GET
-@user_passes_test(lambda u: u.is_venue or u.is_admin)
-@login_required
-@transaction.atomic
-def main_performance(request, venue_uuid, performance_uuid):
-
-    # Get venue and performance
-    venue = get_object_or_404(Venue, uuid = venue_uuid)
-    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
-    assert(venue == performance.venue)
-
-    # Render page
-    return render_main(request, venue, performance)
-
-   
-@require_GET
-@user_passes_test(lambda u: u.is_venue or u.is_admin)
-@login_required
-@transaction.atomic
-def main_performance_sale(request, venue_uuid, performance_uuid, sale_uuid):
-
-    # Get sale, performance and venue
-    venue = get_object_or_404(Venue, uuid = venue_uuid)
-    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
-    assert(venue == performance.venue)
-    sale = get_object_or_404(Sale, uuid = sale_uuid)
-
-    # Render page
-    return render_main(request, venue, performance, sale=sale)
-
-
-@require_POST
-@login_required
-@user_passes_test(lambda u: u.is_venue or u.is_admin)
-@transaction.atomic
-def performance_open(request, performance_uuid):
-
-    # Get performance and venue
-    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
-    assert not performance.has_open_checkpoint
-    assert not performance.has_close_checkpoint
-    venue = performance.venue
-
-    # Process open form
-    open_form = create_open_form(performance, request.POST)
-    if open_form.is_valid():
-
-        # Create open checkpoint
-        checkpoint = Checkpoint(
-            user = request.user,
-            venue = venue,
-            open_performance = performance,
-            cash = 0,
-            buttons = open_form.cleaned_data['buttons'],
-            fringers = open_form.cleaned_data['fringers'],
-            notes = open_form.cleaned_data['notes'],
-        )
-        checkpoint.save()
-        logger.info(f"Open checkpoint created at {venue.name} for {performance.show.name} on {performance.date} at {performance.time}")
-        messages.success(request, 'Performance opened')
-        return HttpResponseClientRedirect(reverse('venue:main_performance', args=[venue.uuid, performance.uuid]))
-    
-    # Form has errors
-    return render_open(request, venue, performance)
-
-
-@require_POST
-@login_required
-@user_passes_test(lambda u: u.is_venue or u.is_admin)
-@transaction.atomic
-def checkpoint_update_open(request, checkpoint_uuid):
-
-    # Get checkpoint, venue and performance
-    checkpoint = get_object_or_404(Checkpoint, uuid = checkpoint_uuid)
-    venue = checkpoint.venue
-    assert venue
-    performance = checkpoint.open_performance
-    assert performance
-    assert performance.venue == venue
-
-    # Process checkpoint form
-    open_form = create_open_form(performance, request.POST)
-    if open_form.is_valid():
-
-        # Update checkpoint
-        checkpoint.notes = open_form.cleaned_data['notes']
-        checkpoint.save()
-        logger.info(f"Open checkpoint updated at {venue.name} for {performance.show.name} on {performance.date} at {performance.time}")
-        messages.success(request, "Checkpoint updated")
-        open_form = None
-
-    # Render page
-    return render_open(request, venue, performance, form = open_form)
-
-
-@require_POST
-@login_required
-@user_passes_test(lambda u: u.is_venue or u.is_admin)
-@transaction.atomic
-def performance_close(request, performance_uuid):
-
-    # Get performance and venue
-    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
-    assert performance.has_open_checkpoint
-    assert not performance.has_close_checkpoint
-    venue = performance.venue
-
-    # Process close form
-    close_form = create_close_form(performance, request.POST)
-    if close_form.is_valid():
-
-        # Record audience tokens
-        performance.audience = close_form.cleaned_data['audience'] or 0
-        performance.save()
-
-        # Create close checkpoint
-        checkpoint = Checkpoint(
-            user = request.user,
-            venue = venue,
-            close_performance = performance,
-            cash = 0,
-            buttons = close_form.cleaned_data['buttons'],
-            fringers = close_form.cleaned_data['fringers'],
-            notes = close_form.cleaned_data['notes'],
-        )
-        checkpoint.save()
-        logger.info(f"Close checkpoint created at {venue.name} for {performance.show.name} on {performance.date} at {performance.time}")
-        messages.success(request, 'Performance closed')
-        return HttpResponseClientRedirect(reverse('venue:main_performance', args=[venue.uuid, performance.uuid]))
-
-    # Form has errors
-    return render_close(request, venue, performance, form = close_form)
-
-
-@require_POST
-@login_required
-@user_passes_test(lambda u: u.is_venue or u.is_admin)
-@transaction.atomic
-def checkpoint_update_close(request, checkpoint_uuid):
-
-    # Get checkpoint, venue and performance
-    checkpoint = get_object_or_404(Checkpoint, uuid = checkpoint_uuid)
-    venue = checkpoint.venue
-    assert venue
-    performance = checkpoint.close_performance
-    assert performance
-    assert performance.venue == venue
-
-    # Process checkpoint form
-    close_form = create_close_form(performance, request.POST)
-    if close_form.is_valid():
-
-        # Update audience tokens
-        performance.audience = close_form.cleaned_data['audience'] or 0
-        performance.save()
-
-        # Update checkpoint
-        checkpoint.notes = close_form.cleaned_data['notes']
-        checkpoint.save()
-        logger.info(f"Close checkpoint updated at {venue.name} for {performance.show.name} on {performance.date} at {performance.time}")
-        messages.success(request, "Checkpoint updated")
-        close_form = None
-
-    # Render page
-    return render_close(request, venue, performance, form = close_form)
-
-
-# AJAX sale API
 @require_GET
 @login_required
 @user_passes_test(lambda u: u.is_venue or u.is_admin)
@@ -588,7 +358,6 @@ def sale_select(request, performance_uuid, sale_uuid):
     # Render sales tab content
     return  render_sales(request, performance, sale)
 
-
 @require_GET
 @login_required
 @user_passes_test(lambda u: u.is_venue or u.is_admin)
@@ -603,7 +372,6 @@ def sale_close(request, performance_uuid, sale_uuid):
 
     # Render sales tab content
     return  render_sales(request, performance, None)
-
 
 @require_GET
 @login_required
@@ -629,7 +397,6 @@ def sale_start(request, performance_uuid):
     # Render sales tab content
     return  render_sales(request, performance, sale)
 
-
 @require_POST
 @login_required
 @user_passes_test(lambda u: u.is_venue or u.is_admin)
@@ -646,7 +413,7 @@ def sale_items(request, performance_uuid, sale_uuid):
     assert sale.is_in_progress
 
     # Process sale form
-    form = create_sale_items_form(performance, sale, request.POST)
+    form = sale_items_form(performance, sale, request.POST)
     if form.is_valid():
 
         # Check if there are sufficient tickets
@@ -704,7 +471,6 @@ def sale_items(request, performance_uuid, sale_uuid):
     # Render sales tab content
     return  render_sales(request, performance, sale, items_form=form)
 
-
 @require_POST
 @login_required
 @user_passes_test(lambda u: u.is_venue or u.is_admin)
@@ -720,7 +486,7 @@ def sale_payment_card(request, performance_uuid, sale_uuid):
     assert sale.is_in_progress
 
     # Process form
-    form = create_sale_form(sale, request.POST)
+    form = sale_update_form(sale, request.POST)
     if form.is_valid():
 
         # Update sale
@@ -733,8 +499,7 @@ def sale_payment_card(request, performance_uuid, sale_uuid):
         form = None
 
     # Form has errors
-    return render_sales(request, performance, sale, sale_form=form)
-
+    return render_sales(request, performance, sale, update_form=form)
 
 @require_GET
 @login_required
@@ -761,7 +526,6 @@ def sale_payment_cancel(request, performance_uuid, sale_uuid):
     # Update sales tab
     return  render_sales(request, performance, sale)
 
-
 @require_POST
 @login_required
 @user_passes_test(lambda u: u.is_venue or u.is_admin)
@@ -778,7 +542,7 @@ def sale_complete_zero(request, performance_uuid, sale_uuid):
     assert sale.is_in_progress and sale.total_cost == 0
 
     # Process form
-    form = create_sale_form(sale, request.POST)
+    form = sale_update_form(sale, request.POST)
     if form.is_valid():
 
         # Complete sale
@@ -792,8 +556,7 @@ def sale_complete_zero(request, performance_uuid, sale_uuid):
         form = None
 
     # Update sales tab
-    return  render_sales(request, performance, sale, sale_form=form)
-
+    return  render_sales(request, performance, sale, update_form=form)
 
 @require_GET
 @login_required
@@ -824,7 +587,6 @@ def sale_cancel(request, performance_uuid, sale_uuid):
     # Update sales tab
     return  render_sales(request, performance, None)
 
-
 @require_POST
 @login_required
 @user_passes_test(lambda u: u.is_venue or u.is_admin)
@@ -840,7 +602,7 @@ def sale_update(request, performance_uuid, sale_uuid):
     assert sale.is_complete
 
     # Process sale form
-    form = create_sale_form(sale, request.POST)
+    form = sale_update_form(sale, request.POST)
     if form.is_valid():
 
         # Update sale
@@ -851,29 +613,228 @@ def sale_update(request, performance_uuid, sale_uuid):
         form = None
 
     # Update sales tab
-    return  render_sales(request, performance, sale, sale_form=form)
+    return  render_sales(request, performance, sale, update_form=form)
 
+# Main page - close tab
+def close_form(performance, post_data = None):
+
+    # Validate parameters
+    assert performance
+    assert performance.has_open_checkpoint
+
+    # Create form
+    checkpoint = performance.close_checkpoint if performance.has_close_checkpoint else None
+    form = CloseCheckpointForm(checkpoint, data = post_data)
+
+    # Add crispy form helper
+    form.helper = FormHelper()
+    form.helper.form_id = 'close-form'
+    form.helper.layout = Layout(
+        Row(
+            Column('buttons', css_class='form-group col-md-4 mb-0'),
+            Column('fringers', css_class='form-group col-md-4 mb-0'),
+            Column('audience', css_class='form-group col-md-4 mb-0'),
+        ),
+        Field('notes'),
+    )
+
+    # Return form
+    return form
+
+def close_context(request, venue, performance, form=None):
+
+    # Validate parameters
+    assert performance
+
+    # Create context
+    return {
+        'venue': venue,
+        'performance': performance,
+        'close_form': form or close_form(performance),
+    }
+
+def render_close(request, venue, performance, form=None):
+
+    # Create context and render close tab content
+    context = close_context(request, venue, performance, form)
+    context['tab'] = 'close'
+    return render(request, "venue/_main_close.html", context)
+
+@require_POST
+@login_required
+@user_passes_test(lambda u: u.is_venue or u.is_admin)
+@transaction.atomic
+def performance_close(request, performance_uuid):
+
+    # Get performance and venue
+    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+    assert performance.has_open_checkpoint
+    assert not performance.has_close_checkpoint
+    venue = performance.venue
+
+    # Process close form
+    form = close_form(performance, request.POST)
+    if form.is_valid():
+
+        # Record audience tokens
+        performance.audience = form.cleaned_data['audience'] or 0
+        performance.save()
+
+        # Create close checkpoint
+        checkpoint = Checkpoint(
+            user = request.user,
+            venue = venue,
+            close_performance = performance,
+            cash = 0,
+            buttons = form.cleaned_data['buttons'],
+            fringers = form.cleaned_data['fringers'],
+            notes = form.cleaned_data['notes'],
+        )
+        checkpoint.save()
+        logger.info(f"Close checkpoint created at {venue.name} for {performance.show.name} on {performance.date} at {performance.time}")
+        messages.success(request, 'Performance closed')
+        return HttpResponseClientRedirect(reverse('venue:main_performance', args=[venue.uuid, performance.uuid]))
+
+    # Form has errors
+    return render_close(request, venue, performance, form)
+
+@require_POST
+@login_required
+@user_passes_test(lambda u: u.is_venue or u.is_admin)
+@transaction.atomic
+def checkpoint_update_close(request, checkpoint_uuid):
+
+    # Get checkpoint, venue and performance
+    checkpoint = get_object_or_404(Checkpoint, uuid = checkpoint_uuid)
+    venue = checkpoint.venue
+    assert venue
+    performance = checkpoint.close_performance
+    assert performance
+    assert performance.venue == venue
+
+    # Process checkpoint form
+    form = close_form(performance, request.POST)
+    if form.is_valid():
+
+        # Update audience tokens
+        performance.audience = form.cleaned_data['audience'] or 0
+        performance.save()
+
+        # Update checkpoint
+        checkpoint.notes = form.cleaned_data['notes']
+        checkpoint.save()
+        logger.info(f"Close checkpoint updated at {venue.name} for {performance.show.name} on {performance.date} at {performance.time}")
+        messages.success(request, "Checkpoint updated")
+        close_form = None
+
+    # Render page
+    return render_close(request, venue, performance, form)
+
+
+# Main page - tickets tab
+def tickets_context(request, venue, performance):
+
+    # Get tickets
+    venue_tickets = performance.tickets.filter(sale__completed__isnull = False, sale__venue = venue, refund__isnull = True).order_by('sale__customer', 'id')
+    non_venue_tickets = performance.tickets.filter(sale__completed__isnull = False, sale__venue__isnull = True, refund__isnull = True).order_by('id')
+    cancelled_tickets = performance.tickets.filter(refund__isnull = False).order_by('sale__customer', 'id')
+
+    # Render tickets
+    return {
+        'venue': venue,
+        'performance': performance,
+        'tab': 'tickets',
+        'venue_tickets': venue_tickets,
+        'non_venue_tickets': non_venue_tickets,
+        'cancelled_tickets': cancelled_tickets,
+    }
+
+def render_tickets(request, venue, performance):
+
+    # Create context and render tickets tab content
+    context = tickets_context(request, venue, performance)
+    context['tab'] = 'tickets'
+    return render(request, "venue/_main_tickets.html", context)
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_venue or u.is_admin)
+def tickets_refresh(request, performance_uuid):
+
+    # Get performance and venue
+    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+    venue = performance.venue
+
+    # Update tickets tab content
+    return render_tickets(request, venue, performance)
 
 @require_GET
 @login_required
 @user_passes_test(lambda u: u.is_venue or u.is_admin)
 @transaction.atomic
-def tickets(request, performance_uuid, format):
+def tickets_token(request, performance_uuid, ticket_uuid):
+
+    # Get performance and ticket
+    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+    ticket = get_object_or_404(Ticket, uuid = ticket_uuid)
+    assert ticket.performance == performance
+
+    # Toggle token issued state
+    ticket.token_issued = not ticket.token_issued
+    ticket.save()
+    if ticket.token_issued:
+        logger.info(f'Token issued for ticket {ticket.id}')
+    else:
+        logger.info(f'Token canceled for ticket {ticket.id}')
+
+    # Update checkbox
+    url = reverse('venue:tickets_token', args=[performance.uuid, ticket.uuid])
+    checked = 'checked' if ticket.token_issued else ''
+    return HttpResponse(f'<input id="token_{ticket.uuid}" type="checkbox" name="Issued" hx-get="{url}" hx-target="this" hx-swap="outerHTML" {checked}/>')
+
+@require_POST
+@login_required
+@user_passes_test(lambda u: u.is_venue or u.is_admin)
+@csrf_exempt
+@transaction.atomic
+def tickets_badges(request, performance_uuid):
 
     # Get performance and venue
     performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
-    assert performance.has_open_checkpoint
-    assert format == 'html' or format == 'pdf'
+    venue = performance.venue
+
+    # Get user and number of badges issued
+    user = get_object_or_404(User, uuid = request.POST['user-uuid'])
+    issued = request.POST['issued']
+
+    # Issue badges
+    badges_issued = BadgesIssued(
+        user = user,
+        venue = venue,
+        badges = issued,
+    )
+    badges_issued.save()
+
+    # Remove (or update) badges link
+    if user.badges_to_collect == 0:
+        return HttpResponse(f'<span hx-swap-oob="outerHTML:.badges-{user.uuid}"></span>')
+    else:
+        return HttpResponse(f'<a class="badges-{user.uuid}" hx-swap-oob="outerHTML:.badges-{user.uuid}" href="#responsive" onclick="show_badges_modal(\'{user.uuid}\', {user.badges_to_collect})">{user.badges_to_collect}</a>')
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_venue or u.is_admin)
+@transaction.atomic
+def tickets_print(request, performance_uuid):
+
+    # Get performance and venue
+    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
     venue = performance.venue
 
     # Get tickets
     venue_tickets = performance.tickets.filter(sale__completed__isnull = False, sale__venue = venue, refund__isnull = True).order_by('id')
     non_venue_tickets = performance.tickets.filter(sale__completed__isnull = False, sale__venue__isnull = True, refund__isnull = True).order_by('id')
     cancelled_tickets = performance.tickets.filter(refund__isnull = False).order_by('id')
-
-    # Check for HTML
-    if format == 'html':
-        return render_tickets(request, venue, performance)
 
     # Render as PDF
     response = HttpResponse(content_type = 'application/pdf')
@@ -989,26 +950,26 @@ def tickets(request, performance_uuid, format):
     return response
 
 
-@require_GET
-@login_required
-@user_passes_test(lambda u: u.is_venue or u.is_admin)
-@transaction.atomic
-def ticket_token(request, ticket_uuid):
+# Main page - info tab
+def info_context(request, performance):
 
-    # Get ticket and toggle token issued state
-    ticket = get_object_or_404(Ticket, uuid = ticket_uuid)
-    ticket.token_issued = not ticket.token_issued
-    ticket.save()
-    if ticket.token_issued:
-        logger.info(f'Token issued for ticket {ticket.id}')
-    else:
-        logger.info(f'Token canceled for ticket {ticket.id}')
+    # Validate parameters
+    assert performance
 
-    # Update checkbox
-    url = reverse('venue:ticket_token', args=[ticket.uuid])
-    checked = 'checked' if ticket.token_issued else ''
-    return HttpResponse(f'<input id="token_{ticket.uuid}" type="checkbox" name="Issued" hx-get="{url}" {checked}/>')
+    # Create context
+    return {
+        'show': performance.show if performance else None,
+        'performance': performance,
+        'tab': 'info',
+    }
 
+
+def render_info(request, performance):
+
+    # Create context and render info tab content
+    context = info_context(request, performance)
+    context['tab'] = 'info'
+    return render(request, "venue/_main_info.html", context)
 
 @require_GET
 @user_passes_test(lambda u: u.is_venue or u.is_admin)
@@ -1021,3 +982,77 @@ def performance_info(request, performance_uuid):
 
     # Render information tab
     return render_info(request, performance)
+
+
+# Main page
+def render_main(request, venue, performance, sale=None, tab=None):
+
+    # Validate parameters
+    assert venue
+
+    # Create context and render page
+    context = open_context(request, venue, performance)
+    context.update(sales_context(request, performance, sale))
+    context.update(close_context(request, venue, performance))
+    context.update(tickets_context(request, venue, performance))
+    context.update(info_context(request, performance))
+    context.update({
+        'tab': tab or 'sales' if performance and performance.has_open_checkpoint else 'open',
+        'performances': ShowPerformance.objects.filter(date = request.now.date(), venue = venue, show__is_cancelled = False).order_by('time'),
+        'next_performance': venue.get_next_performance(),
+    })
+    return render(request, 'venue/main.html', context)
+   
+@require_GET
+@user_passes_test(lambda u: u.is_venue or u.is_admin)
+@login_required
+@transaction.atomic
+def main(request, venue_uuid):
+
+    # Get venue and performance taking the first of:
+    #   The next performance (i.e. the first performance with no close checkpoint)
+    #   The last performance
+    venue = get_object_or_404(Venue, uuid = venue_uuid)
+    performance = venue.get_next_performance(request.now.date()) or venue.get_last_performance(request.now.date())
+
+    # Delete any imcomplete sales for this venue
+    for sale in venue.sales.filter(user_id=request.user.id, completed__isnull=True, cancelled__isnull=True):
+        if sale.is_empty:
+            logger.info(f"Sale {sale.id} auto-deleted (venue {venue.name})")
+            sale.delete()
+        else:
+            sale.cancelled = timezone.now()
+            sale.save()
+            logger.info(f"Sale {sale.id} auto-cancelled")
+
+    # Render page
+    return render_main(request, venue, performance)
+   
+@require_GET
+@user_passes_test(lambda u: u.is_venue or u.is_admin)
+@login_required
+@transaction.atomic
+def main_performance(request, venue_uuid, performance_uuid):
+
+    # Get venue and performance
+    venue = get_object_or_404(Venue, uuid = venue_uuid)
+    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+    assert(venue == performance.venue)
+
+    # Render page
+    return render_main(request, venue, performance)
+   
+@require_GET
+@user_passes_test(lambda u: u.is_venue or u.is_admin)
+@login_required
+@transaction.atomic
+def main_performance_sale(request, venue_uuid, performance_uuid, sale_uuid):
+
+    # Get sale, performance and venue
+    venue = get_object_or_404(Venue, uuid = venue_uuid)
+    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+    assert(venue == performance.venue)
+    sale = get_object_or_404(Sale, uuid = sale_uuid)
+
+    # Render page
+    return render_main(request, venue, performance, sale=sale)

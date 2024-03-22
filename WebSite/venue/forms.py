@@ -47,7 +47,7 @@ class SaleItemsForm(forms.Form):
         )
 
 
-class SaleForm(forms.Form):
+class SaleUpdateForm(forms.Form):
 
     notes = forms.CharField(label = 'Notes', widget = forms.Textarea(attrs = { 'style': 'width: 100%; height: 100px' }), required = False)
 
