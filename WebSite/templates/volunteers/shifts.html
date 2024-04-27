@@ -37,8 +37,7 @@
                     <tr>
                         <th>Date</th>
                         <th>Location</th>
-                        <th>Start</th>
-                        <th>End</th>
+                        <th>Time</th>
                         <th>Role</th>
                         <th></th>
                         <th></th>
@@ -49,8 +48,7 @@
                         <tr>
                             <td>{{ shift.date | date:'D, j M' }}</td>
                             <td>{{ shift.location.description }}</td>
-                            <td>{{ shift.start_time }}</td>
-                            <td>{{ shift.end_time }}</td>
+                            <td>{{ shift.start_time | time:'g:i' }} - {{ shift.end_time | time:'g:iA' }}</td>
                             <td>{{ shift.role.description }}</td>
                             <td>{% if can_cancel %}<a href="{% url 'volunteers:shift_cancel' shift.uuid %}">Cancel</a>{% endif %}</td>
                             <td>{% if shift.notes %}<a href="#tf-tab-myshifts-{{ shift.id }}-notes" data-toggle="collapse"><i class="fa fa-info-circle"></i></a>{% endif %}</td>
@@ -72,8 +70,8 @@
                         <tr>
                             <th></th>
                             <th>Location</th>
-                            <th>Start</th>
-                            <th>End</th>
+                            <th>Date</th>
+                            <th>Time</th>
                             <th>Role</th>
                             <th></th>
                         </tr>
@@ -81,15 +79,33 @@
                     <tbody>
                         {% for shift in day.shifts %}
                             <tr>
-                                <td>{% if shift.notes %}<a href="#tf-tab-{{ day.date | date:'Ymd' }}-{{ shift.id }}-notes" data-toggle="collapse"><i class="fa fa-info-circle"></i></a>{% endif %}</td>
+                                <td>{% if shift.notes %}<a href="#tf-shift-{{ shift.id }}-notes" data-toggle="collapse"><i class="fa fa-info-circle"></i></a>{% endif %}</td>
                                 <td>{{ shift.location.description }}</td>
-                                <td>{{ shift.start_time }}</td>
-                                <td>{{ shift.end_time }}</td>
+                                <td>{{ shift.date | date:'D, j M' }}</td>
+                                <td>{{ shift.start_time | time:'g:i' }} - {{ shift.end_time | time:'g:iA' }}</td>
                                 <td>{{ shift.role.description }}</td>
-                                <td><a href="{% url 'volunteers:shift_accept' shift.uuid %}">Accept</a></td>
+                                {% if shift.commitment %}
+                                    <td><a href="#tf-shift-{{ shift.id }}-commitment" data-toggle="collapse">Commitment</a></td>
+                                {% else %}
+                                    <td><a href="{% url 'volunteers:shift_accept' shift.uuid %}">Accept</a></td>
+                                {% endif %}
                             </tr>
+                            {% if shift.commitment %}
+                                <tr id="tf-shift-{{ shift.id }}-commitment" class="collapse" data-parent="#tf-tab-{{ day.date | date:'Ymd' }}">
+                                    <td colspan="6" style="border: 0;"><div class="alert alert-warning">
+                                        <p>By accepting this shift you are accepting all the following shifts.</p>
+                                        <ul>
+                                            {% for s in shift.commitment.shifts.all %}
+                                                <li>{{ s.location.description }}, {{ s.date | date:'D, j M' }} {{ s.start_time | time:'g:i' }} - {{ s.end_time | time:'g:iA' }}, {{ s.role.description }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                        <a class="btn btn-primary" href="{% url 'volunteers:shift_accept' shift.uuid %}">Accept</a>
+                                        <a class="btn btn-secondary" href="#tf-shift-{{ shift.id }}-commitment" data-toggle="collapse">Cancel</a>
+                                    </div></td>
+                                </tr>
+                            {% endif %}
                             {% if shift.notes %}
-                                <tr id="tf-tab-{{ day.date | date:'Ymd' }}-{{ shift.id }}-notes" class="collapse" data-parent="#tf-tab-{{ day.date | date:'Ymd' }}">
+                                <tr id="tf-shift-{{ shift.id }}-notes" class="collapse" data-parent="#tf-tab-{{ day.date | date:'Ymd' }}">
                                     <td colspan="6" style="border: 0;"><div class="alert alert-info">{{ shift.notes | linebreaks }}</div></td>
                                 </tr>
                             {% endif %}

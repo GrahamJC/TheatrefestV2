@@ -37,10 +37,12 @@ logger = logging.getLogger(__name__)
 
 def render_shifts(request, volunteer):
 
-    # Get days that have shifts defined
-    shifts = Shift.objects.filter(location__festival=volunteer.user.festival, volunteer_can_accept=True, volunteer__isnull=True, role__in=volunteer.roles.all())
+    # Get available shifts
+    shifts = Shift.objects.filter(location__festival=request.festival, volunteer_can_accept=True, volunteer__isnull=True, role__in=volunteer.roles.all())
     if volunteer.is_dbs == False:
         shifts = shifts.filter(needs_dbs = False)
+
+    # Get days that have shifts defined
     days = []
     for day in shifts.order_by('date').values('date').distinct():
         days.append({
@@ -78,11 +80,17 @@ def shift_accept(request, slug):
     # Get volunteer
     volunteer = request.user.volunteer
 
-    # Get shift and assign to volunteer
+    # Get shift and assign to volunteer (if the shift is part of a commitment assign all shifts
+    # in the commitment)
     shift = get_object_or_404(Shift, uuid=slug)
     if not shift.volunteer:
-        shift.volunteer = volunteer
-        shift.save()
+        if shift.commitment:
+            shift.commitment.volunteer = volunteer
+            shift.commitment.save()
+            shift.commitment.update_shifts()
+        else:
+            shift.volunteer = volunteer
+            shift.save()
         messages.success(request, 'Shift accepted')
     else:
         messages.error(request, 'Shift has been accepted by another volunteer')

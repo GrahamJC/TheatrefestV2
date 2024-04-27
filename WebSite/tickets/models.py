@@ -250,7 +250,7 @@ class Basket(TimeStampedModel):
 
     @property
     def button_cost(self):
-        return self.buttons *  self.user.festival.button_price
+        return self.buttons * self.user.festival.button_price
 
     @property
     def total_cost(self):
