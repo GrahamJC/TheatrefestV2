@@ -778,6 +778,8 @@ class AdminBucketUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
 
     def get_form(self):
         form = super().get_form()
+        form.fields['company'].widget.attrs = { 'hx-get': reverse('festival:ajax_get_shows'), 'hx-target': '#id_show' }
+        form.fields['show'].widget.attrs = { 'hx-get': reverse('festival:ajax_get_performances'), 'hx-target': '#id_performance' }
         form.helper = FormHelper()
         form.helper.layout = Layout(
             Field('date'),
@@ -825,21 +827,25 @@ def admin_bucket_delete(request, slug):
 def ajax_get_shows(request):
 
     # Get company
-    company = get_object_or_404(Company, pk=request.GET.get('company'))
+    id = request.GET.get('company')
+    company = get_object_or_404(Company, pk=id) if id else None
 
     # Return list of shows
     html = '<option value selected>---------</option>'
-    for show in company.shows.order_by('name'):
-        html += f'<option value={show.id}>{show.name}</option>'
+    if company:
+        for show in company.shows.order_by('name'):
+            html += f'<option value={show.id}>{show.name}</option>'
     return HttpResponse(html)
 
 def ajax_get_performances(request):
 
     # Get show
-    show = get_object_or_404(Show, pk=request.GET.get('show'))
+    id = request.GET.get('show')
+    show = get_object_or_404(Show, pk=id) if id  else None
 
     # Return list of shows
     html = '<option value selected>---------</option>'
-    for performance in show.performances.order_by('date', 'time'):
-        html += f'<option value={performance.id}>{performance.date} at {performance.time}</option>'
+    if show:
+        for performance in show.performances.order_by('date', 'time'):
+            html += f'<option value={performance.id}>{performance.date} at {performance.time}</option>'
     return HttpResponse(html)

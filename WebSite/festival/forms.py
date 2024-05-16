@@ -189,11 +189,30 @@ class AdminBucketForm(forms.ModelForm):
         self.fields['company'].label_from_instance = self.company_label_from_instance
         if hasattr(self.instance, 'company'):
             self.fields['show'].queryset = Show.objects.filter(company=self.instance.company)
+        else:
+            self.fields['show'].queryset = Show.objects.filter(pk=0)
         self.fields['show'].label_from_instance = self.show_label_from_instance
         if hasattr(self.instance, 'show'):
             self.fields['performance'].queryset = ShowPerformance.objects.filter(show=self.instance.show)
+        else:
+            self.fields['performance'].queryset = ShowPerformance.objects.filter(pk=0)
         self.fields['performance'].label_from_instance = self.performance_label_from_instance
+        self.fields['description'].label = 'Notes'
 
+    def clean_company(self):
+        # Update show queryset for selected company
+        company = self.cleaned_data['company']
+        if company:
+            self.fields['show'].queryset = Show.objects.filter(company=company)
+        return company
+
+    def clean_show(self):
+        # Update performance queryset for selected show
+        show = self.cleaned_data['show']
+        if show:
+            self.fields['performance'].queryset = ShowPerformance.objects.filter(show=show)
+        return show
+    
     @staticmethod
     def company_label_from_instance(obj):
         return obj.name
