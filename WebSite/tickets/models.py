@@ -449,9 +449,13 @@ class Bucket(TimeStampedModel):
     company = models.ForeignKey(Company, on_delete = models.PROTECT, related_name = 'buckets')
     show = models.ForeignKey(Show, on_delete = models.PROTECT, null = True, blank = True, related_name = 'buckets')
     performance = models.ForeignKey(ShowPerformance, on_delete = models.PROTECT, null = True, blank = True, related_name = 'buckets')
-    description = models.CharField(max_length = 32)
+    description = models.CharField(blank=True, default='', max_length = 32)
     cash = models.DecimalField(max_digits = 5, decimal_places = 2)
     fringers = models.IntegerField()
+
+    @property
+    def can_delete(self):
+        return True
 
 
 class BadgesIssued(TimeStampedModel):

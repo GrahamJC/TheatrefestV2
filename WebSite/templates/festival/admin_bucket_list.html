@@ -1,0 +1,39 @@
+﻿{% extends "base.html" %}
+{% load i18n %}
+
+{% block pagetitle %}Buckets{% endblock %}
+
+{% block content %}
+
+    <table class="table">
+        <thead class="thead-light">
+            <tr>
+                <th>Date</th>
+                <th>Company</th>
+                <th>Show</th>
+                <th>Performance</th>
+                <th>Description</th>
+                <th>Cash</th>
+                <th>Fringers</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for b in buckets %}
+                <tr>
+                    <td>{{ b.date | date:'D d' }}</td>
+                    <td><a href="{% url 'festival:admin_bucket_update' b.uuid %}">{{ b.company.name }}</a></td>
+                    <td>{{ b.show.name }}</td>
+                    <td>{{ b.performance.date | date:'D' }} at {{ b.performance.time | time:'H:i'}}</td>
+                    <td>{{ b.description }}</td>
+                    <td>&#163;{{ b.cash }}</td>
+                    <td>{{ b.fringers }}</td>
+                </tr>
+            {%endfor %}
+        </tbody>
+    </table>
+
+    <div class="row">
+        <div class="col-12"><a href="{% url 'festival:admin_bucket_create' %}" class="btn btn-primary">Add Bucket</a></div>
+    </div>
+
+{% endblock %}

@@ -7,8 +7,8 @@ from bootstrap_datepicker_plus.widgets import DatePickerInput
 
 from core.models import User, Festival
 from content.models import Page, PageImage, Navigator
-from program.models import Venue
-from tickets.models import BoxOffice, TicketType, FringerType
+from program.models import Company, Venue, Show, ShowPerformance
+from tickets.models import BoxOffice, TicketType, FringerType, Bucket
 
 class PageForm(forms.ModelForm):
 
@@ -164,3 +164,44 @@ class AdminFringerTypeForm(forms.ModelForm):
             self.instance.validate_unique(exclude)
         except ValidationError:
             self._update_errors(ValidationError({'name': 'A fringer type with that name already exists'}))
+
+class AdminBucketForm(forms.ModelForm):
+
+    class Meta:
+        model = Bucket
+        fields = [
+            'date',
+            'company',
+            'show',
+            'performance',
+            'description',
+            'cash',
+            'fringers',
+        ]
+        widgets = {
+            'date': DatePickerInput,
+        }
+
+    def __init__(self, festival, *args, **kwargs):
+        self.festival = festival
+        super().__init__(*args, **kwargs)
+        self.fields['company'].queryset = Company.objects.filter(festival=self.festival)
+        self.fields['company'].label_from_instance = self.company_label_from_instance
+        if hasattr(self.instance, 'company'):
+            self.fields['show'].queryset = Show.objects.filter(company=self.instance.company)
+        self.fields['show'].label_from_instance = self.show_label_from_instance
+        if hasattr(self.instance, 'show'):
+            self.fields['performance'].queryset = ShowPerformance.objects.filter(show=self.instance.show)
+        self.fields['performance'].label_from_instance = self.performance_label_from_instance
+
+    @staticmethod
+    def company_label_from_instance(obj):
+        return obj.name
+
+    @staticmethod
+    def show_label_from_instance(obj):
+        return obj.name
+
+    @staticmethod
+    def performance_label_from_instance(obj):
+        return f'{obj.date:%A %b %d} at {obj.time:%I:%M%p}'
