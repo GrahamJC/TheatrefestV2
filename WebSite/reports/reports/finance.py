@@ -106,9 +106,9 @@ def festival_summary(request):
         ('donations', {'title': 'Donations', 'pre': 0, 'dates': [], 'total': 0}),
     ])
     totals = {
-        'pre': efringers_pre + tickets_pre,
+        'pre': efringers_pre + tickets_pre + buttons_pre,
         'dates': [],
-        'total': efringers_pre + tickets_pre,
+        'total': efringers_pre + tickets_pre + buttons_pre,
     }
     for date in dates:
         date_total = 0
