@@ -96,8 +96,9 @@ def festival_summary(request):
     dates = date_list(festival.boxoffice_open, festival.boxoffice_close)
     efringers_pre = Fringer.objects.filter(type__is_online=True, sale__festival=festival, sale__completed__lt=dates[0]).aggregate(Sum('type__price'))['type__price__sum'] or 0
     tickets_pre = Ticket.objects.filter(sale__festival=festival, sale__completed__lt=dates[0]).aggregate(Sum('type__price'))['type__price__sum'] or 0
+    buttons_pre = festival.button_price * (Sale.objects.filter(festival=festival, completed__lt=dates[0]).aggregate(Sum('buttons'))['buttons__sum'] or 0)
     types = OrderedDict([
-        ('buttons', {'title': 'Badges', 'pre': 0, 'dates': [], 'total': 0}),
+        ('buttons', {'title': 'Badges', 'pre': buttons_pre, 'dates': [], 'total': buttons_pre}),
         ('fringers', {'title': 'Paper fringers', 'pre': 0, 'dates': [], 'total': 0}),
         ('efringers', {'title': 'eFringers', 'pre': efringers_pre, 'dates': [], 'total': efringers_pre}),
         ('tickets', {'title': 'Tickets', 'pre': tickets_pre, 'dates': [], 'total': tickets_pre}),
