@@ -8,7 +8,7 @@ begin
 
 	-- Get site and test/current festivals
 	select id into v_test_festival_id from core_festival where name = 'TEST';
-	select id into v_curr_festival_id from core_festival where name = 'TF2023';
+	select id into v_curr_festival_id from core_festival where name = 'TF2024';
 
 	-- Delete tickets, PAYW, sales, refunds, checkpoints, efringers and box offices
 	delete from tickets_ticket where sale_id in (select id from tickets_sale where festival_id = v_test_festival_id);
@@ -96,44 +96,44 @@ begin
 		name varchar(64) not null,
 		company varchar(64) not null,
 		venue varchar(64) not null,
+		is_ticketed bool not null,
 		seqno integer not null,
 		id integer
 	) on commit drop;
 
-	insert into tmp_show (name, company, venue, seqno) values ('Show A1', 'Company', 'Venue A', 1);
-	insert into tmp_show (name, company, venue, seqno) values ('Show A2', 'Company', 'Venue A', 2);
-	insert into tmp_show (name, company, venue, seqno) values ('Show A3', 'Company', 'Venue A', 3);
-	insert into tmp_show (name, company, venue, seqno) values ('Show B1', 'Company', 'Venue B', 1);
-	insert into tmp_show (name, company, venue, seqno) values ('Show B2', 'Company', 'Venue B', 2);
-	insert into tmp_show (name, company, venue, seqno) values ('Show B3', 'Company', 'Venue B', 3);
-	insert into tmp_show (name, company, venue, seqno) values ('Show C1', 'Company', 'Venue C', 1);
-	insert into tmp_show (name, company, venue, seqno) values ('Show C2', 'Company', 'Venue C', 2);
-	insert into tmp_show (name, company, venue, seqno) values ('Show C3', 'Company', 'Venue C', 3);
-	insert into tmp_show (name, company, venue, seqno) values ('Show D1', 'Company', 'Venue D', 1);
-	insert into tmp_show (name, company, venue, seqno) values ('Show D2', 'Company', 'Venue D', 2);
-	insert into tmp_show (name, company, venue, seqno) values ('Show D3', 'Company', 'Venue D', 3);
-	insert into tmp_show (name, company, venue, seqno) values ('Alt Show A1', 'Company', 'Alt Space A', 0);
-	insert into tmp_show (name, company, venue, seqno) values ('Alt Show A2', 'Company', 'Alt Space A', 0);
-	insert into tmp_show (name, company, venue, seqno) values ('Alt Show A3', 'Company', 'Alt Space A', 0);
-	insert into tmp_show (name, company, venue, seqno) values ('Alt Show B1', 'Company', 'Alt Space B', 0);
-	insert into tmp_show (name, company, venue, seqno) values ('Alt Show B2', 'Company', 'Alt Space B', 0);
-	insert into tmp_show (name, company, venue, seqno) values ('Alt Show B3', 'Company', 'Alt Space B', 0);
+	insert into tmp_show (name, company, venue, is_ticketed, seqno) values ('Show A1', 'Company', 'Venue A', true, 1);
+	insert into tmp_show (name, company, venue, is_ticketed, seqno) values ('Show A2', 'Company', 'Venue A', true, 2);
+	insert into tmp_show (name, company, venue, is_ticketed, seqno) values ('Show A3', 'Company', 'Venue A', true, 3);
+	insert into tmp_show (name, company, venue, is_ticketed, seqno) values ('Show B1', 'Company', 'Venue B', true, 1);
+	insert into tmp_show (name, company, venue, is_ticketed, seqno) values ('Show B2', 'Company', 'Venue B', true, 2);
+	insert into tmp_show (name, company, venue, is_ticketed, seqno) values ('Show B3', 'Company', 'Venue B', true, 3);
+	insert into tmp_show (name, company, venue, is_ticketed, seqno) values ('Show C1', 'Company', 'Venue C', true, 1);
+	insert into tmp_show (name, company, venue, is_ticketed, seqno) values ('Show C2', 'Company', 'Venue C', true, 2);
+	insert into tmp_show (name, company, venue, is_ticketed, seqno) values ('Show C3', 'Company', 'Venue C', true, 3);
+	insert into tmp_show (name, company, venue, is_ticketed, seqno) values ('Show D1', 'Company', 'Venue D', true, 1);
+	insert into tmp_show (name, company, venue, is_ticketed, seqno) values ('Show D2', 'Company', 'Venue D', true, 2);
+	insert into tmp_show (name, company, venue, is_ticketed, seqno) values ('Show D3', 'Company', 'Venue D', true, 3);
+	insert into tmp_show (name, company, venue, is_ticketed, seqno) values ('Alt Show A1', 'Company', 'Alt Space A', false, 0);
+	insert into tmp_show (name, company, venue, is_ticketed, seqno) values ('Alt Show A2', 'Company', 'Alt Space A', false, 0);
+	insert into tmp_show (name, company, venue, is_ticketed, seqno) values ('Alt Show A3', 'Company', 'Alt Space A', false, 0);
+	insert into tmp_show (name, company, venue, is_ticketed, seqno) values ('Alt Show B1', 'Company', 'Alt Space B', false, 0);
+	insert into tmp_show (name, company, venue, is_ticketed, seqno) values ('Alt Show B2', 'Company', 'Alt Space B', false, 0);
+	insert into tmp_show (name, company, venue, is_ticketed, seqno) values ('Alt Show B3', 'Company', 'Alt Space B', false, 0);
 
 	insert
 	into	program_show
-			(uuid, created, updated, festival_id, name, company_id, venue_id,
+			(uuid, created, updated, festival_id, name, company_id,
 			image, listing, listing_short, detail,
 			website, facebook, twitter, instagram,
 			genre_text, has_warnings, age_range, duration, warnings,
-			is_suspended, is_cancelled, replaced_by_id)
-	select	uuid_generate_v4(), clock_timestamp(), clock_timestamp(), v_test_festival_id, ts.name, tc.id, tv.id,
+			is_ticketed, is_suspended, is_cancelled, replaced_by_id)
+	select	uuid_generate_v4(), clock_timestamp(), clock_timestamp(), v_test_festival_id, ts.name, tc.id,
 			'', '', '', '',
 			'', '', '', '',
 			'', false, '', 45, '',
-			false, false, null
+			ts.is_ticketed, false, false, null
 	from 	tmp_show ts
-			join tmp_company tc on tc.name = ts.company
-			join tmp_venue tv on tv.name = ts.venue;
+			join tmp_company tc on tc.name = ts.company;
 
 	update	tmp_show ts
 	set 	id = ps.id
@@ -159,24 +159,27 @@ begin
 
 	insert
 	into 	program_showperformance
-			(uuid, created, updated, show_id, date, time, audience, notes)
-	select	uuid_generate_v4(), clock_timestamp(), clock_timestamp(), ts.id, current_date, tp.time, 0, ''
+			(uuid, created, updated, show_id, date, time, audience, notes, venue_id)
+	select	uuid_generate_v4(), clock_timestamp(), clock_timestamp(), ts.id, current_date, tp.time, 0, '', tv.id
 	from 	tmp_show ts
-			join tmp_performance tp on tp.seqno = ts.seqno;
+			join tmp_performance tp on tp.seqno = ts.seqno
+			join tmp_venue tv on tv.name = ts.venue;
 
 	insert
 	into 	program_showperformance
-			(uuid, created, updated, show_id, date, time, audience, notes)
-	select	uuid_generate_v4(), clock_timestamp(), clock_timestamp(), ts.id, current_date + 1, tp.time, 0, ''
+			(uuid, created, updated, show_id, date, time, audience, notes, venue_id)
+	select	uuid_generate_v4(), clock_timestamp(), clock_timestamp(), ts.id, current_date + 1, tp.time, 0, '', tv.id
 	from 	tmp_show ts
-			join tmp_performance tp on tp.seqno = ts.seqno;
+			join tmp_performance tp on tp.seqno = ts.seqno
+			join tmp_venue tv on tv.name = ts.venue;
 
 	insert
 	into 	program_showperformance
-			(uuid, created, updated, show_id, date, time, audience, notes)
-	select	uuid_generate_v4(), clock_timestamp(), clock_timestamp(), ts.id, current_date + 2, tp.time, 0, ''
+			(uuid, created, updated, show_id, date, time, audience, notes, venue_id)
+	select	uuid_generate_v4(), clock_timestamp(), clock_timestamp(), ts.id, current_date + 2, tp.time, 0, '', tv.id
 	from 	tmp_show ts
-			join tmp_performance tp on tp.seqno = ts.seqno;
+			join tmp_performance tp on tp.seqno = ts.seqno
+			join tmp_venue tv on tv.name = ts.venue;
 
 	-- Set online sales and box office open dates
 	update core_festival set online_sales_open = current_date, boxoffice_open = current_date where id = v_test_festival_id;
@@ -185,11 +188,13 @@ begin
 	insert
 	into 	core_user
 			(uuid, created, updated,
-			site_id, festival_id, email, password, first_name, last_name,
-			is_active, is_superuser, is_admin, is_volunteer, is_boxoffice, is_venue)
+			festival_id, email, password, first_name, last_name,
+			is_active, is_superuser, is_admin, is_volunteer, is_boxoffice, is_venue,
+			buttons_issued)
 	select	uuid_generate_v4(), clock_timestamp(), clock_timestamp(),
-			site_id, v_test_festival_id, email, password, first_name, last_name,
-			is_active, is_superuser, is_admin, is_volunteer, is_boxoffice, is_venue
+			v_test_festival_id, email, password, first_name, last_name,
+			is_active, is_superuser, is_admin, is_volunteer, is_boxoffice, is_venue,
+			0
 	from	core_user
 	where 	festival_id = v_curr_festival_id
 	and 	is_active = true
