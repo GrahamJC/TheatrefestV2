@@ -10,7 +10,12 @@ begin
 	select id into v_test_festival_id from core_festival where name = 'TEST';
 	select id into v_curr_festival_id from core_festival where name = 'TF2024';
 
-	-- Delete tickets, PAYW, sales, refunds, checkpoints, efringers and box offices
+	-- Delete baskets
+	delete from tickets_ticket where basket_id in (select id from core_user where festival_id = v_test_festival_id);
+	delete from tickets_fringer where basket_id in (select id from core_user where festival_id = v_test_festival_id);
+	delete from tickets_basket where user_id in (select id from core_user where festival_id = v_test_festival_id);
+
+	-- Delete sales (including tickets, fringers and PAYW), refunds, checkpoints and box offices
 	delete from tickets_ticket where sale_id in (select id from tickets_sale where festival_id = v_test_festival_id);
 	delete from tickets_payasyouwill where sale_id in (select id from tickets_sale where festival_id = v_test_festival_id);
 	delete from tickets_fringer where sale_id in (select id from tickets_sale where festival_id = v_test_festival_id);
@@ -30,7 +35,6 @@ begin
 
 	-- Delete users
 	delete from volunteers_volunteer where user_id in (select id from core_user where festival_id = v_test_festival_id);
-	delete from tickets_basket where user_id in (select id from core_user where festival_id = v_test_festival_id);
 	delete from core_user where festival_id = v_test_festival_id;
 
 	-- Box offices
