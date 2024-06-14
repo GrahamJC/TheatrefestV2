@@ -992,9 +992,10 @@ def render_main(request, venue, performance, sale=None, tab=None):
 
     # Create context and render page
     context = open_context(request, venue, performance)
-    context.update(sales_context(request, performance, sale))
-    context.update(close_context(request, venue, performance))
-    context.update(tickets_context(request, venue, performance))
+    if performance and performance.has_open_checkpoint:
+        context.update(sales_context(request, performance, sale))
+        context.update(close_context(request, venue, performance))
+        context.update(tickets_context(request, venue, performance))
     context.update(info_context(request, performance))
     context.update({
         'tab': tab or 'sales' if performance and performance.has_open_checkpoint else 'open',

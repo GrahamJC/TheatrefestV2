@@ -25,13 +25,12 @@
         </form>
 
         <div class="nav nav-tabs nav-justified mb-3">
+            <a id="open-tab" class="nav-item nav-link {% if tab == 'open' or not tab %}active{% endif %}" href="#open-tab-content" data-toggle="tab">Open</a>
             {% if performance.has_open_checkpoint %}
-                <a id="open-tab" class="nav-item nav-link {% if tab == 'open' or not tab %}active{% endif %}" href="#open-tab-content" data-toggle="tab">Open</a>
                 <a id="sales-tab" class="nav-item nav-link {% if tab == 'sales' %}active{% endif %}" href="#sales-tab-content" data-toggle="tab">Sales</a>
                 <a id="tickets-tab" class="nav-item nav-link {% if tab == 'tickets' %}active{% endif %}" href="#tickets-tab-content" data-toggle="tab" hx-get="{% url 'venue:tickets_refresh' performance.uuid %}" hx-target="#tickets-tab-content">Tickets</a>
                 <a id="close-tab" class="nav-item nav-link {% if tab == 'close' %}active{% endif %}" href="#close-tab-content" data-toggle="tab">Close</a>
             {% else %}
-                <a class="nav-item nav-link {% if tab == 'open' or not tab %}active{% endif %}" href="#open-tab-content" data-toggle="tab">Open</a>
                 <a class="nav-item nav-link disabled" href="#">Sales</a>
                 <a class="nav-item nav-link disabled" href="#">Tickets</a>
                 <a class="nav-item nav-link disabled" href="#">Close</a>
