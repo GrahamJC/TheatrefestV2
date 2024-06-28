@@ -84,16 +84,14 @@
                             <table class="table table-striped">
                                 <thead>
                                     <th>No</th>
-                                    <th>Customer</th>
-                                    <th>Type</th>
+                                    <th>Customer/Type</th>
                                     <th></th>
                                 </thead>
                                 <tbody>
                                     {% for ticket in refund_tickets %}
                                         <tr>
                                             <td>{{ ticket.id }}</td>
-                                            <td>{{ ticket.sale.customer }}</td>
-                                            <td>{{ ticket.description }}</td>
+                                            <td>{{ ticket.sale.customer }}<br/>{{ ticket.description }}</td>
                                             <td><button class="btn btn-link" hx-get='{% url "boxoffice:refund_add_ticket" refund.uuid ticket.uuid %}'>Add</button></td>
                                         </tr>
                                     {% endfor %}
