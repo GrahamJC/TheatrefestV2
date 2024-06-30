@@ -466,7 +466,7 @@ def users_context(request, boxoffice, search_form=None, email=None, user=None, b
         # Lookup tickets by customer e-mail (this is automatically set when a registered user buys
         # tickets online so it will capture both online and box office purchases linked to the e-mail
         # address)
-        tickets = Ticket.objects.filter(sale__festival=request.festival, sale__customer=email, sale__completed__isnull=False)
+        tickets = Ticket.objects.filter(sale__festival=request.festival, sale__customer=email, sale__completed__isnull=False, refund__isnull=True)
 
         # Group tickets by performance for display
         performances = []
@@ -490,7 +490,7 @@ def users_context(request, boxoffice, search_form=None, email=None, user=None, b
     if user:
 
         # Purchased
-        for s in user.sales.filter(completed__isnull=False, buttons__gt=0).order_by('completed'):
+        for s in user.badges_purchased().order_by('completed'):
             badges.append({
                 'date': s.completed.date,
                 'location': 'Online',
@@ -501,7 +501,7 @@ def users_context(request, boxoffice, search_form=None, email=None, user=None, b
         # Collected
         for bi in user.badges_issued.order_by('created'):
             badges.append({
-                'date': s.completed.date,
+                'date': bi.created.date,
                 'location': bi.boxoffice.name if bi.boxoffice else bi.venue.name,
                 'purchased': 0,
                 'collected': bi.badges,
