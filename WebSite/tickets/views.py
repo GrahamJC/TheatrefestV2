@@ -644,7 +644,7 @@ def payw_donate(request, show_uuid):
             completed = timezone.now(),
         )
         sale.save()
-        logger.info(f"Sale { sale.id } crfeated for eFringer PAYW donation to { show.name }")
+        logger.info(f"Sale { sale.id } created for eFringer PAYW donation to { show.name }")
 
         # Create donations for each fringer seleted
         for fringer_id in fringer_ids:
@@ -655,7 +655,7 @@ def payw_donate(request, show_uuid):
                 sale = sale,
                 show = show,
                 fringer = fringer,
-                amount = fringer.ticket_type.payment,
+                amount = fringer.type.ticket_type.payment,
             )
             payw.save()
 

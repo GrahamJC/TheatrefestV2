@@ -55,7 +55,7 @@
                     <tr class="bg-white sale-{{sale.id}} collapse">
                         <td/>
                         <td>{{ ticket.description }}</td>
-                        <td>£{{ ticket.cost }}</td>
+                        <td>£{{ ticket.type.price }}</td>
                         <td colspan="2">{{ ticket.performance.show.name }} on {{ ticket.performance.date | date:'M-d' }} at {{ ticket.performance.time }}</td>
                     </tr>
                 {% endfor %}

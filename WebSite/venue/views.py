@@ -99,6 +99,11 @@ def square_callback(request):
         # Display main page with the sale still selected
         return redirect(reverse('venue:main_performance_sale', args=[venue.uuid, performance.uuid, sale.uuid]))
 
+    # Tokens for venue ticket sales are issued immediately
+    for ticket in sale.tickets.all():
+        ticket.token_issued = True
+        ticket.save()
+
     # Complete the sale
     sale.transaction_ID = server_transaction_id
     sale.completed = timezone.now()
@@ -545,6 +550,11 @@ def sale_complete_zero(request, performance_uuid, sale_uuid):
     form = sale_update_form(sale, request.POST)
     if form.is_valid():
 
+        # Tokens for venue ticket sales are issued immediately
+        for ticket in sale.tickets.all():
+            ticket.token_issued = True
+            ticket.save()
+
         # Complete sale
         sale.notes = form.cleaned_data['notes']
         sale.completed = timezone.now()
@@ -814,6 +824,7 @@ def tickets_badges(request, performance_uuid):
         badges = issued,
     )
     badges_issued.save()
+    logger.info(f'{issued} badges issued to {user.email} at {venue.name}')
 
     # Remove (or update) badges link
     if user.badges_to_collect == 0:

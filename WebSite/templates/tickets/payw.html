@@ -19,7 +19,7 @@
                         <tr>
                             <td><input type="checkbox" name="fringer_id" value="{{ fringer.id }}" /></td>
                             <td style="width: 700%">{{ fringer.name }} ({{ fringer.available }} credits remaining)</td>
-                            <td style="width: 30%">&#163;{{ fringer.payment }}</td>
+                            <td style="width: 30%">&#163;{{ fringer.type.ticket_type.payment }}</td>
                         </tr>
                     {% endfor %}
                 </table>

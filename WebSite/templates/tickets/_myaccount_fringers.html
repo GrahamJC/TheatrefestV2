@@ -30,7 +30,7 @@
                                                 {% for payw in form.instance.PAYW_donations.all %}
                                                     <div>
                                                         {{ payw.show.name }}<br/>
-                                                        &nbsp;&nbsp;Pay as You Will donation (&#163;{{ form.instance.payment }})
+                                                        &nbsp;&nbsp;Pay as You Will donation (&#163;{{ payw.amount }})
                                                     </div>
                                             {% endfor %}
                                             </div>
