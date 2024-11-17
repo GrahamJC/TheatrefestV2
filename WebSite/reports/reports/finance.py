@@ -1098,7 +1098,7 @@ def get_ticket_payment(company, ticket_types, name):
     for show in company['shows']:
         for performance in show['performances']:
             tickets += performance['tickets'][ticket_type.name] 
-    return tickets * ticket_type['payment']
+    return tickets * ticket_type.payment
 
 def company_payment_xlsx(request, companies, ticket_types):
 
