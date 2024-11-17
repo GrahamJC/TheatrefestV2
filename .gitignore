@@ -262,6 +262,7 @@ __pycache__/
 
 # Python virtual environment
 env/
+.venv*/
 
 # Secrets file
 secrets.json
