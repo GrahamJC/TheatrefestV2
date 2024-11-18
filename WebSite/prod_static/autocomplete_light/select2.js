@@ -20,14 +20,17 @@ document.addEventListener('dal-init-function', function () {
         }
 
         function result_template(item) {
-            var text = template(item.text,
-                ($element.attr('data-html') !== undefined || $element.attr('data-result-html') !== undefined) && !item.create_id
-            );
+            var is_data_html = ($element.attr('data-html') !== undefined || $element.attr('data-result-html') !== undefined)
 
             if (item.create_id) {
-                return $('<span>').text(text).addClass('dal-create');
+              var $result = $('<span>').addClass('dal-create');
+              if (is_data_html){
+                return $result.html(item.text);
+              } else {
+                return $result.text(item.text);
+              }
             } else {
-                return text
+                return template(item.text, is_data_html);
             }
         }
 
@@ -71,9 +74,23 @@ document.addEventListener('dal-init-function', function () {
                 cache: true
             };
         }
-
+        use_tags = false;
+        tokenSeparators = null;
+        // Option 1: 'data-tags'
+        if ($element.attr('data-tags')) {
+            tokenSeparators = [','];
+            use_tags = true;
+        }
+        // Option 2: 'data-token-separators'
+        if ($element.attr('data-token-separators')) {
+            use_tags = true
+            tokenSeparators = $element.attr('data-token-separators')
+            if (tokenSeparators == 'null') {
+                tokenSeparators = null;
+            }
+        }
         $element.select2({
-            tokenSeparators: $element.attr('data-tags') ? [','] : null,
+            tokenSeparators: tokenSeparators,
             debug: true,
             containerCssClass: ':all:',
             placeholder: $element.attr('data-placeholder') || '',
@@ -84,7 +101,7 @@ document.addEventListener('dal-init-function', function () {
             templateSelection: selected_template,
             ajax: ajax,
             with: null,
-            tags: Boolean($element.attr('data-tags')),
+            tags: use_tags,
         });
 
         $element.on('select2:selecting', function (e) {
@@ -109,14 +126,21 @@ document.addEventListener('dal-init-function', function () {
                     xhr.setRequestHeader("X-CSRFToken", document.csrftoken);
                 },
                 success: function (data, textStatus, jqXHR) {
-                    select.append(
-                        $('<option>', {value: data.id, text: data.text, selected: true})
-                    );
-                    select.trigger('change');
-                    select.select2('close');
+                    if ('error' in data) {
+                        error = data['error']
+                        $('.dal-create').append(
+                            `<p class="invalid-feedback d-block""><strong>${error}</strong>`
+                        );
+
+                    } else {
+                        select.append(
+                            $('<option>', {value: data.id, text: data.text, selected: true})
+                        );
+                        select.trigger('change');
+                        select.select2('close');
+                    }
                 }
             });
         });
     });
 })
-

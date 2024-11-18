@@ -3,7 +3,7 @@
  */
 
 var yl = yl || {};
-yl.functions = {};
+yl.functions = yl.functions || {};
 /**
  * Register your own JS function for DAL.
  *
@@ -125,7 +125,7 @@ window.addEventListener("load", function () {
                 // these are used by django-nested-admin for nested template formsets
                 // note that the filter also ensures that 'empty' is not actually the related_name for some relation
                 // by ensuring that it is not surrounded by numbers on both sides
-                return !this.id.match(/(?<!-\d+)-empty-(?!\d+-)/);
+                return !this.id.match(/-empty-/) || this.id.match(/-\d+-empty-\d+-/);
             });
         }
 
@@ -167,6 +167,15 @@ window.addEventListener("load", function () {
 
             // Add element to the array of already initialized fields
             initialized.push(element);
+
+            // creates and dispatches the event to notify of the initialization completed
+            var dalElementInitializedEvent = new CustomEvent("dal-element-initialized", {
+                detail: {
+                    element: element,
+                }
+            });
+
+            document.dispatchEvent(dalElementInitializedEvent);
         }
 
         if (!window.__dal__initialize) {
@@ -175,6 +184,17 @@ window.addEventListener("load", function () {
             $(document).ready(function () {
                 $('[data-autocomplete-light-function]').excludeTemplateForms().each(initialize);
             });
+
+            /**
+             * Helper function to determine if the element is being dragged, so that we
+             * don't initialize the autocomplete fields. They will get initialized when the dragging stops.
+             *
+             * @param element The element to check
+             * @returns {boolean}
+             */
+            function isDraggingElement(element) {
+                return 'classList' in element && element.classList.contains('ui-sortable-helper');
+            }
 
             if ('MutationObserver' in window) {
                 new MutationObserver(function (mutations) {
@@ -187,7 +207,7 @@ window.addEventListener("load", function () {
                         if (mutationRecord.addedNodes.length > 0) {
                             for (var j = 0; j < mutationRecord.addedNodes.length; j++) {
                                 addedNode = mutationRecord.addedNodes[j];
-
+                                if (isDraggingElement(addedNode)) return;
                                 $(addedNode).find('[data-autocomplete-light-function]').excludeTemplateForms().each(initialize);
                             }
                         }
@@ -196,6 +216,7 @@ window.addEventListener("load", function () {
                 }).observe(document.documentElement, {childList: true, subtree: true});
             } else {
                 $(document).on('DOMNodeInserted', function (e) {
+                    if (isDraggingElement(e.target)) return;
                     $(e.target).find('[data-autocomplete-light-function]').excludeTemplateForms().each(initialize);
                 });
             }
@@ -237,7 +258,10 @@ window.addEventListener("load", function () {
                     data: function (params) {
                         return {
                             term: params.term,
-                            page: params.page
+                            page: params.page,
+                            app_label: $element.data('app-label'),
+                            model_name: $element.data('model-name'),
+                            field_name: $element.data('field-name')
                         };
                     }
                 }
@@ -260,11 +284,9 @@ window.addEventListener("load", function () {
             $('.admin-autocomplete').not('[name*=__prefix__]').djangoAdminSelect2();
         });
 
-        $(document).on('formset:added', (function () {
-            return function (event, $newFormset) {
-                return $newFormset.find('.admin-autocomplete').djangoAdminSelect2();
-            };
-        })(this));
+        document.addEventListener('formset:added', (event) => {
+            return $(event.target).find('.admin-autocomplete').djangoAdminSelect2();
+        });
     }(django.jQuery));
 
     (function ($, yl) {
