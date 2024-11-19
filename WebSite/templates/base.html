@@ -114,7 +114,10 @@
                                                 <a class="dropdown-item" href="{% url 'core:debug' %}">debug</a>
                                             {% endif %}
                                             <a class="dropdown-item" href="{% url 'password_change' %}">change password</a>
-                                            <a class="dropdown-item" href="{% url 'logout' %}">logout</a>
+                                            <form action="{% url 'logout' %}" method="POST">
+                                                {% csrf_token %}
+                                                <button class="dropdown-item" type="submit">logout</button>
+                                            </form>
                                         </div>
                                     </li>
                                 {% endif %}
