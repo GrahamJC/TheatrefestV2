@@ -144,12 +144,11 @@
 
                 <div id="tf-header">
                     <h3 id="tf-page-title">
+                        {% block pagetitle %}{% endblock %}
                         <div class="float-right mb-2">
                             <a href="https://www.facebook.com/TheatrefestND/"><img src="{% static 'facebook.png' %}"/></a>
-                            <a href="https://twitter.com/@theatrefestND"><img src="{% static 'twitter.png' %}"/></a>
                             <a href="https://www.instagram.com/theatrefestND"><img src="{% static 'instagram.png' %}"/></a>
                         </div>
-                        {% block pagetitle %}{% endblock %}
                     </h3>
                     <div class="clearfix"></div>
                     <div id="tf-alerts">
@@ -161,6 +160,8 @@
                                 </div>
                             {% endfor %}
                         {% endblock %}
+                    </div>
+                    <div id="tf-basket">
                         {% if request.user.is_authenticated and not request.festival.is_archived and not request.user.basket.is_empty %}
                             {% block basket %}
                                 <div class="alert alert-info">
