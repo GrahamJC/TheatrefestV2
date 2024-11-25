@@ -10,6 +10,7 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.template import Template, Context
 from django.urls import reverse, reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView
+from django.views.decorators.http import require_POST
 
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Field, HTML, Submit, Button, Row, Column
@@ -536,6 +537,16 @@ class AdminDocumentList(LoginRequiredMixin, ListView):
     def get_queryset(self):
         return Document.objects.filter(festival=self.request.festival)
 
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Documents' },
+        ]
+        context_data["previous_festival"] = self.request.festival.previous
+        return context_data
+
+
 
 class AdminDocumentCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
 
@@ -564,6 +575,28 @@ class AdminDocumentCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
             ),
         )
         return form
+
+
+@login_required
+@require_POST
+def admin_document_copy(request):
+
+    # Get document to be copied
+    copy_id = int(request.POST['copy_id'])
+    if copy_id > 0:
+        document_to_copy = get_object_or_404(Document, id=copy_id)
+        copy_name = document_to_copy.name
+        copy_document = Document.objects.filter(festival=request.festival, name=copy_name).first()
+        if copy_document:
+            copy_document.delete()
+        copy_document = Document(festival=request.festival, name=copy_name)
+        copy_document.file = document_to_copy.file
+        copy_document.filename = document_to_copy.filename
+        copy_document.save()
+        messages.success(request, 'Document copied')
+        return redirect('content:admin_document_update', slug=copy_document.uuid)
+    
+    return redirect('content:admin_document_list')
 
 
 class AdminDocumentUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
@@ -595,7 +628,7 @@ class AdminDocumentUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
             )
         )
         return form
-    
+
 
 @login_required
 def admin_document_delete(request, slug):

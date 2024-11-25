@@ -33,6 +33,7 @@ urlpatterns = [
     path('admin/image/<uuid:slug>/delete', views.admin_image_delete, name='admin_image_delete'),
     path('admin/document/list', views.AdminDocumentList.as_view(), name='admin_document_list'),
     path('admin/document/create', views.AdminDocumentCreate.as_view(), name='admin_document_create'),
+    path('admin/document/copy', views.admin_document_copy, name='admin_document_copy'),
     path('admin/document/<uuid:slug>/update', views.AdminDocumentUpdate.as_view(), name='admin_document_update'),
     path('admin/document/<uuid:slug>/delete', views.admin_document_delete, name='admin_document_delete'),
     path('admin/resource/list', views.AdminResourceList.as_view(), name='admin_resource_list'),

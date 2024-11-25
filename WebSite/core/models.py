@@ -35,6 +35,7 @@ class Festival(TimeStampedModel):
     volunteer_comps = models.PositiveIntegerField(blank = True, default = 0)
     boxoffice_open = models.DateField(null=True, blank=True)
     boxoffice_close = models.DateField(null=True, blank=True)
+    previous = models.ForeignKey('self', null=True, on_delete=models.PROTECT, related_name="+")
 
     def __str__(self):
         return self.title

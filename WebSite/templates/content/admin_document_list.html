@@ -5,26 +5,45 @@
 
 {% block content %}
 
-    <table class="table">
-        <thead class="thead-light">
-            <tr>
-                <th>Name</th>
-                <th>Filename</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for document in documents %}
-                <tr>
-                    <td><a href="{% url 'content:admin_document_update' document.uuid %}">{{ document.name }}</a></td>
-                    <td>{{ document.filename }}</td>
-                </tr>
-            {%endfor %}
-        </tbody>
-    </table>
-
-    <div class="row">
-        <div class="col-6"><a href="{% url 'festival:admin' %}" class="btn btn-secondary">Back</a></div>
-        <div class="col-6 text-right"><a href="{% url 'content:admin_document_create' %}" class="btn btn-primary">Add Document</a></div>
+<div class="row">
+    <div class="col-3"><a href="{% url 'content:admin_document_create' %}" class="btn btn-primary">Add Document</a></div>
+    <div class="col-9 text-right">
+        {% if previous_festival %}
+            <form class="form-inline" method="post" action="{% url 'content:admin_document_copy' %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <select class="form-control" name="copy_id">
+                        <option value="0">Select document to copy</option>
+                        {% for document in previous_festival.documents.all %}
+                            <option value="{{ document.id }}">{{ document.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button class="btn btn-primary" type="submit">Copy from {{ request.festival.name }}</button>
+            </form>
+        {% endif %}
     </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <table class="table">
+            <thead class="thead-light">
+                <tr>
+                    <th>Name</th>
+                    <th>Filename</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for document in documents %}
+                    <tr>
+                        <td><a href="{% url 'content:admin_document_update' document.uuid %}">{{ document.name }}</a></td>
+                        <td>{{ document.filename }}</td>
+                    </tr>
+                {%endfor %}
+            </tbody>
+        </table>
+    </div>    
+</div>
 
 {% endblock %}
