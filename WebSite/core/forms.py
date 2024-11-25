@@ -14,7 +14,7 @@ from django_registration.forms import RegistrationForm as BaseRegistrationForm
 
 from bootstrap_datepicker_plus.widgets import DatePickerInput, TimePickerInput
 
-from core.models import User
+from core.models import Festival, User
 
 
 class AdminUserCreationForm(forms.ModelForm):
@@ -243,6 +243,7 @@ class MultiModelForm(MultiForm):
 
 class DebugForm(forms.Form):
 
+    festival = forms.ModelChoiceField(required=False, queryset=Festival.objects.all())
     date = forms.DateField(required=False, widget=DatePickerInput)
     time = forms.TimeField(required=False, widget=TimePickerInput)
 

@@ -19,6 +19,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Field, HTML, Submit, Button, Row, Column
 from crispy_forms.bootstrap import FormActions, TabHolder, Tab
 
+from core.models import Festival
 from .forms import RegistrationForm, PasswordResetForm, DebugForm
 
 User = get_user_model()
@@ -112,6 +113,9 @@ class DebugFormView(FormView):
 
     def get_initial(self):
         initial = {}
+        festival_id = self.request.session.get('festival_id', None)
+        if festival_id and festival_id != settings.DEFAULT_FESTIVAL:
+            initial['festival'] = festival_id
         if 'date' in self.request.session:
             initial['date'] = dateutil.parser.parse(self.request.session['date']).date()
         if 'time' in self.request.session:
@@ -127,6 +131,7 @@ class DebugFormView(FormView):
         form = super().get_form()
         form.helper = FormHelper()
         form.helper.layout = Layout(
+            Field('festival'),
             Row(
                 Column('date', css_class='form-group col-md-6 mb-0'),
                 Column('time', css_class='form-group col-md-6 mb-0'),
@@ -139,6 +144,10 @@ class DebugFormView(FormView):
         return form
 
     def form_valid(self, form):
+        if form.cleaned_data['festival']:
+            self.request.session['festival_id'] = form.cleaned_data['festival'].id
+        else:
+            del self.request.session['festival_id']
         if form.cleaned_data['date']:
             self.request.session['date'] = str(form.cleaned_data['date'])
         elif 'date' in self.request.session:
