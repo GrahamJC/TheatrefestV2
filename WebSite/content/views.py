@@ -154,6 +154,15 @@ class AdminPageList(LoginRequiredMixin, ListView):
     def get_queryset(self):
         return Page.objects.filter(festival=self.request.festival)
 
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Pages' },
+        ]
+        context_data['previous_festival'] = self.request.festival.previous
+        return context_data
+
 
 class AdminPageCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
 
@@ -180,8 +189,48 @@ class AdminPageCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         )
         return form
 
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Pages', 'url': reverse('content:admin_page_list') },
+            { 'text': 'Add' },
+        ]
+        return context_data
+
     def get_success_url(self):
         return reverse('content:admin_page_update', args=[self.object.uuid])
+
+
+@login_required
+@require_POST
+def admin_page_copy(request):
+
+    # Get page to be copied
+    copy_id = int(request.POST['copy_id'])
+    if copy_id == 0:
+        messages.warning(request, 'No page selected')
+        return redirect('content:admin_page_list')
+    page_to_copy = get_object_or_404(Page, id=copy_id)
+
+    # If page name already exists in this festival add a numeric suffix
+    copy_name = page_to_copy.name
+    index = 0
+    while Page.objects.filter(festival=request.festival, name=copy_name).exists():
+        index += 1
+        copy_name = f"{page_to_copy.name}_{index}"
+
+    # Copy the page and associated images
+    copy_page = Page(festival=request.festival, name=copy_name)
+    copy_page.title = page_to_copy.title
+    copy_page.body = page_to_copy.body
+    copy_page.body_test = ''
+    copy_page.save()
+    for image in page_to_copy.images.all():
+        copy_image = PageImage(page=copy_page, name=image.name, image=image.image)
+        copy_image.save()
+    messages.success(request, 'Page copied')
+    return redirect('content:admin_page_update', slug=copy_page.uuid)
 
 
 class AdminPageUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
@@ -248,6 +297,11 @@ class AdminPageUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Pages', 'url': reverse('content:admin_page_list') },
+            { 'text': 'Update' },
+        ]
         context_data['initial_tab'] = self.initial_tab
         return context_data
 
@@ -301,6 +355,12 @@ class AdminPageImageCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
         context_data['page'] = self.page
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Pages', 'url': reverse('content:admin_page_list') },
+            { 'text': self.page.name, 'url': reverse('content:admin_page_update', args=[self.page.uuid]) },
+            { 'text': 'Add Image' },
+        ]
         return context_data
 
     def get_success_url(self):
@@ -342,6 +402,12 @@ class AdminPageImageUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
         context_data['page'] = self.page
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Pages', 'url': reverse('content:admin_page_list') },
+            { 'text': self.page.name, 'url': reverse('content:admin_page_update', args=[self.page.uuid]) },
+            { 'text': 'Update Image' },
+        ]
         return context_data
 
     def get_success_url(self):
@@ -366,6 +432,15 @@ class AdminNavigatorList(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         return Navigator.objects.filter(festival=self.request.festival)
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Navigators' },
+        ]
+        context_data['previous_festival'] = self.request.festival.previous
+        return context_data
 
 
 class AdminNavigatorCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
@@ -400,6 +475,44 @@ class AdminNavigatorCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
             ),
         )
         return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Navigators', 'url': reverse('content:admin_navigator_list') },
+            { 'text': 'Add' },
+        ]
+        return context_data
+
+
+@login_required
+@require_POST
+def admin_navigator_copy(request):
+
+    # Get navigator to be copied
+    copy_id = int(request.POST['copy_id'])
+    if copy_id == 0:
+        messages.warning(request, 'No navigator selected')
+        return redirect('content:admin_navigator_list')
+    navigator_to_copy = get_object_or_404(Navigator, id=copy_id)
+
+    # If navigator name already exists in this festival add a numeric suffix
+    copy_name = navigator_to_copy.label
+    index = 0
+    while Navigator.objects.filter(festival=request.festival, label=copy_name).exists():
+        index += 1
+        copy_name = f"{navigator_to_copy.name}_{index}"
+
+    # Copy the navigator
+    copy_navigator = Navigator(festival=request.festival, label=copy_name)
+    copy_navigator.seqno = navigator_to_copy.seqno
+    copy_navigator.type = navigator_to_copy.type
+    copy_navigator.url = navigator_to_copy.url
+    copy_navigator.page = navigator_to_copy.page
+    copy_navigator.save()
+    messages.success(request, 'Navigator copied')
+    return redirect('content:admin_navigator_update', slug=copy_navigator.uuid)
 
 
 class AdminNavigatorUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
@@ -436,6 +549,15 @@ class AdminNavigatorUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
             )
         )
         return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Navigators', 'url': reverse('content:admin_navigator_list') },
+            { 'text': 'Update' },
+        ]
+        return context_data
     
 
 @login_required
@@ -456,6 +578,15 @@ class AdminImageList(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         return Image.objects.filter(festival=self.request.festival)
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Images' },
+        ]
+        context_data['previous_festival'] = self.request.festival.previous
+        return context_data
 
 
 class AdminImageCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
@@ -485,6 +616,42 @@ class AdminImageCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
             ),
         )
         return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Images', 'url': reverse('content:admin_image_list') },
+            { 'text': 'Add' },
+        ]
+        return context_data
+
+
+@login_required
+@require_POST
+def admin_image_copy(request):
+
+    # Get image to be copied
+    copy_id = int(request.POST['copy_id'])
+    if copy_id == 0:
+        messages.warning(request, 'No image selected')
+        return redirect('content:admin_image_list')
+    image_to_copy = get_object_or_404(Image, id=copy_id)
+
+    # If image name already exists in this festival add a numeric suffix
+    copy_name = image_to_copy.name
+    index = 0
+    while Image.objects.filter(festival=request.festival, name=copy_name).exists():
+        index += 1
+        copy_name = f"{image_to_copy.name}_{index}"
+
+    # Copy the image
+    copy_image = Image(festival=request.festival, name=copy_name)
+    copy_image.image = image_to_copy.image
+    copy_image.map = image_to_copy.map
+    copy_image.save()
+    messages.success(request, 'Image copied')
+    return redirect('content:admin_image_update', slug=copy_image.uuid)
 
 
 class AdminImageUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
@@ -516,6 +683,15 @@ class AdminImageUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
             )
         )
         return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Images', 'url': reverse('content:admin_image_list') },
+            { 'text': 'Update' },
+        ]
+        return context_data
     
 
 @login_required
@@ -547,7 +723,6 @@ class AdminDocumentList(LoginRequiredMixin, ListView):
         return context_data
 
 
-
 class AdminDocumentCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
 
     model = Document
@@ -576,6 +751,15 @@ class AdminDocumentCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         )
         return form
 
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Documents', 'url': reverse('content:admin_document_list') },
+            { 'text': 'Add' },
+        ]
+        return context_data
+
 
 @login_required
 @require_POST
@@ -583,20 +767,25 @@ def admin_document_copy(request):
 
     # Get document to be copied
     copy_id = int(request.POST['copy_id'])
-    if copy_id > 0:
-        document_to_copy = get_object_or_404(Document, id=copy_id)
-        copy_name = document_to_copy.name
-        copy_document = Document.objects.filter(festival=request.festival, name=copy_name).first()
-        if copy_document:
-            copy_document.delete()
-        copy_document = Document(festival=request.festival, name=copy_name)
-        copy_document.file = document_to_copy.file
-        copy_document.filename = document_to_copy.filename
-        copy_document.save()
-        messages.success(request, 'Document copied')
-        return redirect('content:admin_document_update', slug=copy_document.uuid)
-    
-    return redirect('content:admin_document_list')
+    if copy_id == 0:
+        messages.warning(request, 'No document selected')
+        return redirect('content:admin_document_list')
+    document_to_copy = get_object_or_404(Document, id=copy_id)
+
+    # If document name already exists in this festival add a numeric suffix
+    copy_name = document_to_copy.name
+    index = 0
+    while Document.objects.filter(festival=request.festival, name=copy_name).exists():
+        index += 1
+        copy_name = f"{document_to_copy.name}_{index}"
+
+    # Copy the document
+    copy_document = Document(festival=request.festival, name=copy_name)
+    copy_document.file = document_to_copy.file
+    copy_document.filename = document_to_copy.filename
+    copy_document.save()
+    messages.success(request, 'Document copied')
+    return redirect('content:admin_document_update', slug=copy_document.uuid)
 
 
 class AdminDocumentUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
@@ -629,6 +818,15 @@ class AdminDocumentUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
         )
         return form
 
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Documents', 'url': reverse('content:admin_document_list') },
+            { 'text': 'Update' },
+        ]
+        return context_data
+
 
 @login_required
 def admin_document_delete(request, slug):
@@ -648,6 +846,15 @@ class AdminResourceList(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         return Resource.objects.filter(festival=self.request.festival)
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Resources' },
+        ]
+        context_data["previous_festival"] = self.request.festival.previous
+        return context_data
 
 
 class AdminResourceCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
@@ -680,6 +887,43 @@ class AdminResourceCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
             ),
         )
         return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Resources', 'url': reverse('content:admin_resource_list') },
+            { 'text': 'Update' },
+        ]
+        return context_data
+
+
+@login_required
+@require_POST
+def admin_resource_copy(request):
+
+    # Get resource to be copied
+    copy_id = int(request.POST['copy_id'])
+    if copy_id == 0:
+        messages.warning(request, 'No resource selected')
+        return redirect('content:admin_resource_list')
+    resource_to_copy = get_object_or_404(Resource, id=copy_id)
+
+    # If resource name already exists in this festival add a numeric suffix
+    copy_name = resource_to_copy.name
+    index = 0
+    while Resource.objects.filter(festival=request.festival, name=copy_name).exists():
+        index += 1
+        copy_name = f"{resource_to_copy.name}_{index}"
+
+    # Copy the resource
+    copy_resource = Resource(festival=request.festival, name=copy_name)
+    copy_resource.type = resource_to_copy.type
+    copy_resource.body = resource_to_copy.body
+    copy_resource.body_test = ""
+    copy_resource.save()
+    messages.success(request, 'Resource copied')
+    return redirect('content:admin_resource_update', slug=copy_resource.uuid)
 
 
 class AdminResourceUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
@@ -744,6 +988,11 @@ class AdminResourceUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Resources', 'url': reverse('content:admin_resource_list') },
+            { 'text': 'Update' },
+        ]
         context_data['initial_tab'] = self.initial_tab
         return context_data
 
