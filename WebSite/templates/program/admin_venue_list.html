@@ -5,28 +5,47 @@
 
 {% block content %}
 
-    <table class="table">
-        <thead class="thead-light">
-            <tr>
-                <th>Name</th>
-                <th>Capacity</th>
-                <th>Sponsor</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for venue in venues %}
-                <tr>
-                    <td><a href="{% url 'program:admin_venue_update' venue.uuid %}">{{ venue.name }}</a></td>
-                    <td>{{ venue.capacity }}</td>
-                    <td>{% if venue.sponsor %}{{ venue.sponsor.name }}{% endif %}</td>
-                </tr>
-            {%endfor %}
-        </tbody>
-    </table>
-
-    <div class="row">
-        <div class="col-6"><a href="{% url 'festival:admin' %}" class="btn btn-secondary">Back</a></div>
-        <div class="col-6 text-right"><a href="{% url 'program:admin_venue_create' %}" class="btn btn-primary">Add Venue</a></div>
+<div class="row mb-2">
+    <div class="col-3"><a href="{% url 'program:admin_venue_create' %}" class="btn btn-primary">Add Venue</a></div>
+    <div class="col-9">
+        {% if festival.previous %}
+            <form class="form-inline justify-content-end" method="post" action="{% url 'program:admin_venue_copy' %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <select class="form-control" name="copy_id">
+                        <option value="0">Select venue to copy</option>
+                        {% for venue in festival.previous.venues.all %}
+                            <option value="{{ venue.id }}">{{ venue.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button class="btn btn-primary ml-2" type="submit">Copy from {{ festival.previous.name }}</button>
+            </form>
+        {% endif %}
     </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <table class="table">
+            <thead class="thead-light">
+                <tr>
+                    <th>Name</th>
+                    <th>Capacity</th>
+                    <th>Sponsor</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for venue in venues %}
+                    <tr>
+                        <td><a href="{% url 'program:admin_venue_update' venue.uuid %}">{{ venue.name }}</a></td>
+                        <td>{{ venue.capacity }}</td>
+                        <td>{% if venue.sponsor %}{{ venue.sponsor.name }}{% endif %}</td>
+                    </tr>
+                {%endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 
 {% endblock %}

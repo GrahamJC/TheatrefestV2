@@ -238,6 +238,39 @@ class AdminTicketTypeCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView)
     def get_success_url(self):
         return reverse('festival:admin_tickettype_list')
 
+
+@login_required
+@require_POST
+def admin_tickettype_copy(request):
+
+    # Get ticket type to be copied
+    copy_id = int(request.POST['copy_id'])
+    if copy_id == 0:
+        messages.warning(request, 'No type selected')
+        return redirect('festival:admin_tickettype_list')
+    type_to_copy = get_object_or_404(TicketType, id=copy_id)
+
+    # If type name already exists in this festival add a numeric suffix
+    copy_name = type_to_copy.name
+    index = 0
+    while TicketType.objects.filter(festival=request.festival, name=copy_name).exists():
+        index += 1
+        copy_name = f"{type_to_copy.name}_{index}"
+
+    # Copy the type
+    copy_type = TicketType(festival=request.festival, name=copy_name)
+    copy_type.seqno = type_to_copy.seqno
+    copy_type.price = type_to_copy.price
+    copy_type.is_online = type_to_copy.is_online
+    copy_type.is_boxoffice = type_to_copy.is_boxoffice
+    copy_type.is_venue = type_to_copy.is_venue
+    copy_type.rules = type_to_copy.rules
+    copy_type.payment = type_to_copy.payment
+    copy_type.save()
+    messages.success(request, 'Type copied')
+    return redirect('festival:admin_tickettype_update', slug=copy_type.uuid)
+
+
 class AdminTicketTypeUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
 
     model = TicketType
@@ -365,6 +398,36 @@ class AdminFringerTypeCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView
 
     def get_success_url(self):
         return reverse('festival:admin_fringertype_list')
+
+
+@login_required
+@require_POST
+def admin_fringertype_copy(request):
+
+    # Get type to be copied
+    copy_id = int(request.POST['copy_id'])
+    if copy_id == 0:
+        messages.warning(request, 'No type selected')
+        return redirect('festival:admin_fringertype_list')
+    type_to_copy = get_object_or_404(FringerType, id=copy_id)
+
+    # If type name already exists in this festival add a numeric suffix
+    copy_name = type_to_copy.name
+    index = 0
+    while FringerType.objects.filter(festival=request.festival, name=copy_name).exists():
+        index += 1
+        copy_name = f"{type_to_copy.name}_{index}"
+
+    # Copy the type
+    copy_type = FringerType(festival=request.festival, name=copy_name)
+    copy_type.shows = type_to_copy.shows
+    copy_type.price = type_to_copy.price
+    copy_type.is_online = type_to_copy.is_online
+    copy_type.rules = type_to_copy.rules
+    copy_type.ticket_type = TicketType.objects.filter(festival=copy_type.festival, name=type_to_copy.ticket_type.name).first()
+    copy_type.save()
+    messages.success(request, 'Type copied')
+    return redirect('festival:admin_fringertype_update', slug=copy_type.uuid)
 
 class AdminFringerTypeUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
 

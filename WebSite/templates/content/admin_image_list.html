@@ -8,18 +8,18 @@
 <div class="row mb-2">
     <div class="col-3"><a href="{% url 'content:admin_image_create' %}" class="btn btn-primary">Add Image</a></div>
     <div class="col-9">
-        {% if previous_festival %}
+        {% if festival.previous %}
             <form class="form-inline justify-content-end" method="post" action="{% url 'content:admin_image_copy' %}">
                 {% csrf_token %}
                 <div class="form-group">
                     <select class="form-control" name="copy_id">
                         <option value="0">Select image to copy</option>
-                        {% for image in previous_festival.images.all %}
+                        {% for image in festival.previous.images.all %}
                             <option value="{{ image.id }}">{{ image.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <button class="btn btn-primary ml-2" type="submit">Copy from {{ request.festival.name }}</button>
+                <button class="btn btn-primary ml-2" type="submit">Copy from {{ festival.previous.name }}</button>
             </form>
         {% endif %}
     </div>

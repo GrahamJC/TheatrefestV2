@@ -13,6 +13,7 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.template import engines, Template, Context
 from django.urls import reverse, reverse_lazy
 from django.views import View
+from django.views.decorators.http import require_POST
 from django.views.generic import ListView, CreateView, UpdateView
 
 from crispy_forms.helper import FormHelper
@@ -362,6 +363,15 @@ class AdminGenreList(LoginRequiredMixin, ListView):
     def get_queryset(self):
         return Genre.objects.filter(festival=self.request.festival)
 
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Genres' },
+        ]
+        return context_data
+
 
 class AdminGenreCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
 
@@ -388,6 +398,40 @@ class AdminGenreCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
             ),
         )
         return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Navigators', 'url': reverse('program:admin_genre_list') },
+            { 'text': 'Add' },
+        ]
+        return context_data
+
+
+@login_required
+@require_POST
+def admin_genre_copy(request):
+
+    # Get genre to be copied
+    copy_id = int(request.POST['copy_id'])
+    if copy_id == 0:
+        messages.warning(request, 'No genre selected')
+        return redirect('program:admin_genre_list')
+    genre_to_copy = get_object_or_404(Genre, id=copy_id)
+
+    # If genre name already exists in this festival add a numeric suffix
+    copy_name = genre_to_copy.name
+    index = 0
+    while Genre.objects.filter(festival=request.festival, name=copy_name).exists():
+        index += 1
+        copy_name = f"{genre_to_copy.name}_{index}"
+
+    # Copy the genre
+    copy_genre = Genre(festival=request.festival, name=copy_name)
+    copy_genre.save()
+    messages.success(request, 'Genre copied')
+    return redirect('program:admin_genre_update', slug=copy_genre.uuid)
 
 
 class AdminGenreUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
@@ -417,6 +461,15 @@ class AdminGenreUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
             )
         )
         return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Navigators', 'url': reverse('program:admin_genre_list') },
+            { 'text': 'Update' },
+        ]
+        return context_data
     
 
 @login_required
@@ -437,6 +490,15 @@ class AdminVenueList(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         return Venue.objects.filter(festival=self.request.festival)
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Venues' },
+        ]
+        return context_data
 
 
 class AdminVenueCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
@@ -464,8 +526,73 @@ class AdminVenueCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         )
         return form
 
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Venues', 'url': reverse('program:admin_venue_list') },
+            { 'text': 'Add' },
+        ]
+        return context_data
+
     def get_success_url(self):
         return reverse('program:admin_venue_update', args=[self.object.uuid])
+
+
+@login_required
+@require_POST
+def admin_venue_copy(request):
+
+    # Get venue to be copied
+    copy_id = int(request.POST['copy_id'])
+    if copy_id == 0:
+        messages.warning(request, 'No venue selected')
+        return redirect('program:admin_venue_list')
+    venue_to_copy = get_object_or_404(Venue, id=copy_id)
+
+    # If venue name already exists in this festival add a numeric suffix
+    copy_name = venue_to_copy.name
+    index = 0
+    while Venue.objects.filter(festival=request.festival, name=copy_name).exists():
+        index += 1
+        copy_name = f"{venue_to_copy.name}_{index}"
+
+    # Copy the venue and contacts (but not sponsors)
+    copy_venue = Venue(festival=request.festival, name=copy_name)
+    copy_venue.image = venue_to_copy.image
+    copy_venue.listing = venue_to_copy.listing
+    copy_venue.listing_short = venue_to_copy.listing_short
+    copy_venue.detail = venue_to_copy.detail
+    copy_venue.address1 = venue_to_copy.address1
+    copy_venue.address2 = venue_to_copy.address2
+    copy_venue.city = venue_to_copy.city
+    copy_venue.post_code = venue_to_copy.post_code
+    copy_venue.telno = venue_to_copy.telno
+    copy_venue.email = venue_to_copy.email
+    copy_venue.website = venue_to_copy.website
+    copy_venue.facebook = venue_to_copy.facebook
+    copy_venue.twitter = venue_to_copy.twitter
+    copy_venue.instagram = venue_to_copy.instagram
+    copy_venue.is_ticketed = venue_to_copy.is_ticketed
+    copy_venue.is_scheduled = venue_to_copy.is_scheduled
+    copy_venue.is_searchable = venue_to_copy.is_searchable
+    copy_venue.capacity = venue_to_copy.capacity
+    copy_venue.map_index = venue_to_copy.map_index
+    copy_venue.color = venue_to_copy.color
+    copy_venue.save()
+    for contact in venue_to_copy.contacts.all():
+        copy_contact = VenueContact(venue=copy_venue, name=contact.name)
+        copy_contact.role = contact.role
+        copy_contact.address1 = contact.address1
+        copy_contact.address2 = contact.address2
+        copy_contact.city = contact.city
+        copy_contact.post_code = contact.post_code
+        copy_contact.telno = contact.telno
+        copy_contact.mobile = contact.mobile
+        copy_contact.email = contact.email
+        copy_contact.save()
+    messages.success(request, 'Venue copied')
+    return redirect('program:admin_venue_update', slug=copy_venue.uuid)
 
 
 class AdminVenueUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
@@ -562,6 +689,15 @@ class AdminVenueUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
+        return context_data
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Venues', 'url': reverse('program:admin_venue_list') },
+            { 'text': 'Update' },
+        ]
         context_data['initial_tab'] = self.initial_tab
         return context_data
     
@@ -622,7 +758,14 @@ class AdminVenueContactCreate(LoginRequiredMixin, SuccessMessageMixin, CreateVie
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
         context_data['venue'] = self.venue
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Venues', 'url': reverse('program:admin_venue_list') },
+            { 'text': self.venue.name, 'url': reverse('program:admin_venue_update', args=[self.venue.uuid]) },
+            { 'text': 'Add Contact' },
+        ]
         return context_data
+
 
     def get_success_url(self):
         return reverse('program:admin_venue_update_tab', args=[self.venue.uuid, 'contacts'])
@@ -675,7 +818,18 @@ class AdminVenueContactUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateVie
 
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
+        return context_data
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
         context_data['venue'] = self.venue
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Venues', 'url': reverse('program:admin_venue_list') },
+            { 'text': self.venue.name, 'url': reverse('program:admin_venue_update', args=[self.venue.uuid]) },
+            { 'text': 'Update Contact' },
+        ]
+        context_data['initial_tab'] = self.initial_tab
         return context_data
 
     def get_success_url(self):
@@ -747,6 +901,13 @@ class AdminVenueSponsorCreate(LoginRequiredMixin, SuccessMessageMixin, CreateVie
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
         context_data['venue'] = self.venue
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Venues', 'url': reverse('program:admin_venue_list') },
+            { 'text': self.venue.name, 'url': reverse('program:admin_venue_update', args=[self.venue.uuid]) },
+            { 'text': 'Add Sponsor' },
+        ]
+        context_data['initial_tab'] = self.initial_tab
         return context_data
 
     def get_success_url(self):
@@ -810,6 +971,13 @@ class AdminVenueSponsorUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateVie
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
         context_data['venue'] = self.venue
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Venues', 'url': reverse('program:admin_venue_list') },
+            { 'text': self.venue.name, 'url': reverse('program:admin_venue_update', args=[self.venue.uuid]) },
+            { 'text': 'Update Sponsor' },
+        ]
+        context_data['initial_tab'] = self.initial_tab
         return context_data
 
     def get_success_url(self):
@@ -834,6 +1002,15 @@ class AdminCompanyList(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         return Company.objects.filter(festival=self.request.festival)
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Companies' },
+        ]
+        return context_data
 
 
 class AdminCompanyCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
@@ -860,6 +1037,15 @@ class AdminCompanyCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
             ),
         )
         return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Companies', 'url': reverse('program:admin_company_list') },
+            { 'text': 'Add' },
+        ]
+        return context_data
 
     def get_success_url(self):
         return reverse('program:admin_company_update', args=[self.object.uuid])
@@ -941,6 +1127,11 @@ class AdminCompanyUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Companies', 'url': reverse('program:admin_company_list') },
+            { 'text': 'Update' },
+        ]
         context_data['initial_tab'] = self.initial_tab
         return context_data
     
@@ -1001,6 +1192,12 @@ class AdminCompanyContactCreate(LoginRequiredMixin, SuccessMessageMixin, CreateV
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
         context_data['company'] = self.company
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Companies', 'url': reverse('program:admin_company_list') },
+            { 'text': self.company.name, 'url': reverse('program:admin_company_update', args=[self.company.uuid]) },
+            { 'text': 'Add Contact' },
+        ]
         return context_data
 
     def get_success_url(self):
@@ -1055,6 +1252,12 @@ class AdminCompanyContactUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateV
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
         context_data['company'] = self.company
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Companies', 'url': reverse('program:admin_company_list') },
+            { 'text': self.company.name, 'url': reverse('program:admin_company_update', args=[self.company.uuid]) },
+            { 'text': 'Update Contact' },
+        ]
         return context_data
 
     def get_success_url(self):
@@ -1079,6 +1282,15 @@ class AdminShowList(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         return Show.objects.filter(festival=self.request.festival)
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Shows' },
+        ]
+        return context_data
 
 
 class AdminShowCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
@@ -1107,6 +1319,16 @@ class AdminShowCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
             ),
         )
         return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['show'] = self.show
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Shows', 'url': reverse('program:admin_show_list') },
+            { 'text': 'Add' },
+        ]
+        return context_data
 
     def get_success_url(self):
         return reverse('program:admin_show_update', args=[self.object.uuid])
@@ -1202,6 +1424,12 @@ class AdminShowUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
+        context_data['show'] = self.show
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Shows', 'url': reverse('program:admin_show_list') },
+            { 'text': 'Update' },
+        ]
         context_data['initial_tab'] = self.initial_tab
         return context_data
     
@@ -1253,6 +1481,12 @@ class AdminShowPerformanceCreate(LoginRequiredMixin, SuccessMessageMixin, Create
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
         context_data['show'] = self.show
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Shows', 'url': reverse('program:admin_show_list') },
+            { 'text': self.show.name, 'url': reverse('program:admin_show_update', args=[self.show.uuid]) },
+            { 'text': 'Add Performance' },
+        ]
         return context_data
 
     def get_success_url(self):
@@ -1299,6 +1533,12 @@ class AdminShowPerformanceUpdate(LoginRequiredMixin, SuccessMessageMixin, Update
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
         context_data['show'] = self.show
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Shows', 'url': reverse('program:admin_show_list') },
+            { 'text': self.show.name, 'url': reverse('program:admin_show_update', args=[self.show.uuid]) },
+            { 'text': 'Update Performance' },
+        ]
         return context_data
 
     def get_success_url(self):
@@ -1350,6 +1590,12 @@ class AdminShowReviewCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView)
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
         context_data['show'] = self.show
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Shows', 'url': reverse('program:admin_show_list') },
+            { 'text': self.show.name, 'url': reverse('program:admin_show_update', args=[self.show.uuid]) },
+            { 'text': 'Add Review' },
+        ]
         return context_data
 
     def get_success_url(self):
@@ -1393,6 +1639,12 @@ class AdminShowReviewUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView)
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
         context_data['show'] = self.show
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Shows', 'url': reverse('program:admin_show_list') },
+            { 'text': self.show.name, 'url': reverse('program:admin_show_update', args=[self.show.uuid]) },
+            { 'text': 'Update Review' },
+        ]
         return context_data
 
     def get_success_url(self):
@@ -1442,6 +1694,12 @@ class AdminShowImageCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
         context_data['show'] = self.show
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Shows', 'url': reverse('program:admin_show_list') },
+            { 'text': self.show.name, 'url': reverse('program:admin_show_update', args=[self.show.uuid]) },
+            { 'text': 'Add Image' },
+        ]
         return context_data
 
     def get_success_url(self):
@@ -1483,6 +1741,13 @@ class AdminShowImageUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
         context_data['show'] = self.show
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Shows', 'url': reverse('program:admin_show_list') },
+            { 'text': self.show.name, 'url': reverse('program:admin_show_update', args=[self.show.uuid]) },
+            { 'text': 'Update Image' },
+        ]
+        context_data['initial_tab'] = self.initial_tab
         return context_data
 
     def get_success_url(self):

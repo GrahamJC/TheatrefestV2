@@ -5,24 +5,29 @@
 
 {% block content %}
 
-    <table class="table">
-        <thead class="thead-light">
-            <tr>
-                <th>Name</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for company in companies %}
-                <tr>
-                    <td><a href="{% url 'program:admin_company_update' company.uuid %}">{{ company.name }}</a></td>
-                </tr>
-            {%endfor %}
-        </tbody>
-    </table>
-
-    <div class="row">
-        <div class="col-6"><a href="{% url 'festival:admin' %}" class="btn btn-secondary">Back</a></div>
-        <div class="col-6 text-right"><a href="{% url 'program:admin_company_create' %}" class="btn btn-primary">Add Company</a></div>
+<div class="row mb-2">
+    <div class="col-3"><a href="{% url 'program:admin_company_create' %}" class="btn btn-primary">Add Company</a></div>
+    <div class="col-9">
     </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <table class="table">
+            <thead class="thead-light">
+                <tr>
+                    <th>Name</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for company in companies %}
+                    <tr>
+                        <td><a href="{% url 'program:admin_company_update' company.uuid %}">{{ company.name }}</a></td>
+                    </tr>
+                {%endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 
 {% endblock %}

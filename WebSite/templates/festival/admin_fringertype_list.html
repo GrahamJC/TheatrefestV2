@@ -5,31 +5,51 @@
 
 {% block content %}
 
-    <table class="table">
-        <thead class="thead-light">
-            <tr>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Price</th>
-                <th>Shows</th>
-                <th>Ticket Type</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for ft in fringertypes %}
-                <tr>
-                    <td><a href="{% url 'festival:admin_fringertype_update' ft.uuid %}">{{ ft.name }}</a></td>
-                    <td>{% if ft.is_online %}eFringer{% else %}Paper{% endif %}</td>
-                    <td>&#163;{{ ft.price }}</td>
-                    <td>{{ ft.shows }}</td>
-                    <td>{{ ft.ticket_type.name }}</td>
-                </tr>
-            {%endfor %}
-        </tbody>
-    </table>
-
-    <div class="row">
-        <div class="col-12"><a href="{% url 'festival:admin_fringertype_create' %}" class="btn btn-primary">Add Fringer Type</a></div>
+<div class="row mb-2">
+    <div class="col-3"><a href="{% url 'festival:admin_fringertype_create' %}" class="btn btn-primary">Add Type</a></div>
+    <div class="col-9">
+        {% if festival.previous %}
+            <form class="form-inline justify-content-end" method="post" action="{% url 'festival:admin_fringertype_copy' %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <select class="form-control" name="copy_id">
+                        <option value="0">Select type to copy</option>
+                        {% for type in festival.previous.fringer_types.all %}
+                            <option value="{{ type.id }}">{{ type.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button class="btn btn-primary ml-2" type="submit">Copy from {{ festival.previous.name }}</button>
+            </form>
+        {% endif %}
     </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <table class="table">
+            <thead class="thead-light">
+                <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Price</th>
+                    <th>Shows</th>
+                    <th>Ticket Type</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ft in fringertypes %}
+                    <tr>
+                        <td><a href="{% url 'festival:admin_fringertype_update' ft.uuid %}">{{ ft.name }}</a></td>
+                        <td>{% if ft.is_online %}eFringer{% else %}Paper{% endif %}</td>
+                        <td>&#163;{{ ft.price }}</td>
+                        <td>{{ ft.shows }}</td>
+                        <td>{{ ft.ticket_type.name }}</td>
+                    </tr>
+                {%endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 
 {% endblock %}

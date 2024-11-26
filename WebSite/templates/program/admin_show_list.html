@@ -5,28 +5,33 @@
 
 {% block content %}
 
-    <table class="table">
-        <thead class="thead-light">
-            <tr>
-                <th>Name</th>
-                <th>Company</th>
-                <th>Venue(s)</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for show in shows %}
-                <tr>
-                    <td><a href="{% url 'program:admin_show_update' show.uuid %}">{{ show.name }}</a></td>
-                    <td>{{ show.company.name }}</td>
-                    <td>{% for venue in show.performance_venues %}{{ venue.name }}<br/>{% endfor %}</td>
-                </tr>
-            {%endfor %}
-        </tbody>
-    </table>
-
-    <div class="row">
-        <div class="col-6"><a href="{% url 'festival:admin' %}" class="btn btn-secondary">Back</a></div>
-        <div class="col-6 text-right"><a href="{% url 'program:admin_show_create' %}" class="btn btn-primary">Add Show</a></div>
+<div class="row mb-2">
+    <div class="col-3"><a href="{% url 'program:admin_show_create' %}" class="btn btn-primary">Add Show</a></div>
+    <div class="col-9">
     </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <table class="table">
+            <thead class="thead-light">
+                <tr>
+                    <th>Name</th>
+                    <th>Company</th>
+                    <th>Venue(s)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for show in shows %}
+                    <tr>
+                        <td><a href="{% url 'program:admin_show_update' show.uuid %}">{{ show.name }}</a></td>
+                        <td>{{ show.company.name }}</td>
+                        <td>{% for venue in show.performance_venues %}{{ venue.name }}<br/>{% endfor %}</td>
+                    </tr>
+                {%endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 
 {% endblock %}

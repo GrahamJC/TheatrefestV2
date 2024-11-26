@@ -156,11 +156,11 @@ class AdminPageList(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
         context_data['breadcrumbs'] = [
             { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
             { 'text': 'Pages' },
         ]
-        context_data['previous_festival'] = self.request.festival.previous
         return context_data
 
 
@@ -435,11 +435,11 @@ class AdminNavigatorList(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
         context_data['breadcrumbs'] = [
             { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
             { 'text': 'Navigators' },
         ]
-        context_data['previous_festival'] = self.request.festival.previous
         return context_data
 
 
@@ -509,7 +509,7 @@ def admin_navigator_copy(request):
     copy_navigator.seqno = navigator_to_copy.seqno
     copy_navigator.type = navigator_to_copy.type
     copy_navigator.url = navigator_to_copy.url
-    copy_navigator.page = navigator_to_copy.page
+    copy_navigator.page = Page.objects.filter(festival=copy_navigator.festival, name=navigator_to_copy.page.name).first()
     copy_navigator.save()
     messages.success(request, 'Navigator copied')
     return redirect('content:admin_navigator_update', slug=copy_navigator.uuid)
@@ -581,11 +581,11 @@ class AdminImageList(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
         context_data['breadcrumbs'] = [
             { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
             { 'text': 'Images' },
         ]
-        context_data['previous_festival'] = self.request.festival.previous
         return context_data
 
 
@@ -715,11 +715,11 @@ class AdminDocumentList(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
         context_data['breadcrumbs'] = [
             { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
             { 'text': 'Documents' },
         ]
-        context_data["previous_festival"] = self.request.festival.previous
         return context_data
 
 
@@ -849,11 +849,11 @@ class AdminResourceList(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
         context_data['breadcrumbs'] = [
             { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
             { 'text': 'Resources' },
         ]
-        context_data["previous_festival"] = self.request.festival.previous
         return context_data
 
 
