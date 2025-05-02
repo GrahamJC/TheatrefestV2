@@ -431,7 +431,7 @@ class AdminNavigatorList(LoginRequiredMixin, ListView):
     template_name = 'content/admin_navigator_list.html'
 
     def get_queryset(self):
-        return Navigator.objects.filter(festival=self.request.festival)
+        return Navigator.objects.filter(festival=self.request.festival, parent__isnull=True)
 
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
@@ -440,6 +440,7 @@ class AdminNavigatorList(LoginRequiredMixin, ListView):
             { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
             { 'text': 'Navigators' },
         ]
+        context_data['previous_navigators'] = Navigator.objects.filter(festival=self.request.festival.previous, parent__isnull=True)
         return context_data
 
 
@@ -450,11 +451,18 @@ class AdminNavigatorCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     context_object_name = 'navigator'
     template_name = 'content/admin_navigator.html'
     success_message = 'Navigator added'
-    success_url = reverse_lazy('content:admin_navigator_list')
+
+    def dispatch(self, request, *args, **kwargs):
+        if ('parent_uuid' in kwargs):
+            self.parent = get_object_or_404(Navigator, uuid=kwargs['parent_uuid'])
+        else:
+            self.parent = None
+        return super().dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['festival'] = self.request.festival
+        kwargs['parent'] = self.parent
         return kwargs
 
     def get_form(self):
@@ -466,9 +474,7 @@ class AdminNavigatorCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
                 Column('label', css_class = 'col-sm-10'),
                 class_class='form-row',
             ),
-            'type',
-            'url',
-            'page',
+            Field('type'),
             FormActions(
                 Submit('save', 'Save'),
                 Button('cancel', 'Cancel'),
@@ -478,12 +484,29 @@ class AdminNavigatorCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
-        context_data['breadcrumbs'] = [
-            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
-            { 'text': 'Navigators', 'url': reverse('content:admin_navigator_list') },
-            { 'text': 'Add' },
-        ]
+        if (self.parent):
+            context_data['parent'] = self.parent
+            context_data['breadcrumbs'] = [
+                { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+                { 'text': 'Navigators', 'url': reverse('content:admin_navigator_list') },
+                { 'text': self.parent.label, 'url': reverse('content:admin_navigator_update', args=[self.parent.uuid]) },
+                { 'text': 'Add' },
+            ]
+        else:
+            context_data['breadcrumbs'] = [
+                { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+                { 'text': 'Navigators', 'url': reverse('content:admin_navigator_list') },
+                { 'text': 'Add' },
+            ]
         return context_data
+    
+    def get_success_url(self):
+        if self.object.type in [Navigator.MENU, Navigator.PAGE, Navigator.URL]:
+            return reverse('content:admin_navigator_update', args=[self.object.uuid])
+        elif self.parent:
+            return reverse('content:admin_navigator_update', args=[self.parent.uuid])
+        else:
+            return reverse('content:admin_navigator_list')
 
 
 @login_required
@@ -523,50 +546,108 @@ class AdminNavigatorUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     context_object_name = 'navigator'
     template_name = 'content/admin_navigator.html'
     success_message = 'Navigator updated'
-    success_url = reverse_lazy('content:admin_navigator_list')
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['festival'] = self.request.festival
+        kwargs['parent'] = self.object.parent
         return kwargs
 
     def get_form(self):
         form = super().get_form()
         form.helper = FormHelper()
-        form.helper.layout = Layout(
-            Row(
-                Column('seqno', css_class = 'col-sm-2'),
-                Column('label', css_class = 'col-sm-10'),
-                class_class='form-row',
-            ),
-            'type',
-            'url',
-            'page',
-            FormActions(
-                Submit('save', 'Save'),
-                Button('delete', 'Delete'),
-                Button('cancel', 'Cancel'),
+        if self.object.type == Navigator.MENU:
+            form.helper.layout = Layout(
+                Row(
+                    Column('seqno', css_class = 'col-sm-2'),
+                    Column('label', css_class = 'col-sm-10'),
+                    class_class='form-row',
+                ),
+                HTML('{% include \'content/_admin_navigator_items.html\' %}'),
+                FormActions(
+                    Submit('save', 'Save'),
+                    Button('delete', 'Delete'),
+                    Button('cancel', 'Cancel'),
+                )
             )
-        )
+        elif self.object.type == Navigator.PAGE:
+            form.helper.layout = Layout(
+                Row(
+                    Column('seqno', css_class = 'col-sm-2'),
+                    Column('label', css_class = 'col-sm-10'),
+                    class_class='form-row',
+                ),
+                Field('type'),
+                Field('page'),
+                FormActions(
+                    Submit('save', 'Save'),
+                    Button('delete', 'Delete'),
+                    Button('cancel', 'Cancel'),
+                )
+            )
+        elif self.object.type == Navigator.URL:
+            form.helper.layout = Layout(
+                Row(
+                    Column('seqno', css_class = 'col-sm-2'),
+                    Column('label', css_class = 'col-sm-10'),
+                    class_class='form-row',
+                ),
+                Field('type'),
+                Field('url'),
+                FormActions(
+                    Submit('save', 'Save'),
+                    Button('delete', 'Delete'),
+                    Button('cancel', 'Cancel'),
+                )
+            )
+        else:
+            form.helper.layout = Layout(
+                Row(
+                    Column('seqno', css_class = 'col-sm-2'),
+                    Column('label', css_class = 'col-sm-10'),
+                    class_class='form-row',
+                ),
+                Field('type'),
+                FormActions(
+                    Submit('save', 'Save'),
+                    Button('delete', 'Delete'),
+                    Button('cancel', 'Cancel'),
+                )
+            )
         return form
 
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
-        context_data['breadcrumbs'] = [
-            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
-            { 'text': 'Navigators', 'url': reverse('content:admin_navigator_list') },
-            { 'text': 'Update' },
-        ]
+        if (self.object.parent):
+            context_data['breadcrumbs'] = [
+                { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+                { 'text': 'Navigators', 'url': reverse('content:admin_navigator_list') },
+                { 'text': self.object.parent.label, 'url': reverse('content:admin_navigator_update', args=[self.object.parent.uuid]) },
+                { 'text': 'Update' },
+            ]
+        else:
+            context_data['breadcrumbs'] = [
+                { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+                { 'text': 'Navigators', 'url': reverse('content:admin_navigator_list') },
+                { 'text': 'Update' },
+            ]
         return context_data
     
-
+    def get_success_url(self):
+        if (self.object.parent):
+            return reverse('content:admin_navigator_update', args=[self.object.parent.uuid])
+        return reverse('content:admin_navigator_list')
+        
 @login_required
 def admin_navigator_delete(request, slug):
 
     # Delete navigator
     navigator = get_object_or_404(Navigator, uuid=slug)
+    parent = navigator.parent
     navigator.delete()
     messages.success(request, 'Navigator deleted')
+    if (parent):
+        return redirect('content:admin_navigator_update', parent.uuid)
     return redirect('content:admin_navigator_list')
 
 

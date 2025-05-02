@@ -63,8 +63,9 @@ class AdminNavigatorForm(forms.ModelForm):
             'type', 'url', 'page',
         ]
 
-    def __init__(self, festival, *args, **kwargs):
+    def __init__(self, festival, parent, *args, **kwargs):
         self.festival = festival
+        self.parent = parent
         super().__init__(*args, **kwargs)
         self.fields['page'].queryset = Page.objects.filter(festival=festival)
 
@@ -72,7 +73,9 @@ class AdminNavigatorForm(forms.ModelForm):
     def validate_unique(self):
         exclude = self._get_validation_exclusions()
         exclude.remove('festival')
+        exclude.remove('parent')
         self.instance.festival = self.festival
+        self.instance.parent = self.parent
         try:
             self.instance.validate_unique(exclude=exclude)
         except ValidationError:

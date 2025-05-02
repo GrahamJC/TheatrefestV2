@@ -54,6 +54,7 @@ class PageImage(TimeStampedModel):
 
 class Navigator(TimeStampedModel):
 
+    MENU = 0
     URL = 1
     PAGE = 2
     SHOWS = 3
@@ -63,6 +64,7 @@ class Navigator(TimeStampedModel):
     ARCHIVE_HOME = 7
     DONATIONS = 8
     TYPE_CHOICES = (
+        (MENU, 'Menu'),
         (URL, 'URL'),
         (PAGE, 'Content page'),
         (SHOWS, 'List/Search shows'),
@@ -74,6 +76,7 @@ class Navigator(TimeStampedModel):
     )
 
     festival = models.ForeignKey(Festival, on_delete=models.CASCADE, related_name='navigators')
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='items')
     seqno = models.PositiveIntegerField(blank=True, default=0)
     label = models.CharField(max_length=32)
     type = models.IntegerField(choices=TYPE_CHOICES)
@@ -81,8 +84,8 @@ class Navigator(TimeStampedModel):
     page = models.ForeignKey(Page, null=True, blank=True, on_delete=models.PROTECT, related_name='navigators')
 
     class Meta:
-        ordering = ('festival', 'seqno', 'label')
-        unique_together = ('festival', 'label')
+        ordering = ('festival', 'parent_id', 'seqno', 'label')
+        unique_together = ('festival', 'parent', 'label')
 
     @property
     def href(self):
@@ -106,8 +109,16 @@ class Navigator(TimeStampedModel):
             return '#'
 
     def __str__(self):
-        return f'{self.festival.name}/{self.label}'
+        base = ''
+        if (self.parent):
+            base = f'{self.parent}'
+        else:
+            base = f'{self.festival.name}'
+        return f'{base}/{self.label}'
 
+    def is_menu(self):
+        return (self.type == Navigator.MENU)
+    
     def can_delete(self):
         return True
 

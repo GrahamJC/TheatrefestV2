@@ -26,6 +26,7 @@ urlpatterns = [
     path('admin/page/<uuid:page_uuid>/image/<uuid:slug>/delete', views.admin_page_image_delete, name='admin_page_image_delete'),
     path('admin/navigator/list', views.AdminNavigatorList.as_view(), name='admin_navigator_list'),
     path('admin/navigator/create', views.AdminNavigatorCreate.as_view(), name='admin_navigator_create'),
+    path('admin/navigator/<uuid:parent_uuid>/create', views.AdminNavigatorCreate.as_view(), name='admin_navigator_create_item'),
     path('admin/navigator/copy', views.admin_navigator_copy, name='admin_navigator_copy'),
     path('admin/navigator/<uuid:slug>/update', views.AdminNavigatorUpdate.as_view(), name='admin_navigator_update'),
     path('admin/navigator/<uuid:slug>/delete', views.admin_navigator_delete, name='admin_navigator_delete'),

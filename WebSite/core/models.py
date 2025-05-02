@@ -80,6 +80,9 @@ class Festival(TimeStampedModel):
     def volunteer_ticket_type(self):
         return self.ticket_types.filter(name='Volunteer')[0]
 
+    def root_navigators(self):
+        return self.navigators.filter(parent__isnull=True)
+    
 class UserManager(BaseUserManager):
 
     def _create_user(self, festival, email, password, **extra_fields):

@@ -30,7 +30,12 @@
 
     <script language="javascript">
 
-        $('#button-id-cancel').addClass('btn-secondary').on('click', function () { window.location.href = '{% url 'content:admin_navigator_list' %}'; });
+        {% if parent %}
+            let cancel_url = '{% url 'content:admin_navigator_update' parent.uuid %}';
+        {% else %}
+            let cancel_url = '{% url 'content:admin_navigator_list' %}';
+        {% endif %}
+        $('#button-id-cancel').addClass('btn-secondary').on('click', function () { window.location.href = cancel_url; });
         {% if navigator.can_delete %}
             $('#button-id-delete').addClass('btn-danger').on('click', function() { $('#tf-delete-modal').modal('show'); });
             $('#tf-delete-modal .btn-primary').on('click', function () { window.location.href = "{% url 'content:admin_navigator_delete' navigator.uuid %}"; });

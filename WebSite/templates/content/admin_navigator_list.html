@@ -14,7 +14,7 @@
                 <div class="form-group">
                     <select class="form-control" name="copy_id">
                         <option value="0">Select navigator to copy</option>
-                        {% for navigator in festival.previous.navigators.all %}
+                        {% for navigator in previous_navigators %}
                             <option value="{{ navigator.id }}">{{ navigator.label }}</option>
                         {% endfor %}
                     </select>

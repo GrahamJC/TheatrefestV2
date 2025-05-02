@@ -1,0 +1,20 @@
+﻿<table class="table">
+    <thead class="thead-light">
+        <tr>
+            <th>SeqNo</th>
+            <th>Label</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in navigator.items.all %}
+            <tr>
+                <td>{{ item.seqno }}</td>
+                <td><a href="{% url 'content:admin_navigator_update' item.uuid %}">{{ item.label }}</a></td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="mb-4 text-right">
+    <a class="btn btn-primary" href="{% url 'content:admin_navigator_create_item' navigator.uuid %}">Add Item</a>
+</div>

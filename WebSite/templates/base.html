@@ -64,8 +64,21 @@
                         </button>
                         <div id="navbar-collapse" class="collapse navbar-collapse">
                             <ul class="navbar-nav mr-auto">
-                                {% for nav in request.festival.navigators.all %}
-                                    <li class="nav-item"><a class="nav-link" href="{{ nav.href }}">{{ nav.label }}</a></li>
+                                {% for nav in request.festival.root_navigators %}
+                                    {% if nav.is_menu %}
+                                        <li class="nav-item dropdown">
+                                            <a class="nav-link dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-expanded="false">
+                                                {{ nav.label }}
+                                            </a>
+                                            <div class="dropdown-menu">
+                                                {% for item in nav.items.all %}
+                                                    <a class="dropdown-item" href="{{ item.href }}">{{ item.label }}</a>
+                                                {% endfor %}
+                                            </div>
+                                        </li>
+                                    {% else %}
+                                        <li class="nav-item"><a class="nav-link" href="{{ nav.href }}">{{ nav.label }}</a></li>
+                                    {% endif %}
                                 {% endfor %}
                             </ul>
                             <ul class="navbar-nav">
