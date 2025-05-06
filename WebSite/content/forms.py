@@ -17,17 +17,12 @@ class AdminPageForm(forms.ModelForm):
             'body_test': '',
         }
 
-    def __init__(self, festival, *args, **kwargs):
-        self.festival = festival
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     def validate_unique(self):
-        exclude = self._get_validation_exclusions()
-        exclude.remove('festival')
-        self.instance.festival = self.festival
-        try:
-            self.instance.validate_unique(exclude)
-        except ValidationError:
+        super().validate_unique()
+        if Page.objects.filter(festival=self.instance.festival, name=self.instance.name).exists():
             self._update_errors(ValidationError({'name': 'A page with that name already exists'}))
 
 
@@ -40,18 +35,10 @@ class AdminPageImageForm(forms.ModelForm):
             'image',
         ]
 
-    def __init__(self, page, *args, **kwargs):
-        self.page = page
-        super().__init__(*args, **kwargs)
-
     def validate_unique(self):
-        exclude = self._get_validation_exclusions()
-        exclude.remove('page')
-        self.instance.page = self.page
-        try:
-            self.instance.validate_unique(exclude=exclude)
-        except ValidationError:
-            self._update_errors(ValidationError({'name': 'An image with that name already exists'}))
+        super().validate_unique()
+        if PageImage.objects.filter(page=self.instance.page, name=self.instance.name).exists():
+            self._update_errors(ValidationError({'name': 'An image with that name already exists for this page'}))
 
 
 class AdminNavigatorForm(forms.ModelForm):
@@ -63,24 +50,18 @@ class AdminNavigatorForm(forms.ModelForm):
             'type', 'url', 'page',
         ]
 
-    def __init__(self, festival, parent, *args, **kwargs):
-        self.festival = festival
-        self.parent = parent
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['page'].queryset = Page.objects.filter(festival=festival)
+        self.fields['page'].queryset = Page.objects.filter(festival=self.instance.festival)
 
     # Same check - different error message (to avoid mention of festival)
     def validate_unique(self):
-        exclude = self._get_validation_exclusions()
-        exclude.remove('festival')
-        exclude.remove('parent')
-        self.instance.festival = self.festival
-        self.instance.parent = self.parent
-        try:
-            self.instance.validate_unique(exclude=exclude)
-        except ValidationError:
-            self._update_errors(ValidationError({'name': 'A navigator with that name already exists'}))
-
+        super().validate_unique()
+        if self.instance.parent:
+            if Navigator.objects.filter(festival=self.instance.festival, parent=self.instance.parent, label=self.instance.label).exists():
+                self._update_errors(ValidationError({'label': 'An item with that label already exists in this navigator'}))
+        elif Navigator.objects.filter(festival=self.instance.festival, parent__is_null=True, label=self.instance.label).exists():
+            self._update_errors(ValidationError({'label': 'An navigator with that label already exists'}))
 
 class AdminImageForm(forms.ModelForm):
 
@@ -92,19 +73,10 @@ class AdminImageForm(forms.ModelForm):
             'map',
         ]
 
-    def __init__(self, festival, *args, **kwargs):
-        self.festival = festival
-        super().__init__(*args, **kwargs)
-
-    # Same check - different error message (to avoid mention of festival)
     def validate_unique(self):
-        exclude = self._get_validation_exclusions()
-        exclude.remove('festival')
-        self.instance.festival = self.festival
-        try:
-            self.instance.validate_unique(exclude=exclude)
-        except ValidationError:
-            self._update_errors(ValidationError({'name': 'A image with that name already exists'}))
+        super().validate_unique()
+        if Image.objects.filter(festival=self.instance.festival, name=self.instance.name).exists():
+            self._update_errors(ValidationError({'name': 'An image with that name already exists'}))
 
 
 class AdminDocumentForm(forms.ModelForm):
@@ -116,18 +88,9 @@ class AdminDocumentForm(forms.ModelForm):
             'file', 'filename',
         ]
 
-    def __init__(self, festival, *args, **kwargs):
-        self.festival = festival
-        super().__init__(*args, **kwargs)
-
-    # Same check - different error message (to avoid mention of festival)
     def validate_unique(self):
-        exclude = self._get_validation_exclusions()
-        exclude.remove('festival')
-        self.instance.festival = self.festival
-        try:
-            self.instance.validate_unique(exclude=exclude)
-        except ValidationError:
+        super().validate_unique()
+        if Document.objects.filter(festival=self.instance.festival, name=self.instance.name).exists():
             self._update_errors(ValidationError({'name': 'A document with that name already exists'}))
 
 
@@ -141,15 +104,7 @@ class AdminResourceForm(forms.ModelForm):
             'body', 'body_test',
         ]
 
-    def __init__(self, festival, *args, **kwargs):
-        self.festival = festival
-        super().__init__(*args, **kwargs)
-
     def validate_unique(self):
-        exclude = self._get_validation_exclusions()
-        exclude.remove('festival')
-        self.instance.festival = self.festival
-        try:
-            self.instance.validate_unique(exclude)
-        except ValidationError:
+        super().validate_unique()
+        if Resource.objects.filter(festival=self.instance.festival, name=self.instance.name).exists():
             self._update_errors(ValidationError({'name': 'A resource with that name already exists'}))

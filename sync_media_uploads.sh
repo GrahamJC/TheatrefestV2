@@ -1,0 +1,1 @@
+sshpass -p skK557PXFYjJ rsync -avzhe ssh GrahamJC@ssh.eu.pythonanywhere.com:TheatrefestV2/WebSite/media/uploads/* media/uploads

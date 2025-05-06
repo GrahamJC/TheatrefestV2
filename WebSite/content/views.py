@@ -174,7 +174,7 @@ class AdminPageCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['festival'] = self.request.festival
+        kwargs['instance'] = Page(festival=self.request.festival)
         return kwargs
 
     def get_form(self):
@@ -245,11 +245,6 @@ class AdminPageUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     def dispatch(self, request, *args, **kwargs):
         self.initial_tab = kwargs.pop('tab', None)
         return super().dispatch(request, *args, **kwargs)
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['festival'] = self.request.festival
-        return kwargs
 
     def get_form(self):
         form = super().get_form()
@@ -336,7 +331,7 @@ class AdminPageImageCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['page'] = self.page
+        kwargs['instance'] = PageImage(page=self.page)
         return kwargs
 
     def get_form(self):
@@ -379,11 +374,6 @@ class AdminPageImageUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     def dispatch(self, request, *args, **kwargs):
         self.page = get_object_or_404(Page, uuid=kwargs['page_uuid'])
         return super().dispatch(request, *args, **kwargs)
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['page'] = self.page
-        return kwargs
 
     def get_form(self):
         form = super().get_form()
@@ -461,8 +451,7 @@ class AdminNavigatorCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['festival'] = self.request.festival
-        kwargs['parent'] = self.parent
+        kwargs['instance'] = Navigator(festival=self.request.festival, parent=self.parent)
         return kwargs
 
     def get_form(self):
@@ -547,12 +536,6 @@ class AdminNavigatorUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     template_name = 'content/admin_navigator.html'
     success_message = 'Navigator updated'
 
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['festival'] = self.request.festival
-        kwargs['parent'] = self.object.parent
-        return kwargs
-
     def get_form(self):
         form = super().get_form()
         form.helper = FormHelper()
@@ -619,6 +602,7 @@ class AdminNavigatorUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
         if (self.object.parent):
+            context_data['parent'] = self.object.parent
             context_data['breadcrumbs'] = [
                 { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
                 { 'text': 'Navigators', 'url': reverse('content:admin_navigator_list') },
@@ -681,7 +665,7 @@ class AdminImageCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['festival'] = self.request.festival
+        kwargs['instance'] = Image(festival=self.request.festival)
         return kwargs
 
     def get_form(self):
@@ -744,11 +728,6 @@ class AdminImageUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     template_name = 'content/admin_image.html'
     success_message = 'Image updated'
     success_url = reverse_lazy('content:admin_image_list')
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['festival'] = self.request.festival
-        return kwargs
 
     def get_form(self):
         form = super().get_form()
@@ -815,7 +794,7 @@ class AdminDocumentCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['festival'] = self.request.festival
+        kwargs['instance'] = Document(festival=self.request.festival)
         return kwargs
 
     def get_form(self):
@@ -878,11 +857,6 @@ class AdminDocumentUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     template_name = 'content/admin_document.html'
     success_message = 'Document updated'
     success_url = reverse_lazy('content:admin_document_list')
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['festival'] = self.request.festival
-        return kwargs
 
     def get_form(self):
         form = super().get_form()
@@ -949,7 +923,7 @@ class AdminResourceCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['festival'] = self.request.festival
+        kwargs['instance'] = Resource(festival=self.request.festival)
         return kwargs
 
     def get_form(self):
@@ -1020,11 +994,6 @@ class AdminResourceUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     def dispatch(self, request, *args, **kwargs):
         self.initial_tab = kwargs.pop('tab', None)
         return super().dispatch(request, *args, **kwargs)
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['festival'] = self.request.festival
-        return kwargs
 
     def get_form(self):
         form = super().get_form()

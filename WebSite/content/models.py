@@ -18,7 +18,9 @@ class Page(TimeStampedModel):
 
     class Meta:
         ordering = ('festival', 'name')
-        unique_together = ('festival', 'name')
+        constraints = [
+            models.UniqueConstraint(fields=['festival', 'name'], name='unique_page_name'),
+        ]
 
     def __str__(self):
         return f'{self.festival.name}/{self.name}'
@@ -39,8 +41,10 @@ class PageImage(TimeStampedModel):
     image = models.ImageField(upload_to = get_image_filename, blank = True, default = '')
 
     class Meta:
-        unique_together = ('page', 'name')
         ordering = ('page', 'name')
+        constraints = [
+            models.UniqueConstraint(fields=['page', 'name'], name='unique_page_image_name'),
+        ]
 
     def __str__(self):
         return f'{self.page}/{self.name}'
@@ -85,7 +89,10 @@ class Navigator(TimeStampedModel):
 
     class Meta:
         ordering = ('festival', 'parent_id', 'seqno', 'label')
-        unique_together = ('festival', 'parent', 'label')
+        constraints = [
+            models.UniqueConstraint(fields=['festival', 'label'], condition=models.Q(parent__isnull=True), name='unique_root_navigator_label'),
+            models.UniqueConstraint(fields=['festival', 'parent', 'label'], name='unique_navigator_item_label'),
+        ]
 
     @property
     def href(self):
@@ -132,7 +139,9 @@ class Image(TimeStampedModel):
 
     class Meta:
         ordering = ('festival', 'name')
-        unique_together = ('festival', 'name')
+        constraints = [
+            models.UniqueConstraint(fields=['festival', 'name'], name='unique_image_name'),
+        ]
 
     def __str__(self):
         return f'{self.festival.name}/{self.name}'
@@ -156,7 +165,9 @@ class Document(TimeStampedModel):
 
     class Meta:
         ordering = ('festival', 'name')
-        unique_together = ('festival', 'name')
+        constraints = [
+            models.UniqueConstraint(fields=['festival', 'name'], name='unique_document_name'),
+        ]
 
     def __str__(self):
         return f'{self.festival.name}/{self.name}'
@@ -186,7 +197,9 @@ class Resource(TimeStampedModel):
 
     class Meta:
         ordering = ('festival', 'name')
-        unique_together = ('festival', 'name')
+        constraints = [
+            models.UniqueConstraint(fields=['festival', 'name'], name='unique_resource_name'),
+        ]
 
     def __str__(self):
         return f'{self.festival.name}/{self.name}'
