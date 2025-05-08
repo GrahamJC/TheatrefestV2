@@ -546,6 +546,7 @@ class AdminNavigatorUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
                     Column('label', css_class = 'col-sm-10'),
                     class_class='form-row',
                 ),
+                Field('type'),
                 HTML('{% include \'content/_admin_navigator_items.html\' %}'),
                 FormActions(
                     Submit('save', 'Save'),
