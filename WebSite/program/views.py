@@ -1745,7 +1745,6 @@ class AdminShowImageUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
             { 'text': self.show.name, 'url': reverse('program:admin_show_update', args=[self.show.uuid]) },
             { 'text': 'Update Image' },
         ]
-        context_data['initial_tab'] = self.initial_tab
         return context_data
 
     def get_success_url(self):
