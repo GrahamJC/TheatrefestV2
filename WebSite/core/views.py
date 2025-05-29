@@ -1,10 +1,11 @@
+import os
 import dateutil
-import logging
-import logging_tree
+from pathlib import Path
 
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model, login
 from django.contrib.auth.views import PasswordResetView as AuthPasswordResetView
+from django.contrib import messages
 from django.http import HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
@@ -20,10 +21,11 @@ from crispy_forms.layout import Layout, Field, HTML, Submit, Button, Row, Column
 from crispy_forms.bootstrap import FormActions, TabHolder, Tab
 
 from core.models import Festival
+from content.models import Image, PageImage, Document
+from program.models import Company, Venue, VenueSponsor, Show, ShowImage
 from .forms import RegistrationForm, PasswordResetForm, DebugForm
 
 User = get_user_model()
-
 
 class OneStepRegistrationView(OneStepViews.RegistrationView):
 
@@ -105,6 +107,55 @@ class ResendActivationView(TwoStepViews.RegistrationView):
         return redirect(reverse('django_registration_complete'))
 
 
+
+def get_orphan_images():
+    uuids = []
+    uuids.extend([Path(festival.venue_map.name).stem for festival in Festival.objects.exclude(venue_map='')])
+    uuids.extend([Path(image.image.name).stem for image in Image.objects.exclude(image='')])
+    uuids.extend([Path(page_image.image.name).stem for page_image in PageImage.objects.exclude(image='')])
+    uuids.extend([Path(company.image.name).stem for company in Company.objects.exclude(image='')])
+    uuids.extend([Path(venue.image.name).stem for venue in Venue.objects.exclude(image='')])
+    uuids.extend([Path(venue_sponsor.image.name).stem for venue_sponsor in VenueSponsor.objects.exclude(image='')])
+    uuids.extend([Path(show.image.name).stem for show in Show.objects.exclude(image='')])
+    uuids.extend([Path(show_image.image.name).stem for show_image in ShowImage.objects.exclude(image='')])
+    uuids = list(dict.fromkeys(uuids))
+    count = 0
+    size = 0
+    files = []
+    for file in Path(os.path.join(settings.MEDIA_ROOT, 'uploads/images')).iterdir():
+        if file.is_file():
+            uuid = file.stem
+            if not uuid in uuids:
+                count += 1
+                size += file.stat().st_size
+                files.append(file)
+    return {
+        'count': count,
+        'total_size': size,
+        'files': files,
+    }
+
+
+def get_orphan_documents():
+    uuids = []
+    uuids.extend([Path(document.file.name).stem for document in Document.objects.exclude(file='')])
+    uuids = list(dict.fromkeys(uuids))
+    count = 0
+    size = 0
+    files = []
+    for file in Path(os.path.join(settings.MEDIA_ROOT, 'uploads/documents')).iterdir():
+        if file.is_file():
+            uuid = file.stem
+            if not uuid in uuids:
+                count += 1
+                size += file.stat().st_size
+                files.append(file)
+    return {
+        'count': count,
+        'total_size': size,
+        'files': files,
+    }
+
 class DebugFormView(FormView):
 
     template_name = 'core/debug.html'
@@ -121,10 +172,11 @@ class DebugFormView(FormView):
         if 'time' in self.request.session:
             initial['time'] = dateutil.parser.parse(self.request.session['time']).time()
         return initial
-
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['log_config'] = logging_tree.format.build_description()
+        context['orphan_images'] = get_orphan_images()
+        context['orphan_documents'] = get_orphan_documents()
         return context
 
     def get_form(self):
@@ -157,4 +209,25 @@ class DebugFormView(FormView):
         elif 'time' in self.request.session:
             del self.request.session['time']
         return super().form_valid(form)
+
+
+#@login_required
+def debug_clean_images(request):
+    orphan_dir = Path(os.path.join(settings.MEDIA_ROOT, 'uploads/images/orphan'))
+    orphan_dir.mkdir(exist_ok=True)
+    for file in get_orphan_images()['files']:
+        file.replace(orphan_dir / file.name)
+    messages.info(request, 'Orphans moved to sub-directory')
+    return redirect('core:debug')
+
+
+#@login_required
+def debug_clean_documents(request):
+    orphan_dir = Path(os.path.join(settings.MEDIA_ROOT, 'uploads/documents/orphan'))
+    orphan_dir.mkdir(exist_ok=True)
+    for file in get_orphan_documents()['files']:
+        file.replace(orphan_dir / file.name)
+    messages.info(request, 'Orphans moved to sub-directory')
+    return redirect('core:debug')
+
 

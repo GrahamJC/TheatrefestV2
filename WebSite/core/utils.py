@@ -17,7 +17,6 @@ def get_document_filename(instance, filename):
     ext = filename.split('.')[-1]
     return os.path.join('uploads', 'documents', f'{uuid.uuid4()}.{ext}')
 
-
 class AutoSingleRelatedObjectDescriptor(ReverseOneToOneDescriptor):
     """
     The descriptor that handles the object creation for an AutoOneToOneField.

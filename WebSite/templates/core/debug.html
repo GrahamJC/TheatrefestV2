@@ -7,7 +7,20 @@
 
     {% crispy form %}
 
-    <pre>
-        {{ log_config }}
-    </pre>
+    <h3>Orphaned Images</h3>
+    <ul>
+        <li>{{ orphan_images.count }} files</li>
+        <li>({{ orphan_images.total_size }} bytes)</li>
+    </ul>
+    <a class="btn btn-primary" href="{% url 'core:debug_clean_images' %}">Clean Images</a>
+
+    <p/>
+    
+    <h3>Orphaned Documents</h3>
+    <ul>
+        <li>{{ orphan_documents.count }} files</li>
+        <li>({{ orphan_documents.total_size }} bytes)</li>
+    </ul>
+    <a class="btn btn-primary" href="{% url 'core:debug_clean_documents' %}">Clean Documents</a>
+
 {% endblock %}
