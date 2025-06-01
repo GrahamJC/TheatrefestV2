@@ -22,7 +22,7 @@ from .forms import AdminPageForm, AdminPageImageForm, AdminNavigatorForm, AdminI
 def home(request):
 
     # Go to first naviator option
-    option = request.festival.navigators.first()
+    option = request.festival.root_navigators().first()
     if option:
         return redirect(option.href)
 
