@@ -165,7 +165,7 @@ class DebugFormView(FormView):
     def get_initial(self):
         initial = {}
         festival_id = self.request.session.get('festival_id', None)
-        if festival_id and festival_id != settings.DEFAULT_FESTIVAL:
+        if festival_id:
             initial['festival'] = festival_id
         if 'date' in self.request.session:
             initial['date'] = dateutil.parser.parse(self.request.session['date']).date()
@@ -198,7 +198,7 @@ class DebugFormView(FormView):
     def form_valid(self, form):
         if form.cleaned_data['festival']:
             self.request.session['festival_id'] = form.cleaned_data['festival'].id
-        else:
+        elif 'festival_id' in self.request.session:
             del self.request.session['festival_id']
         if form.cleaned_data['date']:
             self.request.session['date'] = str(form.cleaned_data['date'])
