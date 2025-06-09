@@ -1,6 +1,11 @@
-Thankyou for buying tickets for {{ festival.title }}:
+You have purchased the following:
 
 {% for ticket in tickets %}
-	{{ ticket.id|ljust:'8' }} {{ ticket.description|ljust:'12' }} {{ ticket.performance.date|date:'D, j M' }} at {{ ticket.performance.time|time:'P' }}
-	{{ ''|ljust:'8' }} {{ ticket.performance.show.name }}
+	{{ ticket.performance.date|date:'D, j M' }} at {{ ticket.performance.time|time:'P' }} - {{ ticket.performance.show.name }} ({{ ticket.description }})
 {% endfor %}
+
+{% if badges %}
+    {{ badges }} Fringe Badges
+{% endif %}
+
+Thankyou for supporting {{ festival.title }}.
