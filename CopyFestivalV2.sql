@@ -13,7 +13,7 @@ begin
 	-- Delete new festival if it already exists
 	select id into to_festival_id from core_festival where name = to_festival;
 	if to_festival_id is not null then
-		delete from volunteers_volunteer_roles where volunteer_id in (select vv.id from volunteers_volunteer vv join core_user cu on cu.id = vv.user_id where cu.festival_id = to_festival_id);
+		delete from volunteers_volunteer_roles where volunteer_id in (select id from core_user where festival_id = to_festival_id);
 		delete from volunteers_shift where location_id in (select id from volunteers_location where festival_id = to_festival_id);
 		delete from volunteers_location where festival_id = to_festival_id;
 		delete from volunteers_role where festival_id = to_festival_id;
@@ -231,7 +231,7 @@ begin
 	insert
 	into	tickets_tickettype
 			(uuid, created, updated, festival_id, name, seqno, price, payment, is_online, is_boxoffice, is_venue, rules)
-	select	uuid_generate_v4(), clock_timestamp(), clock_timestamp(), to_festival_id, name, tt.seqno, tt.price, tt.payment, tt.is_online, tt.is_boxoffice, tt.is_venue, tt.rules
+	select	uuid_generate_v4(), clock_timestamp(), clock_timestamp(), to_festival_id, tt.name, tt.seqno, tt.price, tt.payment, tt.is_online, tt.is_boxoffice, tt.is_venue, tt.rules
 	from	tickets_tickettype as tt
 	where	tt.festival_id = from_festival_id;
 	
@@ -248,8 +248,24 @@ begin
 	insert
 	into	tickets_boxoffice
 			(uuid, created, updated, festival_id, name)
-	select	uuid_generate_v4(), clock_timestamp(), clock_timestamp(), to_festival_id, name
+	select	uuid_generate_v4(), clock_timestamp(), clock_timestamp(), to_festival_id, tb.name
 	from	tickets_boxoffice as tb
 	where	tb.festival_id = from_festival_id;
+
+	-- Volunteer roles
+	insert
+	into	volunteers_role
+			(uuid, created, updated, festival_id, description, information, comps_per_shift)
+	select	uuid_generate_v4(), clock_timestamp(), clock_timestamp(), to_festival_id, vr.description, vr.information, vr.comps_per_shift
+	from	volunteers_role as vr
+	where	vr.festival_id = from_festival_id;
+
+	-- Volunteer locations
+	insert
+	into	volunteers_location
+			(uuid, created, updated, festival_id, description, information)
+	select	uuid_generate_v4(), clock_timestamp(), clock_timestamp(), to_festival_id, vl.description, vl.information
+	from	volunteers_location as vl
+	where	vl.festival_id = from_festival_id;
 
 end $$;
