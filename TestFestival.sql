@@ -8,7 +8,7 @@ begin
 
 	-- Get site and test/current festivals
 	select id into v_test_festival_id from core_festival where name = 'TEST';
-	select id into v_curr_festival_id from core_festival where name = 'TF2024';
+	select id into v_curr_festival_id from core_festival where name = 'TF2025';
 
 	-- Delete baskets
 	delete from tickets_ticket where basket_id in (select id from core_user where festival_id = v_test_festival_id);
