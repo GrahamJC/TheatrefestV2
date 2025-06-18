@@ -945,13 +945,14 @@ def checkout_success(request, sale_uuid):
     logger.info(f"Sale {sale.id} completed")
 
     # Send e-mail to confirm tickets
-    if sale.tickets:
+    if sale.tickets or sale.buttons:
         context = {
             'festival': request.festival,
             'tickets': sale.tickets.order_by('performance__date', 'performance__time', 'performance__show__name'),
+            'badges': sale.buttons,
         }
         body = render_to_string('tickets/sale_email.txt', context)
-        send_mail('Tickets for ' + request.festival.title, body, settings.DEFAULT_FROM_EMAIL, [request.user.email])
+        send_mail('Confirmation from ' + request.festival.title, body, settings.DEFAULT_FROM_EMAIL, [request.user.email])
 
     # Display confirmation
     context = {
