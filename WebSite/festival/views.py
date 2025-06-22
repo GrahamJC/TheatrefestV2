@@ -25,9 +25,9 @@ from crispy_forms.bootstrap import FormActions, TabHolder, Tab, Div
 from core.models import Festival, User
 
 from program.models import Company, Show, ShowPerformance
-from tickets.models import BoxOffice, Sale, TicketType, FringerType, Bucket
+from tickets.models import BoxOffice, Sale, TicketType, FringerType, Bucket, PAYWCard
 
-from .forms import PasswordResetForm, EMailForm, AdminSaleListForm, AdminFestivalForm, AdminTicketTypeForm, AdminFringerTypeForm, AdminBucketForm
+from .forms import PasswordResetForm, EMailForm, AdminSaleListForm, AdminFestivalForm, AdminTicketTypeForm, AdminFringerTypeForm, AdminBucketForm, AdminPAYWCardForm
 
 # Logging
 import logging
@@ -885,6 +885,132 @@ def admin_bucket_delete(request, slug):
     bucket.delete()
     messages.success(request, 'Bucket deleted')
     return redirect('festival:admin_bucket_list')
+
+
+# PAYW Card payments
+class AdminPAYWCardList(LoginRequiredMixin, ListView):
+
+    model = PAYWCard
+    context_object_name = 'paywcards'
+    template_name = 'festival/admin_paywcard_list.html'
+
+    def get_queryset(self):
+        return PAYWCard.objects.filter(company__festival=self.request.festival).order_by('company__name', 'show__name', 'performance__date', 'performance__time')
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'PAYW Card Payments' },
+        ]
+        return context_data
+
+
+class AdminPAYWCardCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+
+    model = PAYWCard
+    form_class = AdminPAYWCardForm
+    context_object_name = 'paywcard'
+    template_name = 'festival/admin_paywcard.html'
+    success_message = 'PAYW card payment added'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['festival'] = self.request.festival
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.fields['company'].widget.attrs = { 'hx-get': reverse('festival:ajax_get_shows'), 'hx-target': '#id_show' }
+        form.fields['show'].widget.attrs = { 'hx-get': reverse('festival:ajax_get_performances'), 'hx-target': '#id_performance' }
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Field('date'),
+            Field('company'),
+            Field('show'),
+            Field('performance'),
+            Field('description'),
+            Field('total'),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('cancel', 'Cancel'),
+            ),
+        )
+        return form
+
+    def get_initial(self):
+        return { 'date': datetime.now().date }
+    
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'PAYW Card Payments', 'url': reverse('festival:admin_paywcard_list') },
+            { 'text': 'Add' },
+        ]
+        return context_data
+
+    def get_success_url(self):
+        return reverse('festival:admin_paywcard_list')
+
+class AdminPAYWCardUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+
+    model = PAYWCard
+    form_class = AdminPAYWCardForm
+    slug_field = 'uuid'
+    context_object_name = 'paywcard'
+    template_name = 'festival/admin_paywcard.html'
+    success_message = 'PAYW card payment updated'
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['festival'] = self.request.festival
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.fields['company'].widget.attrs = { 'hx-get': reverse('festival:ajax_get_shows'), 'hx-target': '#id_show' }
+        form.fields['show'].widget.attrs = { 'hx-get': reverse('festival:ajax_get_performances'), 'hx-target': '#id_performance' }
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Field('date'),
+            Field('company'),
+            Field('show'),
+            Field('performance'),
+            Field('description'),
+            Field('total'),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('delete', 'Delete'),
+                Button('cancel', 'Cancel'),
+            )
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'PAYW Card Payments', 'url': reverse('festival:admin_paywcard_list') },
+            { 'text': 'Update' },
+        ]
+        return context_data
+
+    def get_success_url(self):
+        return reverse('festival:admin_paywcard_list')
+
+
+@login_required
+def admin_paywcard_delete(request, slug):
+
+    # Delete bucket
+    bucket = get_object_or_404(PAYWCard, uuid=slug)
+    bucket.delete()
+    messages.success(request, 'PAYW card payment deleted')
+    return redirect('festival:admin_paywcard_list')
 
 # AJAX support
 def ajax_get_shows(request):

@@ -447,7 +447,7 @@ class Bucket(TimeStampedModel):
 
     date = models.DateField()
     company = models.ForeignKey(Company, on_delete = models.PROTECT, related_name = 'buckets')
-    show = models.ForeignKey(Show, on_delete = models.PROTECT, null = True, blank = True, related_name = 'buckets')
+    show = models.ForeignKey(Show, on_delete = models.PROTECT, related_name = 'buckets')
     performance = models.ForeignKey(ShowPerformance, on_delete = models.PROTECT, null = True, blank = True, related_name = 'buckets')
     description = models.CharField(blank=True, default='', max_length = 32)
     cash = models.DecimalField(max_digits = 5, decimal_places = 2)
@@ -458,6 +458,19 @@ class Bucket(TimeStampedModel):
         return True
 
 
+class PAYWCard(TimeStampedModel):
+
+    date = models.DateField()
+    company = models.ForeignKey(Company, on_delete = models.PROTECT, related_name = 'PAYW_cards')
+    show = models.ForeignKey(Show, on_delete = models.PROTECT, related_name = 'PAYW_cards')
+    performance = models.ForeignKey(ShowPerformance, on_delete = models.PROTECT, null = True, blank = True, related_name = 'PAYW_cards')
+    description = models.CharField(blank=True, default='', max_length = 32)
+    total = models.DecimalField(max_digits = 5, decimal_places = 2)
+
+    @property
+    def can_delete(self):
+        return True
+    
 class BadgesIssued(TimeStampedModel):
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete = models.PROTECT, related_name = 'badges_issued')

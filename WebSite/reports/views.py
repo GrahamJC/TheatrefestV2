@@ -64,12 +64,12 @@ reports = {
             'report_url': reverse_lazy('reports:finance_company_payment'),
             'formats': ['HTML', 'PDF', 'XLSX'],
         },
-        'company_buckets': {
-            'title': 'Company buckets',
+        'company_payw': {
+            'title': 'Company PAYW',
             'select_form': SelectAltSpaceCompanyForm,
             'select_fields': ['company'],
             'select_required': [],
-            'report_url': reverse_lazy('reports:finance_company_buckets'),
+            'report_url': reverse_lazy('reports:finance_company_payw'),
             'formats': ['HTML', 'PDF', 'XLSX'],
         },
     },
