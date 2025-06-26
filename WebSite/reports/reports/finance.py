@@ -153,6 +153,7 @@ def festival_summary(request):
         ('fringers', {'title': 'Paper fringers', 'dates': [], 'post': 0, 'total': 0}),
         ('boxoffice', {'title': 'Box office', 'dates': [], 'post': 0, 'total': 0}),
         ('efringers', {'title': 'eFringers', 'dates': [], 'post': 0, 'total': 0}),
+        ('cards', {'title': 'Card payments', 'dates': [], 'post': 0, 'total': 0}),
     ])
     totals = {
         'dates': [],
@@ -176,6 +177,10 @@ def festival_summary(request):
         date_amount = PayAsYouWill.objects.filter(sale__festival = festival, sale__completed__date = date, fringer_id__isnull = False).aggregate(Sum('amount'))['amount__sum'] or 0
         types['efringers']['dates'].append(date_amount)
         types['efringers']['total'] += date_amount
+        date_total += date_amount
+        date_amount = PAYWCard.objects.filter(company__festival = festival, date = date).aggregate(Sum('total'))['total__sum'] or 0
+        types['cards']['dates'].append(date_amount)
+        types['cards']['total'] += date_amount
         date_total += date_amount
         totals['dates'].append(date_total)
         totals['total'] += date_total
