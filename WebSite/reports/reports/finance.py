@@ -28,7 +28,7 @@ from reportlab.lib import colors
 import xlsxwriter as xlsx
 
 from program.models import Company, Venue, Show, ShowPerformance
-from tickets.models import BoxOffice, Sale, Refund, FringerType, Fringer, TicketType, Ticket, Checkpoint, PayAsYouWill, Bucket, PAYWCard
+from tickets.models import BoxOffice, Sale, Refund, FringerType, Fringer, TicketType, Ticket, Checkpoint, PayAsYouWill, Bucket
 from volunteers.models import Volunteer
 
 def date_list(from_date, to_date):
@@ -178,7 +178,7 @@ def festival_summary(request):
         types['efringers']['dates'].append(date_amount)
         types['efringers']['total'] += date_amount
         date_total += date_amount
-        date_amount = PAYWCard.objects.filter(company__festival = festival, date = date).aggregate(Sum('total'))['total__sum'] or 0
+        date_amount = Bucket.objects.filter(company__festival = festival, date = date).aggregate(Sum('cards'))['cards__sum'] or 0
         types['cards']['dates'].append(date_amount)
         types['cards']['total'] += date_amount
         date_total += date_amount
@@ -1203,6 +1203,7 @@ def _get_performance_payw(performance):
 
     cash = Bucket.objects.filter(performance = performance).aggregate(Sum('cash'))['cash__sum'] or 0
     fringers = 4 * (Bucket.objects.filter(performance = performance).aggregate(Sum('fringers'))['fringers__sum'] or 0)
+    cards = Bucket.objects.filter(performance = performance).aggregate(Sum('cards'))['cards__sum'] or 0
     return {
         'date': performance.date,
         'time': performance.time,
@@ -1210,8 +1211,8 @@ def _get_performance_payw(performance):
         'fringers': fringers,
         'boxoffice': 0,
         'efringers': 0,
-        'cards': 0,
-        'total': cash + fringers,
+        'cards': cards,
+        'total': cash + fringers + cards,
     }
 
 def _get_show_payw(show):
@@ -1221,7 +1222,7 @@ def _get_show_payw(show):
     other_fringers = 4 * (Bucket.objects.filter(show = show, performance__isnull = True).aggregate(Sum('fringers'))['fringers__sum'] or 0)
     other_boxoffice = PayAsYouWill.objects.filter(show = show, sale__completed__isnull = False, fringer__isnull = True).aggregate(Sum('amount'))['amount__sum'] or 0
     other_efringers = PayAsYouWill.objects.filter(show = show, sale__completed__isnull = False, fringer__isnull = False).aggregate(Sum('amount'))['amount__sum'] or 0
-    other_cards = PAYWCard.objects.filter(show = show, performance__isnull = True).aggregate(Sum('total'))['total__sum'] or 0
+    other_cards = Bucket.objects.filter(show = show, performance__isnull = True).aggregate(Sum('cards'))['cards__sum'] or 0
     other = {
         'cash': other_cash,
         'fringers': other_fringers,

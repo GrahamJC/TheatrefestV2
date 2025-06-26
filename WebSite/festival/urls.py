@@ -36,10 +36,6 @@ urlpatterns = [
     path('admin/bucket/create', views.AdminBucketCreate.as_view(), name='admin_bucket_create'),
     path('admin/bucket/<uuid:slug>/update', views.AdminBucketUpdate.as_view(), name='admin_bucket_update'),
     path('admin/bucket/<uuid:slug>/delete', views.admin_bucket_delete, name='admin_bucket_delete'),
-    path('admin/paywcard/list', views.AdminPAYWCardList.as_view(), name='admin_paywcard_list'),
-    path('admin/paywcard/create', views.AdminPAYWCardCreate.as_view(), name='admin_paywcard_create'),
-    path('admin/paywcard/<uuid:slug>/update', views.AdminPAYWCardUpdate.as_view(), name='admin_paywcard_update'),
-    path('admin/paywcard/<uuid:slug>/delete', views.admin_paywcard_delete, name='admin_paywcard_delete'),
     # AJAX support
     path('ajax/get_shows', views.ajax_get_shows, name='ajax_get_shows'),
     path('ajax/get_performances', views.ajax_get_performances, name='ajax_get_performances'),

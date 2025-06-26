@@ -14,6 +14,7 @@
                 <th>Performance</th>
                 <th>Cash</th>
                 <th>Fringers</th>
+                <th>Cards</th>
             </tr>
         </thead>
         <tbody>
@@ -25,6 +26,7 @@
                     <td>{% if b.performance %}{{ b.performance.date | date:'D' }} at {{ b.performance.time | time:'H:i'}}{% endif %}</td>
                     <td>&#163;{{ b.cash }}</td>
                     <td>{{ b.fringers }}</td>
+                    <td>&#163;{{ b.cards }}</td>
                 </tr>
             {%endfor %}
         </tbody>

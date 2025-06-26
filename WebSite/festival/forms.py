@@ -8,7 +8,7 @@ from bootstrap_datepicker_plus.widgets import DatePickerInput
 from core.models import User, Festival
 from content.models import Page, PageImage, Navigator
 from program.models import Company, Venue, Show, ShowPerformance
-from tickets.models import BoxOffice, TicketType, FringerType, Bucket, PAYWCard
+from tickets.models import BoxOffice, TicketType, FringerType, Bucket
 
 class PageForm(forms.ModelForm):
 
@@ -177,66 +177,7 @@ class AdminBucketForm(forms.ModelForm):
             'description',
             'cash',
             'fringers',
-        ]
-        widgets = {
-            'date': DatePickerInput,
-        }
-
-    def __init__(self, festival, *args, **kwargs):
-        self.festival = festival
-        super().__init__(*args, **kwargs)
-        self.fields['company'].queryset = Company.objects.filter(festival=self.festival)
-        self.fields['company'].label_from_instance = self.company_label_from_instance
-        if hasattr(self.instance, 'company'):
-            self.fields['show'].queryset = Show.objects.filter(company=self.instance.company)
-        else:
-            self.fields['show'].queryset = Show.objects.filter(pk=0)
-        self.fields['show'].label_from_instance = self.show_label_from_instance
-        if hasattr(self.instance, 'show'):
-            self.fields['performance'].queryset = ShowPerformance.objects.filter(show=self.instance.show)
-        else:
-            self.fields['performance'].queryset = ShowPerformance.objects.filter(pk=0)
-        self.fields['performance'].label_from_instance = self.performance_label_from_instance
-        self.fields['description'].label = 'Notes'
-
-    def clean_company(self):
-        # Update show queryset for selected company
-        company = self.cleaned_data['company']
-        if company:
-            self.fields['show'].queryset = Show.objects.filter(company=company)
-        return company
-
-    def clean_show(self):
-        # Update performance queryset for selected show
-        show = self.cleaned_data['show']
-        if show:
-            self.fields['performance'].queryset = ShowPerformance.objects.filter(show=show)
-        return show
-    
-    @staticmethod
-    def company_label_from_instance(obj):
-        return obj.name
-
-    @staticmethod
-    def show_label_from_instance(obj):
-        return obj.name
-
-    @staticmethod
-    def performance_label_from_instance(obj):
-        return f'{obj.date:%A %b %d} at {obj.time:%I:%M%p}'
-
-
-class AdminPAYWCardForm(forms.ModelForm):
-
-    class Meta:
-        model = PAYWCard
-        fields = [
-            'date',
-            'company',
-            'show',
-            'performance',
-            'description',
-            'total',
+            'cards'
         ]
         widgets = {
             'date': DatePickerInput,
