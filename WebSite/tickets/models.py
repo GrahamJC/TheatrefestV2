@@ -453,6 +453,7 @@ class Bucket(TimeStampedModel):
     cash = models.DecimalField(max_digits = 5, decimal_places = 2)
     fringers = models.IntegerField()
     cards = models.DecimalField(max_digits = 5, decimal_places = 2)
+    audience = models.IntegerField(null = True, blank = True)
 
     @property
     def can_delete(self):

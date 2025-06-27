@@ -15,6 +15,7 @@
                 <th>Cash</th>
                 <th>Fringers</th>
                 <th>Cards</th>
+                <th>Audience</th>
             </tr>
         </thead>
         <tbody>
@@ -27,6 +28,7 @@
                     <td>&#163;{{ b.cash }}</td>
                     <td>{{ b.fringers }}</td>
                     <td>&#163;{{ b.cards }}</td>
+                    <td>{% if b.audience %}{{ b.audience }}{% endif %}</td>
                 </tr>
             {%endfor %}
         </tbody>

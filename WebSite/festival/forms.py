@@ -177,7 +177,8 @@ class AdminBucketForm(forms.ModelForm):
             'description',
             'cash',
             'fringers',
-            'cards'
+            'cards',
+            'audience'
         ]
         widgets = {
             'date': DatePickerInput,

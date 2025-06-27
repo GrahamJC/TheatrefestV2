@@ -796,13 +796,14 @@ class AdminBucketCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
             Field('company'),
             Field('show'),
             Field('performance'),
-            Field('description'),
             Row(
                 Column('cash', css_class='col-sm-4'),
                 Column('fringers', css_class='col-sm-4'),
                 Column('cards', css_class='col-sm-4'),
                 css_class='form-row'
             ),
+            Field('audience'),
+            Field('description'),
             FormActions(
                 Submit('save', 'Save'),
                 Button('cancel', 'Cancel'),
@@ -850,13 +851,14 @@ class AdminBucketUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
             Field('company'),
             Field('show'),
             Field('performance'),
-            Field('description'),
             Row(
                 Column('cash', css_class='col-sm-4'),
                 Column('fringers', css_class='col-sm-4'),
                 Column('cards', css_class='col-sm-4'),
                 css_class='form-row'
             ),
+            Field('audience'),
+            Field('description'),
             FormActions(
                 Submit('save', 'Save'),
                 Button('delete', 'Delete'),
