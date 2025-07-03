@@ -27,7 +27,7 @@ from core.models import Festival, User
 from program.models import Company, Show, ShowPerformance
 from tickets.models import BoxOffice, Sale, TicketType, FringerType, Bucket
 
-from .forms import PasswordResetForm, EMailForm, AdminSaleListForm, AdminFestivalForm, AdminTicketTypeForm, AdminFringerTypeForm, AdminBucketForm
+from .forms import PasswordResetForm, EMailForm, AdminSaleListForm, AdminFestivalForm, AdminTicketTypeForm, AdminFringerTypeForm, AdminSaleForm, AdminBucketForm
 
 # Logging
 import logging
@@ -752,6 +752,72 @@ def admin_sale_confirmation(request, sale_uuid):
     return JsonResponse({
         'is_sent': is_sent
     })
+
+class AdminSaleUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+
+    model = Sale
+    form_class = AdminSaleForm
+    slug_field = 'uuid'
+    context_object_name = 'sale'
+    template_name = 'festival/admin_sale_update.html'
+    success_message = 'Sale updated'
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['festival'] = self.request.festival
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            TabHolder(
+                Tab ('General',
+                    Row(
+                        Column('boxoffice', css_class='form-group col-md-6 mb-0'),
+                        Column('venue', css_class='form-group col-md-6 mb-0'),
+                        css_class = 'form-row',
+                    ),
+                    Field('user'),
+                    Field('customer'),
+                    Row(
+                        Column('amount', css_class='form-group col-md-6 mb-0'),
+                        Column('buttons', css_class='form-group col-md-6 mb-0'),
+                        css_class = 'form-row',
+                    ),
+                    Row(
+                        Column('transaction_type', css_class='form-group col-md-4 mb-0'),
+                        Column('transaction_ID', css_class='form-group col-md-8 mb-0'),
+                        css_class = 'form-row',
+                    ),
+                    Row(
+                        Column('completed', css_class='form-group col-md-6 mb-0'),
+                        Column('cancelled', css_class='form-group col-md-6 mb-0'),
+                        css_class = 'form-row',
+                    ),
+                    Field('notes'),
+                    FormActions(
+                        Submit('save', 'Save'),
+                        Button('delete', 'Delete'),
+                        Button('cancel', 'Cancel'),
+                    ),
+                ),
+                Tab('Fringers'),
+                Tab('Tickets'),
+            )
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Sales', 'url': reverse('festival:admin_sale_list') },
+            { 'text': 'Edit' }
+        ]
+        return context_data
+
 
 # Buckets
 class AdminBucketList(LoginRequiredMixin, ListView):

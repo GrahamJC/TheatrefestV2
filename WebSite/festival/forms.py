@@ -2,13 +2,14 @@ from datetime import datetime
 from django import forms
 from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
+from django.db.models import Q
 
 from bootstrap_datepicker_plus.widgets import DatePickerInput
 
 from core.models import User, Festival
 from content.models import Page, PageImage, Navigator
 from program.models import Company, Venue, Show, ShowPerformance
-from tickets.models import BoxOffice, TicketType, FringerType, Bucket
+from tickets.models import BoxOffice, TicketType, FringerType, Sale, Bucket
 
 class PageForm(forms.ModelForm):
 
@@ -164,6 +165,47 @@ class AdminFringerTypeForm(forms.ModelForm):
             self.instance.validate_unique(exclude)
         except ValidationError:
             self._update_errors(ValidationError({'name': 'A fringer type with that name already exists'}))
+
+
+class AdminSaleForm(forms.ModelForm):
+
+    class Meta:
+        model = Sale
+        fields = [
+            'boxoffice',
+            'venue',
+            'user',
+            'customer',
+            'buttons',
+            'amount',
+            'transaction_type',
+            'transaction_ID',
+            'completed',
+            'cancelled',
+            'notes'
+        ]
+
+    @staticmethod
+    def boxoffice_label_from_instance(obj):
+        return obj.name
+
+    @staticmethod
+    def venue_label_from_instance(obj):
+        return obj.name
+
+    @staticmethod
+    def user_label_from_instance(obj):
+        return obj.email
+
+    def __init__(self, festival, *args, **kwargs):
+        self.festival = festival
+        super().__init__(*args, **kwargs)
+        self.fields['boxoffice'].queryset = BoxOffice.objects.filter(festival=self.festival)
+        self.fields['boxoffice'].label_from_instance = self.boxoffice_label_from_instance
+        self.fields['venue'].queryset = Venue.objects.filter(festival=self.festival, is_ticketed=True)
+        self.fields['venue'].label_from_instance = self.venue_label_from_instance
+        self.fields['user'].queryset = User.objects.filter(festival=self.festival).order_by('email')
+        self.fields['user'].label_from_instance = self.user_label_from_instance
 
 class AdminBucketForm(forms.ModelForm):
 

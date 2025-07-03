@@ -32,6 +32,7 @@ urlpatterns = [
     path('admin/user/email/send', views.admin_user_email_send, name='admin_user_email_send'),
     path('admin/sale/list', views.AdminSaleListView.as_view(), name='admin_sale_list'),
     path('admin/sale/<uuid:sale_uuid>/confirmation/', views.admin_sale_confirmation, name='admin_sale_confirmation'),
+    path('admin/sale/<uuid:slug>/update/', views.AdminSaleUpdateView.as_view(), name='admin_sale_update'),
     path('admin/bucket/list', views.AdminBucketList.as_view(), name='admin_bucket_list'),
     path('admin/bucket/create', views.AdminBucketCreate.as_view(), name='admin_bucket_create'),
     path('admin/bucket/<uuid:slug>/update', views.AdminBucketUpdate.as_view(), name='admin_bucket_update'),

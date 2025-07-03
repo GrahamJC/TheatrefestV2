@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+
+{% block pagetitle %}{{ festival.name }}: Sale {{ sale.id }}{% endblock %}
+
+{% block content %}
+    
+    {% crispy form %}
+
+{% endblock %}
+
+{% block body-script %}
+    
+<script language="javascript">
+
+
+</script>
+
+{% endblock %}

@@ -23,7 +23,7 @@
         <tbody>
             {% for sale in sales %}
                 <tr>
-                    <td>{{ sale.id }}</td>
+                    <td><a href="{% url 'festival:admin_sale_update' sale.uuid %}">{{ sale.id }}</a></td>
                     <td>{{ sale.date | date:'M-d' }}</td>
                     <td>{{ sale.customer }}</td>
                     <td><a data-toggle="collapse" href=".sale-{{sale.id}}">£{{ sale.total | floatformat:2 }}</a></td>
