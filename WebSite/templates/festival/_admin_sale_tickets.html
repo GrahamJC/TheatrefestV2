@@ -1,0 +1,28 @@
+﻿<table class="table">
+    <thead class="thead-light">
+        <tr>
+            <th>Id</th>
+            <th>Show</th>
+            <th>Performance</th>
+            <th>Type</th>
+            <th>Price</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for ticket in sale.tickets.all %}
+            <tr>
+                <td><a href="{% url 'festival:admin_sale_ticket_update' sale.uuid ticket.uuid %}">{{ ticket.id }}</a></td>
+                <td>{{ ticket.performance.show.name }}</td>
+                <td>{{ ticket.performance.date | date:'M-d' }} at {{ ticket.performance.time }}</td>
+                <td>{{ ticket.type.name }}</td>
+                <td>{{ ticket.type.price }}</td>
+                <td><a href="{% url 'festival:admin_sale_ticket_delete' sale.uuid ticket.uuid %}">Delete</a></td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="mb-4 text-right">
+    <a class="btn btn-primary" href="{% url 'festival:admin_sale_fringer_create' sale.uuid %}">Add Ticket</a>
+</div>

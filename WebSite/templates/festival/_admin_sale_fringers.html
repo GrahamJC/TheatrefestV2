@@ -1,0 +1,26 @@
+﻿<table class="table">
+    <thead class="thead-light">
+        <tr>
+            <th>Id</th>
+            <th>Type</th>
+            <th>Shows</th>
+            <th>Price</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for fringer in sale.fringers.all %}
+            <tr>
+                <td><a href="{% url 'festival:admin_sale_fringer_update' sale.uuid fringer.uuid %}">{{ fringer.id }}</a></td>
+                <td>{{ fringer.type.name }}</td>
+                <td>{{ fringer.type.shows }}</td>
+                <td>{{ fringer.type.price }}</td>
+                <td><a href="{% url 'festival:admin_sale_fringer_delete' sale.uuid fringer.uuid %}">Delete</a></td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="mb-4 text-right">
+    <a class="btn btn-primary" href="{% url 'festival:admin_sale_fringer_create' sale.uuid %}">Add Fringer</a>
+</div>

@@ -67,35 +67,37 @@
 
 {% block body-script %}
     
-<script language="javascript">
+    <script language="javascript">
 
-    function email_confirmation(url, email) {
-        $.ajax({
-            url: url,
-            beforeSend: function () {
-                $('body').css({
-                    'cursor': 'wait'
-                });
-            },
-            complete: function () {
-                $('body').css({
-                    'cursor': 'default'
-                });
-            },
-            success: function(response) {
-                if (response.is_sent) {
-                    $('#tf-alerts').append('<div class="alert alert-info"><a class="close" data-dismiss="alert">x</a><span>Confirmation e-mail sent to ' + email + '.</span></div>');
-                }
-                else {
+        $('#button-id-add').addClass('btn-secondary').on('click', function () { window.location.href = '{% url 'festival:admin_sale_create' %}'; });
+
+        function email_confirmation(url, email) {
+            $.ajax({
+                url: url,
+                beforeSend: function () {
+                    $('body').css({
+                        'cursor': 'wait'
+                    });
+                },
+                complete: function () {
+                    $('body').css({
+                        'cursor': 'default'
+                    });
+                },
+                success: function(response) {
+                    if (response.is_sent) {
+                        $('#tf-alerts').append('<div class="alert alert-info"><a class="close" data-dismiss="alert">x</a><span>Confirmation e-mail sent to ' + email + '.</span></div>');
+                    }
+                    else {
+                        $('#tf-alerts').append('<div class="alert alert-error"><a class="close" data-dismiss="alert">x</a><span>Confirmation e-mail failed.</span></div>');
+                    }
+                },
+                error: function(response) {
                     $('#tf-alerts').append('<div class="alert alert-error"><a class="close" data-dismiss="alert">x</a><span>Confirmation e-mail failed.</span></div>');
                 }
-            },
-            error: function(response) {
-                $('#tf-alerts').append('<div class="alert alert-error"><a class="close" data-dismiss="alert">x</a><span>Confirmation e-mail failed.</span></div>');
-            }
-        });
-    }
+            });
+        }
 
-</script>
+    </script>
 
 {% endblock %}

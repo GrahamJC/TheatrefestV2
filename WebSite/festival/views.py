@@ -652,6 +652,7 @@ class AdminSaleListView(LoginRequiredMixin, View):
             ),
             FormActions(
                 Submit('search', 'Search'),
+                Button('add', 'Add Sale')
             )
         )
         form.helper = helper
@@ -753,13 +754,73 @@ def admin_sale_confirmation(request, sale_uuid):
         'is_sent': is_sent
     })
 
+class AdminSaleCreateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+
+    model = Sale
+    form_class = AdminSaleForm
+    context_object_name = 'sale'
+    template_name = 'festival/admin_show.html'
+    success_message = 'Sale added'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['festival'] = self.request.festival
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Row(
+                Column('boxoffice', css_class='form-group col-md-6 mb-0'),
+                Column('venue', css_class='form-group col-md-6 mb-0'),
+                css_class = 'form-row',
+            ),
+            Field('user'),
+            Field('customer'),
+            Row(
+                Column('amount', css_class='form-group col-md-6 mb-0'),
+                Column('buttons', css_class='form-group col-md-6 mb-0'),
+                css_class = 'form-row',
+            ),
+            Row(
+                Column('transaction_type', css_class='form-group col-md-4 mb-0'),
+                Column('transaction_ID', css_class='form-group col-md-8 mb-0'),
+                css_class = 'form-row',
+            ),
+            Row(
+                Column('completed', css_class='form-group col-md-6 mb-0'),
+                Column('cancelled', css_class='form-group col-md-6 mb-0'),
+                css_class = 'form-row',
+            ),
+            Field('notes'),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('cancel', 'Cancel'),
+            ),
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['festival'] = self.request.festival
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Sales', 'url': reverse('festival:admin_sale_list') },
+            { 'text': 'Add Sale' }
+        ]
+        return context_data
+
+    def get_success_url(self):
+        return reverse('festival:admin_sale_update', args=[self.object.uuid])
+
 class AdminSaleUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
 
     model = Sale
     form_class = AdminSaleForm
     slug_field = 'uuid'
     context_object_name = 'sale'
-    template_name = 'festival/admin_sale_update.html'
+    template_name = 'festival/admin_sale.html'
     success_message = 'Sale updated'
     
     def get_form_kwargs(self):
@@ -802,8 +863,12 @@ class AdminSaleUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
                         Button('cancel', 'Cancel'),
                     ),
                 ),
-                Tab('Fringers'),
-                Tab('Tickets'),
+                Tab('Fringers',
+                    HTML('{% include \'festival/_admin_sale_fringers.html\' %}'),
+                ),
+                Tab('Tickets',
+                    HTML('{% include \'festival/_admin_sale_tickets.html\' %}'),
+                ),
             )
         )
         return form
@@ -817,6 +882,37 @@ class AdminSaleUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
             { 'text': 'Edit' }
         ]
         return context_data
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_admin)
+def admin_sale_delete(request, sale_uuid):
+    pass
+
+class AdminSaleFringerCreateView(LoginRequiredMixin, UpdateView):
+    pass
+
+class AdminSaleFringerUpdateView(LoginRequiredMixin, UpdateView):
+    pass
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_admin)
+def admin_sale_fringer_delete(request, sale_uuid, slug):
+    pass
+
+
+class AdminSaleTicketCreateView(LoginRequiredMixin, UpdateView):
+    pass
+
+class AdminSaleTicketUpdateView(LoginRequiredMixin, UpdateView):
+    pass
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_admin)
+def admin_sale_ticket_delete(request, sale_uuid, slug):
+    pass
 
 
 # Buckets
