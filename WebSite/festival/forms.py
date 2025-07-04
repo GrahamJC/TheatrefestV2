@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
 from django.db.models import Q
 
-from bootstrap_datepicker_plus.widgets import DatePickerInput
+from bootstrap_datepicker_plus.widgets import DatePickerInput, DateTimePickerInput
 
 from core.models import User, Festival
 from content.models import Page, PageImage, Navigator
@@ -184,6 +184,10 @@ class AdminSaleForm(forms.ModelForm):
             'cancelled',
             'notes'
         ]
+        widgets = {
+            'completed': DateTimePickerInput(),
+            'cancelled': DateTimePickerInput(),
+        }
 
     @staticmethod
     def boxoffice_label_from_instance(obj):
@@ -197,14 +201,13 @@ class AdminSaleForm(forms.ModelForm):
     def user_label_from_instance(obj):
         return obj.email
 
-    def __init__(self, festival, *args, **kwargs):
-        self.festival = festival
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['boxoffice'].queryset = BoxOffice.objects.filter(festival=self.festival)
+        self.fields['boxoffice'].queryset = BoxOffice.objects.filter(festival=self.instance.festival)
         self.fields['boxoffice'].label_from_instance = self.boxoffice_label_from_instance
-        self.fields['venue'].queryset = Venue.objects.filter(festival=self.festival, is_ticketed=True)
+        self.fields['venue'].queryset = Venue.objects.filter(festival=self.instance.festival, is_ticketed=True)
         self.fields['venue'].label_from_instance = self.venue_label_from_instance
-        self.fields['user'].queryset = User.objects.filter(festival=self.festival).order_by('email')
+        self.fields['user'].queryset = User.objects.filter(festival=self.instance.festival).order_by('email')
         self.fields['user'].label_from_instance = self.user_label_from_instance
 
 class AdminBucketForm(forms.ModelForm):

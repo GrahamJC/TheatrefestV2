@@ -1,0 +1,26 @@
+﻿<table class="table">
+    <thead class="thead-light">
+        <tr>
+            <th>Id</th>
+            <th>Show</th>
+            <th>Amount</th>
+            <th>eFringer</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for payw in sale.PAYW_donations.all %}
+            <tr>
+                <td><a href="{% url 'festival:admin_sale_payw_update' sale.uuid payw.uuid %}">{{ payw.id }}</a></td>
+                <td>{{ payw.show.name }}</td>
+                <td>&#163;{{ payw.amount }}</td>
+                <td>{{ payw.fringer.user.email }} ({{payw.fringer.name }})</td>
+                <td><a href="{% url 'festival:admin_sale_payw_delete' sale.uuid payw.uuid %}">Delete</a></td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="mb-4 text-right">
+    <a class="btn btn-primary" href="{% url 'festival:admin_sale_payw_create' sale.uuid %}">Add PAYW</a>
+</div>

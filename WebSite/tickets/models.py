@@ -153,7 +153,9 @@ class Sale(TimeStampedModel):
     def __str__(self):
         return f'{self.id} ({self.customer})'
 
-
+    def can_delete(self):
+        return True
+    
 class Refund(TimeStampedModel):
 
     festival = models.ForeignKey(Festival, on_delete=models.PROTECT, related_name='refunds')

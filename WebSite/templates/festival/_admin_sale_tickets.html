@@ -16,7 +16,7 @@
                 <td>{{ ticket.performance.show.name }}</td>
                 <td>{{ ticket.performance.date | date:'M-d' }} at {{ ticket.performance.time }}</td>
                 <td>{{ ticket.type.name }}</td>
-                <td>{{ ticket.type.price }}</td>
+                <td>&#163;{{ ticket.type.price }}</td>
                 <td><a href="{% url 'festival:admin_sale_ticket_delete' sale.uuid ticket.uuid %}">Delete</a></td>
             </tr>
         {% endfor %}

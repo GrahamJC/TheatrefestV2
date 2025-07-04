@@ -754,17 +754,17 @@ def admin_sale_confirmation(request, sale_uuid):
         'is_sent': is_sent
     })
 
-class AdminSaleCreateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+class AdminSaleCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
 
     model = Sale
     form_class = AdminSaleForm
     context_object_name = 'sale'
-    template_name = 'festival/admin_show.html'
+    template_name = 'festival/admin_sale.html'
     success_message = 'Sale added'
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['festival'] = self.request.festival
+        kwargs['instance'] = Sale(festival=self.request.festival)
         return kwargs
 
     def get_form(self):
@@ -807,7 +807,7 @@ class AdminSaleCreateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
         context_data['breadcrumbs'] = [
             { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
             { 'text': 'Sales', 'url': reverse('festival:admin_sale_list') },
-            { 'text': 'Add Sale' }
+            { 'text': 'Add' }
         ]
         return context_data
 
@@ -822,18 +822,17 @@ class AdminSaleUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     context_object_name = 'sale'
     template_name = 'festival/admin_sale.html'
     success_message = 'Sale updated'
-    
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['festival'] = self.request.festival
-        return kwargs
 
+    def dispatch(self, request, *args, **kwargs):
+        self.initial_tab = kwargs.pop('tab', None)
+        return super().dispatch(request, *args, **kwargs)
+    
     def get_form(self):
         form = super().get_form()
         form.helper = FormHelper()
         form.helper.layout = Layout(
             TabHolder(
-                Tab ('General',
+                Tab ('Sale',
                     Row(
                         Column('boxoffice', css_class='form-group col-md-6 mb-0'),
                         Column('venue', css_class='form-group col-md-6 mb-0'),
@@ -869,6 +868,9 @@ class AdminSaleUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
                 Tab('Tickets',
                     HTML('{% include \'festival/_admin_sale_tickets.html\' %}'),
                 ),
+                Tab('PAYW',
+                    HTML('{% include \'festival/_admin_sale_payw.html\' %}'),
+                ),
             )
         )
         return form
@@ -879,15 +881,24 @@ class AdminSaleUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
         context_data['breadcrumbs'] = [
             { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
             { 'text': 'Sales', 'url': reverse('festival:admin_sale_list') },
-            { 'text': 'Edit' }
+            { 'text': 'Update' }
         ]
+        context_data['initial_tab'] = self.initial_tab
         return context_data
+
+    def get_success_url(self):
+        return reverse('festival:admin_sale_update', args=[self.object.uuid])
 
 @require_GET
 @login_required
 @user_passes_test(lambda u: u.is_admin)
-def admin_sale_delete(request, sale_uuid):
-    pass
+def admin_sale_delete(request, slug):
+
+    # Delete sale
+    sale = get_object_or_404(Sale, uuid=slug)
+    sale.delete()
+    messages.success(request, 'Sale deleted')
+    return redirect('festival:admin_sale_list')
 
 class AdminSaleFringerCreateView(LoginRequiredMixin, UpdateView):
     pass
@@ -912,6 +923,19 @@ class AdminSaleTicketUpdateView(LoginRequiredMixin, UpdateView):
 @login_required
 @user_passes_test(lambda u: u.is_admin)
 def admin_sale_ticket_delete(request, sale_uuid, slug):
+    pass
+
+
+class AdminSalePAYWCreateView(LoginRequiredMixin, UpdateView):
+    pass
+
+class AdminSalePAYWUpdateView(LoginRequiredMixin, UpdateView):
+    pass
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_admin)
+def admin_sale_payw_delete(request, sale_uuid, slug):
     pass
 
 
