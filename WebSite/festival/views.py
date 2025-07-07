@@ -25,9 +25,9 @@ from crispy_forms.bootstrap import FormActions, TabHolder, Tab, Div
 from core.models import Festival, User
 
 from program.models import Company, Show, ShowPerformance
-from tickets.models import BoxOffice, Sale, TicketType, FringerType, Bucket
+from tickets.models import BoxOffice, Sale, TicketType, Ticket, FringerType, Fringer, PayAsYouWill, Bucket
 
-from .forms import PasswordResetForm, EMailForm, AdminSaleListForm, AdminFestivalForm, AdminTicketTypeForm, AdminFringerTypeForm, AdminSaleForm, AdminBucketForm
+from .forms import PasswordResetForm, EMailForm, AdminSaleListForm, AdminFestivalForm, AdminTicketTypeForm, AdminFringerTypeForm, AdminSaleForm, AdminSaleFringerForm, AdminSaleTicketForm, AdminSalePayAsYouWillForm, AdminBucketForm
 
 # Logging
 import logging
@@ -900,36 +900,217 @@ def admin_sale_delete(request, slug):
     messages.success(request, 'Sale deleted')
     return redirect('festival:admin_sale_list')
 
-class AdminSaleFringerCreateView(LoginRequiredMixin, UpdateView):
-    pass
+class AdminSaleFringerCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
 
-class AdminSaleFringerUpdateView(LoginRequiredMixin, UpdateView):
-    pass
+    model = Fringer
+    form_class = AdminSaleFringerForm
+    context_object_name = 'fringer'
+    template_name = 'festival/admin_sale_fringer.html'
+    success_message = 'Fringer added'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.sale = get_object_or_404(Sale, uuid=kwargs['sale_uuid'])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['instance'] = Fringer(sale=self.sale)
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Row(
+                Column('type', css_class='col-sm-4'),
+                Column('user', css_class='col-sm-8'),
+                css_class='form-row'
+            ),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('cancel', 'Cancel'),
+            ),
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['sale'] = self.sale
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Sales', 'url': reverse('festival:admin_sale_list') },
+            { 'text': f'Sale {self.sale.id}', 'url': reverse('festival:admin_sale_update_tab', args=[self.sale.uuid, 'fringers']) },
+            { 'text': 'Add Fringer' },
+        ]
+        return context_data
+
+    def get_success_url(self):
+        return reverse('festival:admin_sale_update_tab', args=[self.sale.uuid, 'fringers'])
+
+class AdminSaleFringerUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+
+    model = Fringer
+    form_class = AdminSaleFringerForm
+    slug_field = 'uuid'
+    context_object_name = 'fringer'
+    template_name = 'festival/admin_sale_fringer.html'
+    success_message = 'Fringer updated'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.sale = get_object_or_404(Sale, uuid=kwargs['sale_uuid'])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Row(
+                Column('type', css_class='col-sm-4'),
+                Column('user', css_class='col-sm-8'),
+                css_class='form-row'
+            ),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('delete', 'Delete'),
+                Button('cancel', 'Cancel'),
+            ),
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['sale'] = self.sale
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Sales', 'url': reverse('festival:admin_sale_list') },
+            { 'text': f'Sale {self.sale.id}', 'url': reverse('festival:admin_sale_update_tab', args=[self.sale.uuid, 'fringers']) },
+            { 'text': 'Update Fringer' },
+        ]
+        return context_data
+
+    def get_success_url(self):
+        return reverse('festival:admin_sale_update_tab', args=[self.sale.uuid, 'fringers'])
 
 @require_GET
 @login_required
 @user_passes_test(lambda u: u.is_admin)
 def admin_sale_fringer_delete(request, sale_uuid, slug):
-    pass
+
+    # Delete fringer from sale
+    fringer = get_object_or_404(Fringer, uuid=slug)
+    fringer.delete()
+    messages.success(request, 'Fringer deleted')
+    return redirect('festival:admin_sale_update_tab', sale_uuid, 'fringers')
 
 
-class AdminSaleTicketCreateView(LoginRequiredMixin, UpdateView):
-    pass
+class AdminSaleTicketCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
 
-class AdminSaleTicketUpdateView(LoginRequiredMixin, UpdateView):
-    pass
+    model = Ticket
+    form_class = AdminSaleTicketForm
+    context_object_name = 'ticket'
+    template_name = 'festival/admin_sale_ticket.html'
+    success_message = 'Ticket added'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.sale = get_object_or_404(Sale, uuid=kwargs['sale_uuid'])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['instance'] = Fringer(sale=self.sale)
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Field('performance'),
+            Field('type'),
+            Field('user'),
+            Field('fringer'),
+            Field('token_issued'),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('cancel', 'Cancel'),
+            ),
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['sale'] = self.sale
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Sales', 'url': reverse('festival:admin_sale_list') },
+            { 'text': f'Sale {self.sale.id}', 'url': reverse('festival:admin_sale_update_tab', args=[self.sale.uuid, 'tickets']) },
+            { 'text': 'Add Ticket' },
+        ]
+        return context_data
+
+    def get_success_url(self):
+        return reverse('festival:admin_sale_update_tab', args=[self.sale.uuid, 'tickets'])
+
+
+class AdminSaleTicketUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+
+    model = Ticket
+    form_class = AdminSaleTicketForm
+    slug_field = 'uuid'
+    context_object_name = 'ticket'
+    template_name = 'festival/admin_sale_ticket.html'
+    success_message = 'Ticket updated'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.sale = get_object_or_404(Sale, uuid=kwargs['sale_uuid'])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            Field('performance'),
+            Field('type'),
+            Field('user'),
+            Field('fringer'),
+            Field('token_issued'),
+            FormActions(
+                Submit('save', 'Save'),
+                Button('delete', 'Delete'),
+                Button('cancel', 'Cancel'),
+            ),
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['sale'] = self.sale
+        context_data['breadcrumbs'] = [
+            { 'text': 'Festival Admin', 'url': reverse('festival:admin') },
+            { 'text': 'Sales', 'url': reverse('festival:admin_sale_list') },
+            { 'text': f'Sale {self.sale.id}', 'url': reverse('festival:admin_sale_update_tab', args=[self.sale.uuid, 'tickets']) },
+            { 'text': 'Update Ticket' },
+        ]
+        return context_data
+
+    def get_success_url(self):
+        return reverse('festival:admin_sale_update_tab', args=[self.sale.uuid, 'tickets'])
 
 @require_GET
 @login_required
 @user_passes_test(lambda u: u.is_admin)
 def admin_sale_ticket_delete(request, sale_uuid, slug):
+
+    # Delete ticket from sale
+    ticket = get_object_or_404(Ticket, uuid=slug)
+    ticket.delete()
+    messages.success(request, 'Ticket deleted')
+    return redirect('festival:admin_sale_update_tab', sale_uuid, 'tickets')
+
+
+class AdminSalePAYWCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     pass
 
-
-class AdminSalePAYWCreateView(LoginRequiredMixin, UpdateView):
-    pass
-
-class AdminSalePAYWUpdateView(LoginRequiredMixin, UpdateView):
+class AdminSalePAYWUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     pass
 
 @require_GET

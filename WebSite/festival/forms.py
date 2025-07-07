@@ -9,7 +9,7 @@ from bootstrap_datepicker_plus.widgets import DatePickerInput, DateTimePickerInp
 from core.models import User, Festival
 from content.models import Page, PageImage, Navigator
 from program.models import Company, Venue, Show, ShowPerformance
-from tickets.models import BoxOffice, TicketType, FringerType, Sale, Bucket
+from tickets.models import BoxOffice, TicketType, Ticket, FringerType, Fringer, Sale, Bucket, PayAsYouWill
 
 class PageForm(forms.ModelForm):
 
@@ -210,6 +210,72 @@ class AdminSaleForm(forms.ModelForm):
         self.fields['user'].queryset = User.objects.filter(festival=self.instance.festival).order_by('email')
         self.fields['user'].label_from_instance = self.user_label_from_instance
 
+class AdminSaleFringerForm(forms.ModelForm):
+
+    class Meta:
+        model = Fringer
+        fields = [
+            'type',
+            'user'
+        ]
+    
+    @staticmethod
+    def type_label_from_instance(obj):
+        return f"{obj.name} ({'eFringer' if obj.is_online else 'paper'})"
+
+    @staticmethod
+    def user_label_from_instance(obj):
+        return obj.email
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['type'].queryset = FringerType.objects.filter(festival=self.instance.sale.festival)
+        self.fields['type'].label_from_instance = self.type_label_from_instance
+        self.fields['user'].queryset = User.objects.filter(festival=self.instance.sale.festival).order_by('email')
+        self.fields['user'].label_from_instance = self.user_label_from_instance
+
+
+class AdminSaleTicketForm(forms.ModelForm):
+
+    class Meta:
+        model = Ticket
+        fields = [
+            'performance',
+            'type',
+            'user',
+            'fringer',
+            'token_issued'
+        ]
+    
+    @staticmethod
+    def performance_label_from_instance(obj):
+        return f'{obj.show.name} on {obj.date} at {obj.time}'
+    
+    @staticmethod
+    def type_label_from_instance(obj):
+        return obj.name
+
+    @staticmethod
+    def user_label_from_instance(obj):
+        return obj.email
+
+    @staticmethod
+    def fringer_label_from_instance(obj):
+        return f'{obj.user.email} ({obj.name})'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['performance'].queryset = ShowPerformance.objects.filter(show_festival=self.instance.sale.festival).order_by('show_name', 'date', 'time')
+        self.fields['performance'].label_from_instance = self.performance_label_from_instance
+        self.fields['type'].queryset = TicketType.objects.filter(festival=self.instance.sale.festival)
+        self.fields['type'].label_from_instance = self.type_label_from_instance
+        self.fields['user'].queryset = User.objects.filter(festival=self.instance.sale.festival).order_by('email')
+        self.fields['user'].label_from_instance = self.user_label_from_instance
+        self.fields['fringer'].queryset = Fringer.objects.filter(user_festival=self.instance.sale.festival).order_by('user_email', 'name')
+        self.fields['fringer'].label_from_instance = self.fringer_label_from_instance
+
+class AdminSalePayAsYouWillForm(forms.ModelForm):
+    pass
 class AdminBucketForm(forms.ModelForm):
 
     class Meta:
