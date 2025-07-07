@@ -702,7 +702,7 @@ class AdminSaleListView(LoginRequiredMixin, View):
                 else:
                     sales = sales.filter(venue__isnull = False)
             elif sale_type == 'Online':
-                sales = sales.filter(user__isnull = False)
+                sales = sales.filter(boxoffice__isnull=True, venue__isnull=True)
             sales = sales.order_by('id')[:50]
             if sales.count() == 0:
                 messages.warning(request, "No sales found")
@@ -921,11 +921,8 @@ class AdminSaleFringerCreateView(LoginRequiredMixin, SuccessMessageMixin, Create
         form = super().get_form()
         form.helper = FormHelper()
         form.helper.layout = Layout(
-            Row(
-                Column('type', css_class='col-sm-4'),
-                Column('user', css_class='col-sm-8'),
-                css_class='form-row'
-            ),
+            Field('type'),
+            Field('user'),
             FormActions(
                 Submit('save', 'Save'),
                 Button('cancel', 'Cancel'),
@@ -964,11 +961,8 @@ class AdminSaleFringerUpdateView(LoginRequiredMixin, SuccessMessageMixin, Update
         form = super().get_form()
         form.helper = FormHelper()
         form.helper.layout = Layout(
-            Row(
-                Column('type', css_class='col-sm-4'),
-                Column('user', css_class='col-sm-8'),
-                css_class='form-row'
-            ),
+            Field('type'),
+            Field('user'),
             FormActions(
                 Submit('save', 'Save'),
                 Button('delete', 'Delete'),

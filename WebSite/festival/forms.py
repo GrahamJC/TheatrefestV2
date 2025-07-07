@@ -265,13 +265,13 @@ class AdminSaleTicketForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['performance'].queryset = ShowPerformance.objects.filter(show_festival=self.instance.sale.festival).order_by('show_name', 'date', 'time')
+        self.fields['performance'].queryset = ShowPerformance.objects.filter(show__festival=self.instance.sale.festival).order_by('show__name', 'date', 'time')
         self.fields['performance'].label_from_instance = self.performance_label_from_instance
         self.fields['type'].queryset = TicketType.objects.filter(festival=self.instance.sale.festival)
         self.fields['type'].label_from_instance = self.type_label_from_instance
         self.fields['user'].queryset = User.objects.filter(festival=self.instance.sale.festival).order_by('email')
         self.fields['user'].label_from_instance = self.user_label_from_instance
-        self.fields['fringer'].queryset = Fringer.objects.filter(user_festival=self.instance.sale.festival).order_by('user_email', 'name')
+        self.fields['fringer'].queryset = Fringer.objects.filter(user__festival=self.instance.sale.festival).order_by('user__email', 'name')
         self.fields['fringer'].label_from_instance = self.fringer_label_from_instance
 
 class AdminSalePayAsYouWillForm(forms.ModelForm):
