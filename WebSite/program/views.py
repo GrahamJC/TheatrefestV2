@@ -431,7 +431,7 @@ def admin_genre_copy(request):
     copy_genre = Genre(festival=request.festival, name=copy_name)
     copy_genre.save()
     messages.success(request, 'Genre copied')
-    return redirect('program:admin_genre_update', slug=copy_genre.uuid)
+    return redirect('program:admin_genre_list')
 
 
 class AdminGenreUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
@@ -592,7 +592,7 @@ def admin_venue_copy(request):
         copy_contact.email = contact.email
         copy_contact.save()
     messages.success(request, 'Venue copied')
-    return redirect('program:admin_venue_update', slug=copy_venue.uuid)
+    return redirect('program:admin_venue_list')
 
 
 class AdminVenueUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):

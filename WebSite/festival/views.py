@@ -268,7 +268,7 @@ def admin_tickettype_copy(request):
     copy_type.payment = type_to_copy.payment
     copy_type.save()
     messages.success(request, 'Type copied')
-    return redirect('festival:admin_tickettype_update', slug=copy_type.uuid)
+    return redirect('festival:admin_tickettype_list')
 
 
 class AdminTicketTypeUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
@@ -427,7 +427,7 @@ def admin_fringertype_copy(request):
     copy_type.ticket_type = TicketType.objects.filter(festival=copy_type.festival, name=type_to_copy.ticket_type.name).first()
     copy_type.save()
     messages.success(request, 'Type copied')
-    return redirect('festival:admin_fringertype_update', slug=copy_type.uuid)
+    return redirect('festival:admin_fringertype_list')
 
 class AdminFringerTypeUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
 

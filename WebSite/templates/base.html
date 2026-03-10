@@ -14,6 +14,8 @@
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
         {% if request.festival.stylesheet %}
             <link rel="stylesheet" href="{{ request.festival.stylesheet.get_absolute_url }}">
+        {% else %}
+            <link rel="stylesheet" href="{%static 'default.css' %}">
         {% endif %}
     {% endblock %}
     {% block head-script %}

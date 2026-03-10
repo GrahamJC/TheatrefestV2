@@ -230,7 +230,7 @@ def admin_page_copy(request):
         copy_image = PageImage(page=copy_page, name=image.name, image=image.image)
         copy_image.save()
     messages.success(request, 'Page copied')
-    return redirect('content:admin_page_update', slug=copy_page.uuid)
+    return redirect('content:admin_page_list')
 
 
 class AdminPageUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
@@ -498,6 +498,24 @@ class AdminNavigatorCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
             return reverse('content:admin_navigator_list')
 
 
+def copy_navigator_details(from_nav, to_nav):
+
+    # Copy navigator details
+    to_nav.seqno = from_nav.seqno
+    nav_type = from_nav.type
+    to_nav.type = nav_type
+    if nav_type == Navigator.URL:
+        to_nav.url = from_nav.url
+    elif nav_type == Navigator.PAGE and from_nav.page != None:
+        to_nav.page = Page.objects.filter(festival=to_nav.festival, name=from_nav.page.name).first()
+    to_nav.save()
+
+    # If it is a sub-menu copy the menu items
+    if nav_type == Navigator.MENU:
+        for from_item in from_nav.items.all():
+            to_item = Navigator(festival=to_nav.festival, parent=to_nav, label=from_item.label)
+            copy_navigator_details(from_item, to_item)
+
 @login_required
 @require_POST
 def admin_navigator_copy(request):
@@ -510,21 +528,17 @@ def admin_navigator_copy(request):
     navigator_to_copy = get_object_or_404(Navigator, id=copy_id)
 
     # If navigator name already exists in this festival add a numeric suffix
-    copy_name = navigator_to_copy.label
+    copy_label = navigator_to_copy.label
     index = 0
-    while Navigator.objects.filter(festival=request.festival, label=copy_name).exists():
+    while Navigator.objects.filter(festival=request.festival, label=copy_label).exists():
         index += 1
-        copy_name = f"{navigator_to_copy.name}_{index}"
+        copy_label = f"{navigator_to_copy.label}_{index}"
 
     # Copy the navigator
-    copy_navigator = Navigator(festival=request.festival, label=copy_name)
-    copy_navigator.seqno = navigator_to_copy.seqno
-    copy_navigator.type = navigator_to_copy.type
-    copy_navigator.url = navigator_to_copy.url
-    copy_navigator.page = Page.objects.filter(festival=copy_navigator.festival, name=navigator_to_copy.page.name).first()
-    copy_navigator.save()
+    copy_navigator = Navigator(festival=request.festival, label=copy_label)
+    copy_navigator_details(navigator_to_copy, copy_navigator)
     messages.success(request, 'Navigator copied')
-    return redirect('content:admin_navigator_update', slug=copy_navigator.uuid)
+    return redirect('content:admin_navigator_list')
 
 
 class AdminNavigatorUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
@@ -717,7 +731,7 @@ def admin_image_copy(request):
     copy_image.map = image_to_copy.map
     copy_image.save()
     messages.success(request, 'Image copied')
-    return redirect('content:admin_image_update', slug=copy_image.uuid)
+    return redirect('content:admin_image_list')
 
 
 class AdminImageUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
@@ -846,7 +860,7 @@ def admin_document_copy(request):
     copy_document.filename = document_to_copy.filename
     copy_document.save()
     messages.success(request, 'Document copied')
-    return redirect('content:admin_document_update', slug=copy_document.uuid)
+    return redirect('content:admin_document_list')
 
 
 class AdminDocumentUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
@@ -979,7 +993,7 @@ def admin_resource_copy(request):
     copy_resource.body_test = ""
     copy_resource.save()
     messages.success(request, 'Resource copied')
-    return redirect('content:admin_resource_update', slug=copy_resource.uuid)
+    return redirect('content:admin_resource_list')
 
 
 class AdminResourceUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
