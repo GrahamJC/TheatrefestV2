@@ -267,6 +267,6 @@ env/
 # Secrets file
 secrets.json
 
-website/django_static/
+website/prod_static/
 website/media/
 website/obj/
