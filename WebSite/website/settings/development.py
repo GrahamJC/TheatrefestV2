@@ -34,15 +34,6 @@ DATABASES = {
     },
 }
 
-# Static files (CSS, JavaScript, Images)
-STATIC_URL = '/static/'
-STATICFILES_DIRS = [
-	os.path.join(BASE_DIR, "static"),
-]
-STATIC_ROOT = os.path.join(BASE_DIR, 'prod_static')
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
 # Registration
 REGISTRATION_TWOSTEP = True
 
@@ -89,7 +80,7 @@ LOGGING = {
         },
         "theatrefest": {
             "class": "logging.handlers.TimedRotatingFileHandler",
-            "filename": r"C:\Temp\Theatrefest\theatrefest.log",
+            "filename": r"D:\Theatrefest\log\theatrefest.log",
             "when": "midnight",
             "interval": 1,
             "backupCount": 10,
@@ -98,7 +89,7 @@ LOGGING = {
         },
         "django": {
             "class": "logging.handlers.TimedRotatingFileHandler",
-            "filename": r"C:\Temp\Theatrefest\django.log",
+            "filename": r"D:\Theatrefest\log\django.log",
             "when": "midnight",
             "interval": 1,
             "backupCount": 10,

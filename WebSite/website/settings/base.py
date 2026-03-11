@@ -117,6 +117,15 @@ MESSAGE_TAGS = {
     messages.ERROR: 'alert alert-danger',
 }
 
+# Static files (CSS, JavaScript, Images)
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [
+	os.path.join(BASE_DIR, "static"),
+]
+STATIC_ROOT = os.path.join(BASE_DIR, 'prod_static')
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
 # Default auot-field type (to avoid unwanted migrations in the future)
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
