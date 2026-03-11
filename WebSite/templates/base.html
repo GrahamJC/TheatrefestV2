@@ -112,7 +112,7 @@
                                                 <a class="dropdown-item" href="{% url 'festival:admin' %}">festival admin</a>
                                                 <a class="dropdown-item" href="{% url 'volunteers:admin_home' %}">volunteer admin</a>
                                                 {% if user.is_system_admin %}
-                                                    <a class="dropdown-item" href="/admin">system admin</a>
+                                                    <a class="dropdown-item" href="{% url 'core:admin' %}">system admin</a>
                                                 {% endif %}
                                             {% endif %}
                                             <div class="dropdown-divider"></div>

@@ -1,0 +1,26 @@
+﻿{% extends "base.html" %}
+{% load i18n %}
+
+{% block pagetitle %}System Administration{% endblock %}
+
+{% block content %}
+
+    <div class="row">
+
+        <div class="col">
+
+            <h5>System</h5>
+            <ul>
+                <li><a href="{% url 'core:admin_festival_list' %}">Festivals</a></li>
+            </ul>
+
+            <h5>Django</h5>
+            <ul>
+                <li><a href="/admin" target="_blank">Django Admin (new window)</a></li>
+            </ul>
+            
+        </div>
+
+    </div>
+
+{% endblock %}

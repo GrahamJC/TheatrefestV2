@@ -241,6 +241,23 @@ class MultiModelForm(MultiForm):
         return objects
 
 
+class AdminFestivalForm(forms.ModelForm):
+
+    class Meta:
+        model = Festival
+        fields = [
+            'name',
+            'title',
+            'previous',
+            'is_live',
+            'is_archived'
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['previous'].queryset = Festival.objects.order_by('name')
+
+
 class DebugForm(forms.Form):
 
     festival = forms.ModelChoiceField(required=False, queryset=Festival.objects.all())

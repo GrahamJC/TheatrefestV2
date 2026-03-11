@@ -4,11 +4,15 @@ from pathlib import Path
 
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model, login
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.views import PasswordResetView as AuthPasswordResetView
 from django.contrib import messages
+from django.contrib.messages.views import SuccessMessageMixin
 from django.http import HttpResponseNotAllowed
-from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse, reverse_lazy
+from django.views.generic import ListView, CreateView, UpdateView
 from django.views.generic.edit import FormView
 
 from django_registration import signals
@@ -23,7 +27,7 @@ from crispy_forms.bootstrap import FormActions, TabHolder, Tab
 from core.models import Festival
 from content.models import Image, PageImage, Document
 from program.models import Company, Venue, VenueSponsor, Show, ShowImage
-from .forms import RegistrationForm, PasswordResetForm, DebugForm
+from .forms import RegistrationForm, PasswordResetForm, AdminFestivalForm, DebugForm
 
 User = get_user_model()
 
@@ -107,7 +111,129 @@ class ResendActivationView(TwoStepViews.RegistrationView):
         return redirect(reverse('django_registration_complete'))
 
 
+# Administration
+@login_required
+@user_passes_test(lambda u: u.is_system_admin)
+def admin(request):
 
+    # Render the page
+    context = {
+    }
+    return render(request, 'core/admin.html', context)
+
+
+class AdminFestivalList(LoginRequiredMixin, ListView):
+
+    model = Festival
+    context_object_name = 'festivals'
+    template_name = 'core/admin_festival_list.html'
+
+    def get_queryset(self):
+        return Festival.objects.order_by('name')
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['breadcrumbs'] = [
+            { 'text': 'System Admin', 'url': reverse('core:admin') },
+            { 'text': 'Festivals' },
+        ]
+        return context_data
+
+
+class AdminFestivalCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+
+    model = Festival
+    form_class = AdminFestivalForm
+    context_object_name = 'festival'
+    template_name = 'core/admin_festival.html'
+    success_message = 'Festival added'
+    success_url = reverse_lazy('core:admin_festival_list')
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['instance'] = Festival()
+        return kwargs
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            'name',
+            'title',
+            'previous',
+            FormActions(
+                Submit('save', 'Save'),
+                Button('cancel', 'Cancel'),
+            ),
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['breadcrumbs'] = [
+            { 'text': 'System Admin', 'url': reverse('core:admin') },
+            { 'text': 'Festivals', 'url': reverse('core:admin_festival_list') },
+            { 'text': 'Add' },
+        ]
+        return context_data
+
+
+class AdminFestivalUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+
+    model = Festival
+    form_class = AdminFestivalForm
+    slug_field = 'uuid'
+    context_object_name = 'festival'
+    template_name = 'core/admin_festival.html'
+    success_message = 'Festival updated'
+    success_url = reverse_lazy('core:admin_festival_list')
+
+    def get_form(self):
+        form = super().get_form()
+        form.helper = FormHelper()
+        form.helper.layout = Layout(
+            'name',
+            'title',
+            'previous',
+            'is_live',
+            'is_archived',
+            FormActions(
+                Submit('save', 'Save'),
+                Button('delete', 'Delete'),
+                Button('cancel', 'Cancel'),
+            )
+        )
+        return form
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data['breadcrumbs'] = [
+            { 'text': 'System Admin', 'url': reverse('core:admin') },
+            { 'text': 'Festivals', 'url': reverse('core:admin_festival_list') },
+            { 'text': 'Update' },
+        ]
+        return context_data
+   
+
+    def form_valid(self, form):
+        if form.cleaned_data['is_live']:
+            for festival in Festival.objects.filter(is_live=True).exclude(id=self.object.id):
+                festival.is_live = False
+                festival.save()
+        return super().form_valid(form)
+
+
+@login_required
+def admin_festival_delete(request, slug):
+
+    # Delete image
+    image = get_object_or_404(Festival, uuid=slug)
+    image.delete()
+    messages.success(request, 'Festival deleted')
+    return redirect('core:admin_festival_list')
+
+
+# Debug
 def get_orphan_images():
     uuids = []
     uuids.extend([Path(festival.venue_map.name).stem for festival in Festival.objects.exclude(venue_map='')])

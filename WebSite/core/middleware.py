@@ -3,7 +3,7 @@ from datetime import datetime
 from dateutil.parser import parse
 
 from django.conf import settings
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
 
 from .models import Festival
@@ -15,13 +15,30 @@ class FestivalMiddleware:
 
     def __call__(self, request):
 
-        # Add festival to request
-        festival_id = request.session.get('festival_id', None)
-        if festival_id:
-            request.festival = get_object_or_404(Festival, pk=festival_id)
-        else:
-            request.festival = get_object_or_404(Festival, name=settings.DEFAULT_FESTIVAL)
-        
+        # Check request and session to see if a festival has been selected
+        festival = None
+        try:
+            festival_name = request.GET.get('_FESTIVAL', None)
+            if festival_name:
+                if festival_name == 'LIVE':
+                    if 'festival_id' in request.session:
+                        del request.session['festival_id']
+                else:
+                    festival = Festival.objects.get(name=festival_name)
+                    request.session['festival_id'] = festival.id
+            if not festival:
+                festival_id = request.session.get('festival_id', None)
+                if festival_id:
+                    festival = Festival.objects.get(id=festival_id)
+            if not festival:
+                festival = Festival.objects.filter(is_live=True).order_by('name').last()
+                #festival = Festival.objects.get(name=settings.DEFAULT_FESTIVAL)
+        except Festival.DoesNotExist:
+            festival = None
+        if not festival:
+            return redirect('/static/maintenance.html')
+        request.festival = festival
+
         # Add curret date/time to request
         date = parse(request.session.get('date', str(timezone.now().date()))).date()
         time = parse(request.session.get('time', str(timezone.now().time()))).time()

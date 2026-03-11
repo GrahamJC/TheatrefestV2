@@ -37,7 +37,8 @@ class Festival(TimeStampedModel):
     volunteer_comps = models.PositiveIntegerField(blank = True, default = 0)
     boxoffice_open = models.DateField(null=True, blank=True)
     boxoffice_close = models.DateField(null=True, blank=True)
-    previous = models.ForeignKey('self', null=True, on_delete=models.PROTECT, related_name="+")
+    previous = models.ForeignKey('self', null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    is_live = models.BooleanField(default=False)
 
     def __str__(self):
         return self.title
@@ -85,6 +86,10 @@ class Festival(TimeStampedModel):
     def root_navigators(self):
         return self.navigators.filter(parent__isnull=True)
     
+    def can_delete(self):
+        return not User.objects.filter(festival=self).exists()
+    
+
 class UserManager(BaseUserManager):
 
     def _create_user(self, festival, email, password, **extra_fields):
