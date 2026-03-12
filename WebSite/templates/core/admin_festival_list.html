@@ -16,8 +16,9 @@
                 <tr>
                     <th>Name</th>
                     <th>Title</th>
-                    <th>Live</th>
                     <th>Archived</th>
+                    <th>Live</th>
+                    <th>Session</th>
                 </tr>
             </thead>
             <tbody>
@@ -25,8 +26,21 @@
                     <tr>
                         <td><a href="{% url 'core:admin_festival_update' festival.uuid %}">{{ festival.name }}</a></td>
                         <td>{{ festival.title }}</td>
-                        <td>{{ festival.is_live }}</td>
                         <td>{{ festival.is_archived }}</td>
+                        <td>
+                            {% if festival.is_live %}
+                                <span>Yes</span>
+                            {% elif not festival.is_archived %}
+                                <a class="btn btn-secondary" href="{% url 'core:admin_festival_live' festival.uuid %}">Select</a>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if request.session.festival_id == festival.id %}
+                                <a class="btn btn-primary" href="{% url 'core:admin_festival_disable' %}">Disable</a>
+                            {% else %}
+                                <a class="btn btn-secondary" href="{% url 'core:admin_festival_enable' festival.uuid %}">Enable</a>
+                            {% endif %}
+                        </td>
                     </tr>
                 {%endfor %}
             </tbody>

@@ -15,24 +15,15 @@ class FestivalMiddleware:
 
     def __call__(self, request):
 
-        # Check request and session to see if a festival has been selected
+        # Check session to see if a festival has been selected otherwise default
+        # to the live festival
         festival = None
         try:
-            festival_name = request.GET.get('_FESTIVAL', None)
-            if festival_name:
-                if festival_name == 'LIVE':
-                    if 'festival_id' in request.session:
-                        del request.session['festival_id']
-                else:
-                    festival = Festival.objects.get(name=festival_name)
-                    request.session['festival_id'] = festival.id
-            if not festival:
-                festival_id = request.session.get('festival_id', None)
-                if festival_id:
-                    festival = Festival.objects.get(id=festival_id)
+            festival_id = request.session.get('festival_id', None)
+            if festival_id:
+                festival = Festival.objects.get(id=festival_id)
             if not festival:
                 festival = Festival.objects.filter(is_live=True).order_by('name').last()
-                #festival = Festival.objects.get(name=settings.DEFAULT_FESTIVAL)
         except Festival.DoesNotExist:
             festival = None
         if not festival:

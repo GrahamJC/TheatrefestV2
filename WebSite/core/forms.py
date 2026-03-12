@@ -249,7 +249,6 @@ class AdminFestivalForm(forms.ModelForm):
             'name',
             'title',
             'previous',
-            'is_live',
             'is_archived'
         ]
 
@@ -260,7 +259,6 @@ class AdminFestivalForm(forms.ModelForm):
 
 class DebugForm(forms.Form):
 
-    festival = forms.ModelChoiceField(required=False, queryset=Festival.objects.all())
     date = forms.DateField(required=False, widget=DatePickerInput)
     time = forms.TimeField(required=False, widget=TimePickerInput)
 

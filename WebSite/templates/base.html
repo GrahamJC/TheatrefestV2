@@ -111,7 +111,7 @@
                                                 <div class="dropdown-divider"></div>
                                                 <a class="dropdown-item" href="{% url 'festival:admin' %}">festival admin</a>
                                                 <a class="dropdown-item" href="{% url 'volunteers:admin_home' %}">volunteer admin</a>
-                                                {% if user.is_system_admin %}
+                                                {% if user.is_superuser %}
                                                     <a class="dropdown-item" href="{% url 'core:admin' %}">system admin</a>
                                                 {% endif %}
                                             {% endif %}
@@ -124,9 +124,6 @@
                                                         <a class="dropdown-item" href="{% url 'festival:switch_name' 'TEST' %}">switch to test site</a>
                                                     {% endif %}
                                                 {% endif %}
-                                            {% endif %}
-                                            {% if user.is_superuser %}
-                                                <a class="dropdown-item" href="{% url 'core:debug' %}">debug</a>
                                             {% endif %}
                                             <a class="dropdown-item" href="{% url 'password_change' %}">change password</a>
                                             <form action="{% url 'logout' %}" method="POST">

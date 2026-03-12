@@ -4,7 +4,7 @@ from pathlib import Path
 
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model, login
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.views import PasswordResetView as AuthPasswordResetView
 from django.contrib import messages
@@ -113,7 +113,7 @@ class ResendActivationView(TwoStepViews.RegistrationView):
 
 # Administration
 @login_required
-@user_passes_test(lambda u: u.is_system_admin)
+@user_passes_test(lambda u: u.is_superuser)
 def admin(request):
 
     # Render the page
@@ -140,7 +140,41 @@ class AdminFestivalList(LoginRequiredMixin, ListView):
         return context_data
 
 
-class AdminFestivalCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def admin_festival_live(request, slug):
+
+    # Make festival live
+    festival = get_object_or_404(Festival, uuid=slug)
+    for f in Festival.objects.filter(is_live=True).exclude(id=festival.id):
+        f.is_live = False
+        f.save()
+    festival.is_live = True
+    festival.save()
+    return redirect('core:admin_festival_list')
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def admin_festival_enable(request, slug):
+
+    # Enable festival for this session
+    festival = get_object_or_404(Festival, uuid=slug)
+    request.session['festival_id'] = festival.id
+    return redirect('core:admin_festival_list')
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def admin_festival_disable(request):
+
+    # Disable festival for this session
+    if 'festival_id' in request.session:
+        del request.session['festival_id']
+    return redirect('core:admin_festival_list')
+
+
+class AdminFestivalCreate(LoginRequiredMixin, UserPassesTestMixin, SuccessMessageMixin, CreateView):
 
     model = Festival
     form_class = AdminFestivalForm
@@ -149,6 +183,9 @@ class AdminFestivalCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     success_message = 'Festival added'
     success_url = reverse_lazy('core:admin_festival_list')
 
+    def test_func(self):
+        return self.request.user.is_superuser
+    
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['instance'] = Festival()
@@ -195,7 +232,6 @@ class AdminFestivalUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
             'name',
             'title',
             'previous',
-            'is_live',
             'is_archived',
             FormActions(
                 Submit('save', 'Save'),
@@ -213,14 +249,6 @@ class AdminFestivalUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
             { 'text': 'Update' },
         ]
         return context_data
-   
-
-    def form_valid(self, form):
-        if form.cleaned_data['is_live']:
-            for festival in Festival.objects.filter(is_live=True).exclude(id=self.object.id):
-                festival.is_live = False
-                festival.save()
-        return super().form_valid(form)
 
 
 @login_required
@@ -290,9 +318,6 @@ class DebugFormView(FormView):
 
     def get_initial(self):
         initial = {}
-        festival_id = self.request.session.get('festival_id', None)
-        if festival_id:
-            initial['festival'] = festival_id
         if 'date' in self.request.session:
             initial['date'] = dateutil.parser.parse(self.request.session['date']).date()
         if 'time' in self.request.session:
@@ -309,7 +334,6 @@ class DebugFormView(FormView):
         form = super().get_form()
         form.helper = FormHelper()
         form.helper.layout = Layout(
-            Field('festival'),
             Row(
                 Column('date', css_class='form-group col-md-6 mb-0'),
                 Column('time', css_class='form-group col-md-6 mb-0'),
@@ -322,10 +346,6 @@ class DebugFormView(FormView):
         return form
 
     def form_valid(self, form):
-        if form.cleaned_data['festival']:
-            self.request.session['festival_id'] = form.cleaned_data['festival'].id
-        elif 'festival_id' in self.request.session:
-            del self.request.session['festival_id']
         if form.cleaned_data['date']:
             self.request.session['date'] = str(form.cleaned_data['date'])
         elif 'date' in self.request.session:
@@ -355,5 +375,3 @@ def debug_clean_documents(request):
         file.replace(orphan_dir / file.name)
     messages.info(request, 'Orphans moved to sub-directory')
     return redirect('core:debug')
-
-
