@@ -235,7 +235,7 @@ class AdminFestivalCreate(LoginRequiredMixin, UserPassesTestMixin, SuccessMessag
         user.is_admin = True
         user.is_superuser = True
         user.first_name = 'Initial'
-        user.last_name = self.request.festival.name
+        user.last_name = self.object.name
         user.save()
         return response
 
@@ -277,6 +277,9 @@ class AdminFestivalUpdate(LoginRequiredMixin, UserPassesTestMixin, SuccessMessag
         ]
         return context_data
 
+    def form_valid(self, form):
+        return super().form_valid(form)
+    
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser)

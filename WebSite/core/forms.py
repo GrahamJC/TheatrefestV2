@@ -258,8 +258,9 @@ class AdminFestivalForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['previous'].queryset = Festival.objects.order_by('name')
-        self.fields['user_email'] = forms.CharField(label='Initial user e-mail', required=True)
-        self.fields['user_pword'] = forms.CharField(label='Initial user password', required=True, widget=forms.PasswordInput())
+        if not self.instance.id:
+            self.fields['user_email'] = forms.CharField(label='Initial user e-mail', required=True)
+            self.fields['user_pword'] = forms.CharField(label='Initial user password', required=True, widget=forms.PasswordInput())
 
 
 class AdminUserAddForm(forms.Form):
