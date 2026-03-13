@@ -35,7 +35,7 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if request.session.festival_id == festival.id %}
+                            {% if festival.id == session_festival_id %}
                                 <a class="btn btn-primary" href="{% url 'core:admin_festival_disable' %}">Disable</a>
                             {% else %}
                                 <a class="btn btn-secondary" href="{% url 'core:admin_festival_enable' festival.uuid %}">Enable</a>

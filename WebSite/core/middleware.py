@@ -15,16 +15,15 @@ class FestivalMiddleware:
 
     def __call__(self, request):
 
-        # Check session to see if a festival has been selected otherwise default
-        # to the live festival
+        # Check if there is a festival cookie; if not default to the live festival
         festival = None
         try:
-            festival_id = request.session.get('festival_id', None)
+            festival_id = int(request.get_signed_cookie(settings.FESTIVAL_COOKIE, default=0))
             if festival_id:
                 festival = Festival.objects.get(id=festival_id)
             if not festival:
-                festival = Festival.objects.filter(is_live=True).order_by('name').last()
-        except Festival.DoesNotExist:
+                festival = Festival.get_live()
+        except (ValueError, Festival.DoesNotExist):
             festival = None
         if not festival:
             return redirect('/static/maintenance.html')

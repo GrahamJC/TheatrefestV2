@@ -20,6 +20,8 @@ from django_registration.exceptions import ActivationError
 import django_registration.backends.one_step.views as OneStepViews
 import django_registration.backends.activation.views as TwoStepViews
 
+from dal.autocomplete import Select2QuerySetView
+
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Field, HTML, Submit, Button, Row, Column
 from crispy_forms.bootstrap import FormActions, TabHolder, Tab
@@ -27,7 +29,7 @@ from crispy_forms.bootstrap import FormActions, TabHolder, Tab
 from core.models import Festival
 from content.models import Image, PageImage, Document
 from program.models import Company, Venue, VenueSponsor, Show, ShowImage
-from .forms import RegistrationForm, PasswordResetForm, AdminFestivalForm, DebugForm
+from .forms import RegistrationForm, PasswordResetForm, AdminFestivalForm, AdminUserAddForm, DebugForm
 
 User = get_user_model()
 
@@ -122,11 +124,14 @@ def admin(request):
     return render(request, 'core/admin.html', context)
 
 
-class AdminFestivalList(LoginRequiredMixin, ListView):
+class AdminFestivalList(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
     model = Festival
     context_object_name = 'festivals'
     template_name = 'core/admin_festival_list.html'
+
+    def test_func(self):
+        return self.request.user.is_superuser
 
     def get_queryset(self):
         return Festival.objects.order_by('name')
@@ -137,6 +142,10 @@ class AdminFestivalList(LoginRequiredMixin, ListView):
             { 'text': 'System Admin', 'url': reverse('core:admin') },
             { 'text': 'Festivals' },
         ]
+        try:
+            context_data['session_festival_id'] = int(self.request.get_signed_cookie(settings.FESTIVAL_COOKIE, default=0))
+        except ValueError:
+            context_data['session_festival_id'] = 0
         return context_data
 
 
@@ -158,21 +167,21 @@ def admin_festival_live(request, slug):
 @user_passes_test(lambda u: u.is_superuser)
 def admin_festival_enable(request, slug):
 
-    # Enable festival for this session
+    # Set festival cookie
     festival = get_object_or_404(Festival, uuid=slug)
-    request.session['festival_id'] = festival.id
-    return redirect('core:admin_festival_list')
+    response = redirect('core:admin_festival_list')
+    response.set_signed_cookie(settings.FESTIVAL_COOKIE, value=festival.id, secure=True, httponly=True)
+    return response
 
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
 def admin_festival_disable(request):
 
-    # Disable festival for this session
-    if 'festival_id' in request.session:
-        del request.session['festival_id']
-    return redirect('core:admin_festival_list')
-
+    # Delete festival cookie
+    response = redirect('core:admin_festival_list')
+    response.delete_cookie(settings.FESTIVAL_COOKIE)
+    return response
 
 class AdminFestivalCreate(LoginRequiredMixin, UserPassesTestMixin, SuccessMessageMixin, CreateView):
 
@@ -198,6 +207,8 @@ class AdminFestivalCreate(LoginRequiredMixin, UserPassesTestMixin, SuccessMessag
             'name',
             'title',
             'previous',
+            'user_email',
+            'user_pword',
             FormActions(
                 Submit('save', 'Save'),
                 Button('cancel', 'Cancel'),
@@ -214,8 +225,21 @@ class AdminFestivalCreate(LoginRequiredMixin, UserPassesTestMixin, SuccessMessag
         ]
         return context_data
 
+    def form_valid(self, form):
+        email = form.cleaned_data['user_email']
+        pword = form.cleaned_data['user_pword']
+        response = super().form_valid(form)
+        user = User(festival=self.object, email=email)
+        user.set_password(pword)
+        user.is_active = True
+        user.is_admin = True
+        user.is_superuser = True
+        user.first_name = 'Initial'
+        user.last_name = self.request.festival.name
+        user.save()
+        return response
 
-class AdminFestivalUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+class AdminFestivalUpdate(LoginRequiredMixin, UserPassesTestMixin, SuccessMessageMixin, UpdateView):
 
     model = Festival
     form_class = AdminFestivalForm
@@ -224,6 +248,9 @@ class AdminFestivalUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     template_name = 'core/admin_festival.html'
     success_message = 'Festival updated'
     success_url = reverse_lazy('core:admin_festival_list')
+
+    def test_func(self):
+        return self.request.user.is_superuser
 
     def get_form(self):
         form = super().get_form()
@@ -252,6 +279,7 @@ class AdminFestivalUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
 
 
 @login_required
+@user_passes_test(lambda u: u.is_superuser)
 def admin_festival_delete(request, slug):
 
     # Delete image
@@ -259,6 +287,94 @@ def admin_festival_delete(request, slug):
     image.delete()
     messages.success(request, 'Festival deleted')
     return redirect('core:admin_festival_list')
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def admin_user_list(request):
+
+    # Check request type
+    if request.method == 'GET':
+
+        # Create form
+        form = AdminUserAddForm(request.festival)
+
+    else:
+
+        # Create form, bind it to POST data and valdate
+        form = AdminUserAddForm(request.festival, data=request.POST)
+        if form.is_valid():
+
+            # Add user as volunteer and edit details
+            user = form.cleaned_data['user']
+            user.is_admin = True
+            user.save()
+            messages.success(request, f'Admin access enabled for {user.email}')
+
+    # Create context and render page
+    context = {
+        'breadcrumbs': [
+            { 'text': 'System Admin', 'url': reverse('core:admin') },
+            { 'text': 'System Admin Users' },
+        ],
+        'form': form,
+        'admins': User.objects.filter(festival=request.festival, is_admin=True).order_by('email')
+    }
+    return render(request, 'core/admin_user_list.html', context)
+
+
+class AdminUserAutoComplete(Select2QuerySetView):
+
+    def get_queryset(self):
+        qs = User.objects.filter(festival = self.request.festival, is_admin=False)
+        if self.q:
+            qs = qs.filter(email__istartswith = self.q)
+        return qs
+
+    def get_result_label(self, item):
+        return item.email
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def admin_user_add(request, slug):
+
+    # Enable admin access for user
+    user = get_object_or_404(User, uuid=slug)
+    user.is_admin = True
+    user.save()
+    messages.success(request, f'Admin access added to {user.email}')
+    return redirect('core:admin_user_list')
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def admin_user_remove(request, slug):
+
+    # Enable admin access for user
+    user = get_object_or_404(User, uuid=slug)
+    user.is_admin = False
+    user.is_superuser = False
+    user.save()
+    messages.success(request, f'Admin access removed from {user.email}')
+    return redirect('core:admin_user_list')
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def admin_user_super(request, slug, state):
+
+    # Enable/disable superuser
+    user = get_object_or_404(User, uuid=slug)
+    if state == "ON":
+        user.is_superuser = True
+        user.save()
+        messages.success(request, f'System admin access enabled for {user.email}')
+    else:
+        user.is_superuser = False
+        user.save()
+        messages.success(request, f'System admin access disabled for {user.email}')
+    return redirect('core:admin_user_list')
 
 
 # Debug
@@ -310,11 +426,14 @@ def get_orphan_documents():
         'files': files,
     }
 
-class DebugFormView(FormView):
+class DebugFormView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
     template_name = 'core/debug.html'
     form_class= DebugForm
     success_url = '/core/debug'
+
+    def test_func(self):
+        return self.request.user.is_superuser
 
     def get_initial(self):
         initial = {}
@@ -357,7 +476,8 @@ class DebugFormView(FormView):
         return super().form_valid(form)
 
 
-#@login_required
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
 def debug_clean_images(request):
     orphan_dir = Path(os.path.join(settings.MEDIA_ROOT, 'uploads/images/orphan'))
     orphan_dir.mkdir(exist_ok=True)
@@ -367,7 +487,8 @@ def debug_clean_images(request):
     return redirect('core:debug')
 
 
-#@login_required
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
 def debug_clean_documents(request):
     orphan_dir = Path(os.path.join(settings.MEDIA_ROOT, 'uploads/documents/orphan'))
     orphan_dir.mkdir(exist_ok=True)

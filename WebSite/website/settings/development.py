@@ -35,7 +35,7 @@ DATABASES = {
 }
 
 # Registration
-REGISTRATION_TWOSTEP = True
+REGISTRATION_TWOSTEP = False
 
 # E-mail
 EMAIL_HOST = "smtp.mailgun.org"

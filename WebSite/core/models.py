@@ -40,6 +40,10 @@ class Festival(TimeStampedModel):
     previous = models.ForeignKey('self', null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     is_live = models.BooleanField(default=False)
 
+    @classmethod
+    def get_live(cls):
+        return Festival.objects.filter(is_live=True).order_by('-name').last()
+    
     def __str__(self):
         return self.title
 
@@ -145,16 +149,8 @@ class User(TimeStampedModel, AbstractBaseUser, PermissionsMixin):
         return self.email
 
     @property
-    def is_festival_admin(self):
-        return self.is_admin
-
-    @property
-    def is_system_admin(self):
-        return self.is_admin and not self.festival
-
-    @property
     def is_staff(self):
-        return self.is_system_admin
+        return self.is_superuser
 
     def badges_purchased(self):
         return self.sales.filter(boxoffice__isnull=True, venue__isnull=True, completed__isnull=False, buttons__gt=0)

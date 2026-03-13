@@ -1,0 +1,53 @@
+﻿{% extends "base.html" %}
+{% load i18n %}
+{% load widget_tweaks %}
+
+{% block pagetitle %}{{request.festival.name}} Admin Users{% endblock %}
+
+{% block content %}
+
+    <p>To add a user as an administrator enter the first few letters of their e-mail address, select from the drop-down list and click Add.</p>
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-row">
+            <div class="col-10">
+                {{ form.user|add_class:"form-control" }}
+            </div>
+            <div class="col">
+                <button class="btn btn-primary" name="Add" type="submit">Add</button>
+            </div>
+        </div>
+    </form>
+    
+    <table class="table table-striped mt-4">
+        <thead>
+            <tr>
+                <th>e-mail</th>
+                <th>Name</th>
+                <th>Admin</th>
+                <th>System</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for admin in admins %}
+                <tr>
+                    <td>{{ admin.email }}</a></td>
+                    <td>{{ admin.first_name }} {{ admin.last_name }}</a></td>
+                    <td><a class="btn btn-secondary" href="{% url 'core:admin_user_remove' admin.uuid %}">Remove</a></td>
+                    <td>
+                        {% if admin.is_superuser %}
+                            <a class="btn btn-primary" href="{% url 'core:admin_user_super' admin.uuid 'OFF' %}">Disable</a>
+                        {% else %}
+                            <a class="btn btn-secondary" href="{% url 'core:admin_user_super' admin.uuid 'ON' %}">Enable</a>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+{% endblock %}
+
+{% block body-script %}
+    {{ form.media }}
+{% endblock %}

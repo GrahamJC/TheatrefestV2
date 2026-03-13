@@ -36,38 +36,26 @@ logger = logging.getLogger(__name__)
 
 def archive_index(request):
 
-    # Clear festival from session
-    try:
-        del request.session['festival_id']
-    except KeyError:
-        pass
-
-    # Redirect to archive
-    #return redirect('https://archive.theatrefest.co.uk/archive/index.htm')
-    return redirect('/static/ionos/archive/index.htm')
-
+    # Redirect to archive and clear festival cookie
+    response = redirect('/static/ionos/archive/index.htm')
+    response.delete_cookie(settings.FESTIVAL_COOKIE)
+    return response
 
 def archive_home(request):
 
-    # Clear festival from session
-    try:
-        del request.session['festival_id']
-    except KeyError:
-        pass
-
-    # Redirect to home page
-    return redirect('home')
+    # Redirect to home page and clear festival cookie
+    response = redirect('home')
+    response.delete_cookie(settings.FESTIVAL_COOKIE)
+    return response
 
 
 def archive_festival(request, festival_name):
 
-    # Get festival and save it in the session
+    # Redirect to show listing and set cookie
     festival = get_object_or_404(Festival, name=festival_name)
-    request.session['festival_id'] = festival.id
-
-    # Redirect to show listing
-    return redirect('program:shows')
-
+    response = redirect('program:shows')
+    response.set_signed_cookie(settings.FESTIVAL_COOKIE, value=festival.id, secure=True, httponly=True)
+    return response
 
 @login_required
 @user_passes_test(lambda u: u.is_venue or u.is_boxoffice)
@@ -77,7 +65,7 @@ def switch(request, name=None):
     if name:
         festival = get_object_or_404(Festival, name__iexact=name)
     else:
-        festival = get_object_or_404(Festival, name__iexact=settings.DEFAULT_FESTIVAL)
+        festival = Festival.get_live()
     logger.info(f"Switch session to {festival.name}.")
     user = get_object_or_404(User, festival_id=festival.id, email=request.user.email)
 
@@ -85,10 +73,10 @@ def switch(request, name=None):
     logout(request)
     login(request, user)
 
-    # Save new festival in session and redirect to home page
-    if festival:
-        request.session['festival_id'] = festival.id
-    return redirect('home')
+    # Redirect to home page and set festival cookie
+    response = redirect('home')
+    response.set_signed_cookie(settings.FESTIVAL_COOKIE, value=festival.id, secure=True, httponly=True)
+    return response
 
 
 @user_passes_test(lambda u: u.is_admin)

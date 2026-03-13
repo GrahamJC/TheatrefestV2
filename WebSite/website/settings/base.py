@@ -147,7 +147,7 @@ CRISPY_TEMPLATE_PACK = 'bootstrap4'
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 # Application settings
-DEFAULT_FESTIVAL = 'TF2025'
+FESTIVAL_COOKIE = 'TFFestival'
 VOLUNTEER_CANCEL_SHIFTS = False
 
 # Suppress unwanted system checks

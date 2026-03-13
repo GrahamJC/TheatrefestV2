@@ -12,9 +12,12 @@ from operator import add
 
 from django_registration.forms import RegistrationForm as BaseRegistrationForm
 
+from django_select2.forms import Select2MultipleWidget
+
 from bootstrap_datepicker_plus.widgets import DatePickerInput, TimePickerInput
 
 from core.models import Festival, User
+from core.widgets import ModelSelect2
 
 
 class AdminUserCreationForm(forms.ModelForm):
@@ -255,6 +258,27 @@ class AdminFestivalForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['previous'].queryset = Festival.objects.order_by('name')
+        self.fields['user_email'] = forms.CharField(label='Initial user e-mail', required=True)
+        self.fields['user_pword'] = forms.CharField(label='Initial user password', required=True, widget=forms.PasswordInput())
+
+
+class AdminUserAddForm(forms.Form):
+
+    def __init__(self, festival, *args, **kwargs):
+
+        # Call base class
+        super().__init__(*args, **kwargs)
+
+        # Restrict to current festival and non-admin users
+        self.fields['user'] = forms.ModelChoiceField(
+            queryset = User.objects.filter(festival=festival, is_admin=False),
+            widget = ModelSelect2(
+                url = 'core:admin_user_autocomplete',
+                attrs = {
+                    'data-theme': 'bootstrap4',
+                }
+            )
+        )
 
 
 class DebugForm(forms.Form):
