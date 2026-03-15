@@ -110,9 +110,9 @@ LOGGING = {
     },
     "root": {
         "level": "INFO",
-        "handlers": ["console", "theatrefest"],
+        "handlers": ["console"],
     },
 }
 
 # Application settings
-#VOLUNTEER_CANCEL_SHIFTS = True
+VOLUNTEER_CANCEL_SHIFTS = True

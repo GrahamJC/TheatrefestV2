@@ -5,11 +5,10 @@ from collections import OrderedDict
 from bootstrap_datepicker_plus.widgets import DatePickerInput, TimePickerInput
 from django_select2.forms import Select2MultipleWidget
 
-from core.forms import MultiModelForm
 from core.models import User
 from core.widgets import ModelSelect2
 
-from .models import Role, Location, Volunteer, Commitment, Shift
+from .models import Role, Location, Commitment, Shift
 
 # Logging
 import logging
@@ -66,7 +65,7 @@ class AdminCommitmentForm(forms.ModelForm):
             'role',
             'needs_dbs',
             'volunteer_can_accept',
-            'volunteer',
+            'user',
             'notes',
         ]
         labels = {
@@ -82,7 +81,7 @@ class AdminCommitmentForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.instance.festival = festival
         self.fields['role'].queryset = Role.objects.filter(festival=festival)
-        self.fields['volunteer'].queryset = Volunteer.objects.filter(user__festival=festival).order_by('user__last_name', 'user__first_name')
+        self.fields['user'].queryset = User.objects.filter(festival=festival, is_volunteer=True).order_by('last_name', 'first_name')
 
 
 class AdminShiftSearchForm(forms.Form):
@@ -92,7 +91,7 @@ class AdminShiftSearchForm(forms.Form):
     date = forms.ChoiceField(required=False)
     location = forms.ChoiceField(required=False)
     role = forms.ChoiceField(required=False)
-    volunteer = forms.ChoiceField(required=False)
+    user = forms.ChoiceField(required=False)
     status = forms.ChoiceField(choices = STATUS_CHOICES, label = 'Status', required = True)
     include_commitments = forms.BooleanField(label='Include commitment shifts', required=False)
 
@@ -107,7 +106,7 @@ class AdminShiftSearchForm(forms.Form):
         self.fields['date'].choices = [('20000101', 'All dates')] + [(sd['date'].strftime('%Y%m%d'), sd['date'].strftime('%A, %d %B')) for sd in shift_dates]
         self.fields['location'].choices = [('0', 'All locations')] + [(l.id, l.description) for l in Location.objects.filter(festival = festival).order_by('description')]
         self.fields['role'].choices = [('0', 'All roles')] + [(r.id, r.description) for r in Role.objects.filter(festival = festival).order_by('description')]
-        self.fields['volunteer'].choices = [('0', 'All volunteers')] + [(v.user_id, f"{ v.user.last_name }, { v.user.first_name }") for v in Volunteer.objects.filter(user__festival = festival).order_by('user__last_name', 'user__first_name')]
+        self.fields['user'].choices = [('0', 'All volunteers')] + [(u.id, f"{ u.last_name }, { u.first_name }") for u in User.objects.filter(festival = festival, is_volunteer=True).order_by('last_name', 'first_name')]
 
 
 class AdminShiftForm(forms.ModelForm):
@@ -121,7 +120,7 @@ class AdminShiftForm(forms.ModelForm):
             'role',
             'needs_dbs',
             'volunteer_can_accept',
-            'volunteer',
+            'user',
             'notes',
         ]
         labels = {
@@ -146,11 +145,11 @@ class AdminShiftForm(forms.ModelForm):
             self.fields['role'].disabled = True
             self.fields['needs_dbs'].disabled = True
             self.fields['volunteer_can_accept'].disabled = True
-            self.fields['volunteer'].disabled = True
+            self.fields['user'].disabled = True
         else:
             self.fields['commitment'].queryset = Commitment.objects.filter(festival=festival)
             self.fields['role'].queryset = Role.objects.filter(festival=festival)
-            self.fields['volunteer'].queryset = Volunteer.objects.filter(user__festival=festival).order_by('user__last_name', 'user__first_name')
+            self.fields['user'].queryset = User.objects.filter(festival=festival, is_volunteer=True).order_by('last_name', 'first_name')
         self.fields['location'].queryset = Location.objects.filter(festival=festival)
     
 
@@ -173,45 +172,23 @@ class VolunteerAddForm(forms.Form):
         )
 
 
-class VolunteerUserForm(forms.ModelForm):
+class AdminVolunteerForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ('email', 'first_name', 'last_name', 'is_boxoffice', 'is_venue')
+        fields = ('email', 'first_name', 'last_name', 'is_boxoffice', 'is_venue', 'is_dbs', 'volunteer_roles')
         required = ('email', 'first_name', 'last_name')
+        labels = {
+            'is_dbs': 'Is DBS checked',
+        }
 
+    # The roles filed has to be handles manually because Django won't do it automatically
+    # when the ManyToMany field is not in the User object (it is in the Role object to avoid
+    # circular references)
     def __init__(self, festival, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.instance.festival = festival
         for field in self.Meta.required:
             self.fields[field].required = True
+        self.fields['volunteer_roles'] = forms.ModelMultipleChoiceField(queryset=Role.objects.filter(festival=self.instance.festival), widget=Select2MultipleWidget(attrs={'style': 'width: 100%'}))
 
-
-class VolunteerRolesForm(forms.ModelForm):
-
-    class Meta:
-        model = Volunteer
-        fields = [
-            'is_dbs',
-            'roles',
-        ]
-        labels = {
-            'is_dbs': 'Is DBS checked',
-        }
-        widgets = {
-            'roles': Select2MultipleWidget(attrs={'style': 'width: 100%'}),
-        }
-
-
-    def __init__(self, festival, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.instance.festival = festival
-        self.fields['roles'].queryset = Role.objects.filter(festival=self.instance.festival)
-
-
-class AdminVolunteerForm(MultiModelForm):
-
-    form_classes = OrderedDict((
-        ('user', VolunteerUserForm),
-        ('volunteer', VolunteerRolesForm),
-    ))

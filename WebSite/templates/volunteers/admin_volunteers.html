@@ -33,12 +33,12 @@
         <tbody>
             {% for user in request.festival.volunteers.all|dictsort:"last_name" %}
                 <tr>
-                    <td><a href="{% url 'volunteers:admin_volunteer_update' user.volunteer.uuid %}">{{ user.last_name }}, {{ user.first_name }}</a></td>
-                    <td>{{ user.volunteer.roles.all|join:', ' }}</td>
-                    <td>{% if user.volunteer.is_dbs %}DBS{% endif %}</td>
-                    <td>{{ user.volunteer.shifts.count }}</td>
-                    <td>{{ user.volunteer.comps_earned }}</td>
-                    <td>{{ user.volunteer.comps_used }}</td>
+                    <td><a href="{% url 'volunteers:admin_volunteer_update' user.uuid %}">{{ user.last_name }}, {{ user.first_name }}</a></td>
+                    <td>{{ user.volunteer_roles.all|join:', ' }}</td>
+                    <td>{% if user.is_dbs %}DBS{% endif %}</td>
+                    <td>{{ user.volunteer_shifts.count }}</td>
+                    <td>{{ user.volunteer_comps_earned }}</td>
+                    <td>{{ user.volunteer_comps_used }}</td>
                 </tr>
             {% endfor %}
         </tbody>

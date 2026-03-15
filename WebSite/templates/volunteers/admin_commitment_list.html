@@ -22,7 +22,7 @@
                     <td>{{ commitment.role.description }}</td>
                     <td>{% if commitment.needs_dbs %}DBS{% endif %}</td>
                     <td>{{ commitment.shifts.count }}</td>
-                    <td>{% if commitment.volunteer %}{{ commitment.volunteer.user.first_name }} {{ commitment.volunteer.user.last_name }}{% endif %}</td>
+                    <td>{% if commitment.user %}{{ commitment.user.first_name }} {{ commitment.user.last_name }}{% endif %}</td>
                 </tr>
             {%endfor %}
         </tbody>

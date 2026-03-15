@@ -23,7 +23,7 @@ class Role(TimeStampedModel):
         return f'{self.description}'
 
     def can_delete(self):
-        return (self.volunteers.count() + self.shifts.count()) == 0
+        return (self.users.count() + self.shifts.count()) == 0
 
 
 class Location(TimeStampedModel):
@@ -42,38 +42,6 @@ class Location(TimeStampedModel):
     def can_delete(self):
         return self.shifts.count() == 0
 
-    
-class Volunteer(TimeStampedModel):
-
-    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, related_name='volunteer')
-    roles = models.ManyToManyField(Role, related_name = 'volunteers', blank = True)
-    is_dbs = models.BooleanField(default=False)
-
-    @property
-    def comps_earned(self):
-
-        # Calculate comps earned (rounded down) and limit to a maximum of 4
-        comps = 0
-        for shift in self.shifts.all():
-            comps += shift.role.comps_per_shift
-        comps = int(comps)
-        max_comps = self.user.festival.volunteer_comps
-        return comps if max_comps == 0 else min(comps, max_comps)
-
-    @property
-    def comps_used(self):
-        return self.user.tickets.filter(type=self.user.festival.volunteer_ticket_type, sale__completed__isnull = False).count()
-
-    @property
-    def comps_available(self):
-        return 4 #self.comps_earned - self.comps_used
-
-    def __str__(self):
-        return f'{self.user.get_full_name()}'
-
-    def can_remove(self):
-        return self.shifts.count() == 0
-
 
 class Commitment(TimeStampedModel):
 
@@ -81,7 +49,7 @@ class Commitment(TimeStampedModel):
     description = models.CharField(blank = True, max_length=32, default = '')
     role = models.ForeignKey(Role, on_delete=models.PROTECT, related_name='commitments')
     needs_dbs = models.BooleanField(default=False)
-    volunteer = models.ForeignKey(Volunteer, null=True, blank=True, on_delete=models.PROTECT, related_name='commitments')
+    user = models.ForeignKey(User, null=True, blank=True, on_delete=models.PROTECT, related_name='volunteer_commitments')
     volunteer_can_accept = models.BooleanField(blank = True, default = True)
     notes = models.TextField(blank = True, default = '')
 
@@ -93,14 +61,14 @@ class Commitment(TimeStampedModel):
         return self.description
 
     def can_delete(self):
-        return not self.volunteer
+        return not self.user
 
     def update_shifts(self):
         for shift in self.shifts.all():
             shift.role = self.role
             shift.needs_dbs = self.needs_dbs
             shift.volunteer_can_accept = self.volunteer_can_accept
-            shift.volunteer = self.volunteer
+            shift.user = self.user
             shift.save()
 
 
@@ -113,7 +81,7 @@ class Shift(TimeStampedModel):
     commitment = models.ForeignKey(Commitment, null=True, blank=True, on_delete=models.CASCADE, related_name='shifts')
     role = models.ForeignKey(Role, on_delete=models.PROTECT, related_name='shifts')
     needs_dbs = models.BooleanField(default=False)
-    volunteer = models.ForeignKey(Volunteer, null=True, blank=True, on_delete=models.PROTECT, related_name='shifts')
+    user = models.ForeignKey(User, null=True, blank=True, on_delete=models.PROTECT, related_name='volunteer_shifts')
     volunteer_can_accept = models.BooleanField(blank = True, default = True)
     notes = models.TextField(blank = True, default = '')
 
@@ -125,4 +93,4 @@ class Shift(TimeStampedModel):
         return f'{self.location} {self.date}  {self.start_time} to {self.end_time} ({self.role})'
 
     def can_delete(self):
-        return not self.volunteer
+        return not self.user

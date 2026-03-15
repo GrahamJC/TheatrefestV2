@@ -111,8 +111,8 @@ def myaccount_volunteer_context(request):
     # Volunteer tickets
     volunteer_tickets =  request.user.tickets.filter(type=request.festival.volunteer_ticket_type).order_by('performance__date', 'performance__time', 'performance__show__name')
     return {
-        'volunteer_earned': request.user.volunteer.comps_earned if request.user.is_volunteer else 0,
-        'volunteer_available': request.user.volunteer.comps_available if request.user.is_volunteer else 0,
+        'volunteer_earned': request.user.volunteer_comps_earned if request.user.is_volunteer else 0,
+        'volunteer_available': request.user.volunteer_comps_available if request.user.is_volunteer else 0,
         'volunteer_tickets': volunteer_tickets,
     }
 
@@ -282,7 +282,7 @@ def buy_fringers_context(request, performance, fringer_form=None):
 def buy_volunteer_context(request, performance):
 
     # Get volunteer ticket info
-    volunteer_available = request.user.volunteer.comps_available
+    volunteer_available = request.user.volunteer_comps_available
     volunteer_used = request.user.tickets.filter(performance=performance, type=request.festival.volunteer_ticket_type)
 
     # Create context and return it

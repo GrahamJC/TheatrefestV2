@@ -207,8 +207,6 @@ class AdminFestivalCreate(LoginRequiredMixin, UserPassesTestMixin, SuccessMessag
             'name',
             'title',
             'previous',
-            'user_email',
-            'user_pword',
             FormActions(
                 Submit('save', 'Save'),
                 Button('cancel', 'Cancel'),
@@ -224,20 +222,6 @@ class AdminFestivalCreate(LoginRequiredMixin, UserPassesTestMixin, SuccessMessag
             { 'text': 'Add' },
         ]
         return context_data
-
-    def form_valid(self, form):
-        email = form.cleaned_data['user_email']
-        pword = form.cleaned_data['user_pword']
-        response = super().form_valid(form)
-        user = User(festival=self.object, email=email)
-        user.set_password(pword)
-        user.is_active = True
-        user.is_admin = True
-        user.is_superuser = True
-        user.first_name = 'Initial'
-        user.last_name = self.object.name
-        user.save()
-        return response
 
 class AdminFestivalUpdate(LoginRequiredMixin, UserPassesTestMixin, SuccessMessageMixin, UpdateView):
 

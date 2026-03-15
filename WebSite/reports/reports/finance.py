@@ -27,9 +27,9 @@ from reportlab.lib import colors
 
 import xlsxwriter as xlsx
 
+from core.models import User
 from program.models import Company, Venue, Show, ShowPerformance
 from tickets.models import BoxOffice, Sale, Refund, FringerType, Fringer, TicketType, Ticket, Checkpoint, PayAsYouWill, Bucket
-from volunteers.models import Volunteer
 
 def date_list(from_date, to_date):
 
@@ -257,7 +257,7 @@ def festival_summary(request):
 
     # Volunteer tickets
     volunteers_earned = 0
-    for volunteer in Volunteer.objects.filter(user__festival = festival):
+    for volunteer in User.objects.filter(festival=festival, is_volunteer=True):
         volunteers_earned += volunteer.comps_earned
     volunteer_tickets = Ticket.objects.filter(type=festival.volunteer_ticket_type, sale__festival = festival, sale__completed__isnull = False, refund__isnull = True).count() or 0
     volunteer_unused = volunteers_earned - volunteer_tickets

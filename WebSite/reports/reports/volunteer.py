@@ -20,22 +20,16 @@ from reportlab.lib.pagesizes import A4, portrait
 from reportlab.lib.units import cm
 from reportlab.lib import colors
 
-from volunteers.models import Volunteer, Shift
+from core.models import User
+from volunteers.models import Shift
 
 @require_GET
 @login_required
 @user_passes_test(lambda u: u.is_volunteer) 
-def shifts_pdf(request, volunteer_uuid = None):
-
-    # Get volunteer
-    if volunteer_uuid:
-        volunteer = get_object_or_404(Volunteer, uuid = volunteer_uuid)
-    else:
-        volunteer = request.user.volunteer
-    assert volunteer
+def shifts_pdf(request):
 
     # Fetch data
-    shifts = Shift.objects.filter(volunteer = volunteer).order_by('date', 'start_time')
+    shifts = Shift.objects.filter(user = request.user).order_by('date', 'start_time')
 
     # Render PDF
     response = HttpResponse(content_type = 'application/pdf')

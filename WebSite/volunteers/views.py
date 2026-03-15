@@ -22,11 +22,10 @@ from crispy_forms.bootstrap import FormActions, TabHolder, Tab
 from core.models import User
 from content.models import Document
 
-from .models import Role, Location, Shift, Commitment, Volunteer
+from .models import Role, Location, Shift, Commitment
 from .forms import (
     AdminRoleForm, AdminLocationForm, AdminShiftForm, AdminCommitmentForm,
-    VolunteerAddForm, AdminVolunteerForm, VolunteerUserForm, VolunteerRolesForm,
-    AdminShiftSearchForm,
+    VolunteerAddForm, AdminVolunteerForm, AdminShiftSearchForm,
 )
 
 
@@ -35,11 +34,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def render_shifts(request, volunteer):
+def render_shifts(request, user):
 
     # Get available shifts
-    shifts = Shift.objects.filter(location__festival=request.festival, volunteer_can_accept=True, volunteer__isnull=True, role__in=volunteer.roles.all())
-    if volunteer.is_dbs == False:
+    shifts = Shift.objects.filter(location__festival=request.festival, volunteer_can_accept=True, user__isnull=True, role__in=user.volunteer_roles.all())
+    if user.is_dbs == False:
         shifts = shifts.filter(needs_dbs = False)
 
     # Get days that have shifts defined
@@ -50,7 +49,7 @@ def render_shifts(request, volunteer):
             'shifts': shifts.filter(date = day['date']).order_by('start_time')
         })
     context = {
-        'my_shifts': volunteer.shifts.all(),
+        'my_shifts': user.volunteer_shifts.all(),
         'can_cancel': settings.VOLUNTEER_CANCEL_SHIFTS,
         'days': days,
     }
@@ -66,57 +65,48 @@ def render_shifts(request, volunteer):
 @login_required
 def shift_list(request):
 
-    # Get volunteer
-    volunteer = request.user.volunteer
-
     # Render the page
-    return render_shifts(request, volunteer)
+    return render_shifts(request, request.user)
 
 
 @login_required
 @transaction.atomic
 def shift_accept(request, slug):
 
-    # Get volunteer
-    volunteer = request.user.volunteer
-
     # Get shift and assign to volunteer (if the shift is part of a commitment assign all shifts
     # in the commitment)
     shift = get_object_or_404(Shift, uuid=slug)
-    if not shift.volunteer:
+    if not shift.user:
         if shift.commitment:
-            shift.commitment.volunteer = volunteer
+            shift.commitment.user = request.user
             shift.commitment.save()
             shift.commitment.update_shifts()
         else:
-            shift.volunteer = volunteer
+            shift.user = request.user
             shift.save()
         messages.success(request, 'Shift accepted')
     else:
         messages.error(request, 'Shift has been accepted by another volunteer')
 
     # Render the page
-    return render_shifts(request, volunteer)
+    return render_shifts(request, request.user)
 
 
 @login_required
 @transaction.atomic
 def shift_cancel(request, slug):
 
-    # Get volunteer
-    volunteer = request.user.volunteer
-
     # Get shift and de-assign
     shift = get_object_or_404(Shift, uuid=slug)
-    if shift.volunteer == volunteer:
-        shift.volunteer = None
+    if shift.user == request.user:
+        shift.user = None
         shift.save()
         messages.success(request, 'Shift cancelled')
     else:
         messages.error(request, 'Shift is assigned to another volunteer')
 
     # Render the page
-    return render_shifts(request, volunteer)
+    return render_shifts(request, request.user)
 
 
 @login_required
@@ -438,7 +428,7 @@ class AdminCommitmentUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView)
                     Field('role'),
                     Field('needs_dbs'),
                     Field('volunteer_can_accept'),
-                    Field('volunteer'),
+                    Field('user'),
                 ),
                 Tab('Shifts',
                     HTML('{% include \'volunteers/_admin_commitment_shifts.html\' %}')
@@ -502,7 +492,7 @@ class AdminCommitmentShiftCreate(LoginRequiredMixin, SuccessMessageMixin, Create
         initial['role'] = self.commitment.role
         initial['needs_dbs'] = self.commitment.needs_dbs
         initial['volunteer_can_accept'] = self.commitment.volunteer_can_accept
-        initial['volunteer'] = self.commitment.volunteer
+        initial['user'] = self.commitment.user
         return initial
 
     def get_form_kwargs(self):
@@ -620,7 +610,7 @@ def create_admin_shift_search_form(festival, initial_data = None, post_data = No
         Field('date'),
         Field('location'),
         Field('role'),
-        Field('volunteer'),
+        Field('user'),
         Field('status'),
         Field('include_commitments'),
         Submit('shift-search', 'Search', css_class='btn-primary'),
@@ -628,7 +618,7 @@ def create_admin_shift_search_form(festival, initial_data = None, post_data = No
     return form
 
 
-def admin_get_shifts(festival, date_str, location_id_str, role_id_str, volunteer_id_str, status, include_commitments):
+def admin_get_shifts(festival, date_str, location_id_str, role_id_str, user_id_str, status, include_commitments):
 
     # Get shifts meeting criteria
     shifts = Shift.objects.filter(location__festival = festival)
@@ -641,9 +631,9 @@ def admin_get_shifts(festival, date_str, location_id_str, role_id_str, volunteer
     role_id = int(role_id_str)
     if role_id != 0:
         shifts = shifts.filter(role_id = role_id)
-    volunteer_id = int(volunteer_id_str)
-    if volunteer_id != 0:
-        shifts = shifts.filter(volunteer_id = volunteer_id)
+    user_id = int(user_id_str)
+    if user_id != 0:
+        shifts = shifts.filter(user_id = user_id)
     if status == 'Accepted':
         shifts = shifts.filter(volunteer__isnull = False)
     elif status == 'NotAccepted':
@@ -705,10 +695,10 @@ class AdminShiftList(LoginRequiredMixin, View):
             date_str = search_form.cleaned_data['date']
             location_id_str = search_form.cleaned_data['location']
             role_id_str = search_form.cleaned_data['role']
-            volunteer_id_str = search_form.cleaned_data['volunteer']
+            user_id_str = search_form.cleaned_data['user']
             status = search_form.cleaned_data['status']
             include_commitments = search_form.cleaned_data['include_commitments']
-            shifts = admin_get_shifts(request.festival, date_str, location_id_str, role_id_str, volunteer_id_str, status, include_commitments)
+            shifts = admin_get_shifts(request.festival, date_str, location_id_str, role_id_str, user_id_str, status, include_commitments)
 
             # Save search criteria in session
             #request.session['shift_search_date'] = date_str
@@ -758,7 +748,7 @@ class AdminShiftCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
             ),
             Field('needs_dbs'),
             Field('volunteer_can_accept'),
-            Field('volunteer'),
+            Field('user'),
             Field('notes'),
             FormActions(
                 Submit('save', 'Save'),
@@ -807,7 +797,7 @@ class AdminShiftUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
             ),
             Field('needs_dbs'),
             Field('volunteer_can_accept'),
-            Field('volunteer'),
+            Field('user'),
             Field('notes'),
             FormActions(
                 Submit('save', 'Save'),
@@ -869,10 +859,8 @@ def admin_volunteers(request):
             user = form.cleaned_data['user']
             user.is_volunteer = True
             user.save()
-            volunteer = Volunteer(user = user)
-            volunteer.save()
             messages.success(request, 'Volunteer added')
-            return redirect('volunteers:admin_volunteer_update', slug=volunteer.uuid)
+            return redirect('volunteers:admin_volunteer_update', slug=user.uuid)
 
     # Create context and render page
     context = {
@@ -887,9 +875,9 @@ def admin_volunteers(request):
 
 class AdminVolunteerUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
 
-    model = Volunteer
+    model = User
     form_class = AdminVolunteerForm
-    context_object_name = 'volunteer'
+    context_object_name = 'user'
     slug_field = 'uuid'
     template_name = 'volunteers/admin_volunteer.html'
     success_message = 'Volunteer updated'
@@ -897,23 +885,20 @@ class AdminVolunteerUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs.update({
-            'festival': self.request.festival,
-            'instance': { 'user': self.object.user, 'volunteer': self.object },
-        })
+        kwargs['festival'] = self.request.festival
         return kwargs
 
     def get_form(self):
         form = super().get_form()
         form.helper = FormHelper()
         form.helper.layout = Layout(
-            'user-email',
-            'user-first_name',
-            'user-last_name',
-            'user-is_boxoffice',
-            'user-is_venue',
-            'volunteer-is_dbs',
-            'volunteer-roles',
+            'email',
+            'first_name',
+            'last_name',
+            'is_boxoffice',
+            'is_venue',
+            'is_dbs',
+            'volunteer_roles',
             FormActions(
                 Submit('save', 'Save'),
                 Button('remove', 'Remove'),
@@ -937,9 +922,8 @@ class AdminVolunteerUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
 def admin_volunteer_remove(request, slug):
 
     # Remove user as volunteer and return to list
-    volunteer = get_object_or_404(Volunteer, uuid=slug)
-    volunteer.user.is_volunteer = False;
-    volunteer.user.save();
-    volunteer.delete()
+    user = get_object_or_404(User, uuid=slug)
+    user.is_volunteer = False;
+    user.save();
     messages.success(request, 'Volunteer removed')
     return redirect('volunteers:admin_volunteers')

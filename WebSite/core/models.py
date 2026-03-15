@@ -131,6 +131,8 @@ class User(TimeStampedModel, AbstractBaseUser, PermissionsMixin):
     is_venue = models.BooleanField(default=False)
     is_volunteer = models.BooleanField(default=False)
     buttons_issued = models.IntegerField(blank = True, default = 0)
+    is_dbs = models.BooleanField(default=False)
+    volunteer_roles = models.ManyToManyField('volunteers.Role', related_name='users', blank = True)
 
     class Meta:
         unique_together = ('festival', 'email')
@@ -176,3 +178,23 @@ class User(TimeStampedModel, AbstractBaseUser, PermissionsMixin):
 
     def email_user(self, subject, message, from_email):
         send_mail(subject, message, from_email, [self.email])
+
+    # Volunteers
+    @property
+    def volunteer_comps_earned(self):
+
+        # Calculate comps earned (rounded down) and limit to maximum for festival
+        comps = 0
+        for shift in self.volunteer_shifts.all():
+            comps += shift.role.comps_per_shift
+        comps = int(comps)
+        max_comps = self.festival.volunteer_comps
+        return comps if max_comps == 0 else min(comps, max_comps)
+
+    @property
+    def volunteer_comps_used(self):
+        return self.tickets.filter(type=self.festival.volunteer_ticket_type, sale__completed__isnull = False).count()
+
+    @property
+    def volunteer_comps_available(self):
+        return self.volunteer_comps_earned - self.volunteer_comps_used

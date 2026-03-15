@@ -7,7 +7,7 @@
 
     {% crispy form %}
 
-    {% if volunteer.can_remove %}
+    {% if user.can_remove %}
         <div id="tf-remove-modal" class="modal fade" tabindex="-1" role="dialog">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
@@ -33,9 +33,9 @@
     <script language="javascript">
 
         $('#button-id-cancel').addClass('btn-secondary').on('click', function () { window.location.href = '{% url 'volunteers:admin_volunteers' %}'; });
-        {% if volunteer.can_remove %}
+        {% if user.can_remove %}
             $('#button-id-remove').addClass('btn-danger').on('click', function() { $('#tf-remove-modal').modal('show'); });
-            $('#tf-remove-modal .btn-primary').on('click', function () { window.location.href = "{% url 'volunteers:admin_volunteer_remove' volunteer.uuid %}"; });
+            $('#tf-remove-modal .btn-primary').on('click', function () { window.location.href = "{% url 'volunteers:admin_volunteer_remove' user.uuid %}"; });
         {% else %}
             $('#button-id-remove').addClass('btn-secondary').prop('disabled', true)
         {% endif %}

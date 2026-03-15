@@ -8,7 +8,7 @@ begin
 
 	-- Get site and test/current festivals
 	select id into v_test_festival_id from core_festival where name = 'TEST';
-	select id into v_curr_festival_id from core_festival where name = 'TF2025';
+	select id into v_curr_festival_id from core_festival where name = 'TF2026';
 
 	-- Delete baskets
 	delete from tickets_ticket where basket_id in (select id from core_user where festival_id = v_test_festival_id);
@@ -34,7 +34,6 @@ begin
 	delete from program_company where festival_id = v_test_festival_id;
 
 	-- Delete users
-	delete from volunteers_volunteer where user_id in (select id from core_user where festival_id = v_test_festival_id);
 	delete from core_user where festival_id = v_test_festival_id;
 
 	-- Box offices
@@ -193,25 +192,17 @@ begin
 	into 	core_user
 			(uuid, created, updated,
 			festival_id, email, password, first_name, last_name,
-			is_active, is_superuser, is_admin, is_volunteer, is_boxoffice, is_venue,
+			is_active, is_superuser, is_admin, is_volunteer, is_boxoffice, is_venue, is_dbs,
 			buttons_issued)
 	select	uuid_generate_v4(), clock_timestamp(), clock_timestamp(),
 			v_test_festival_id, email, password, first_name, last_name,
-			is_active, is_superuser, is_admin, is_volunteer, is_boxoffice, is_venue,
+			is_active, is_superuser, is_admin, is_volunteer, is_boxoffice, is_venue, is_dbs,
 			0
 	from	core_user
 	where 	festival_id = v_curr_festival_id
 	and 	is_active = true
+	and		is_volunteer = true
 	and 	(is_boxoffice = true or is_venue = true);
-
-	insert
-	into 	volunteers_volunteer
-			(uuid, created, updated, user_id, is_dbs)
-	select	uuid_generate_v4(), clock_timestamp(), clock_timestamp(), tcu.id, cvv.is_dbs
-	from	core_user tcu
-			join core_user ccu on ccu.festival_id = v_curr_festival_id and ccu.email = tcu.email
-			join volunteers_volunteer cvv on cvv.user_id = ccu.id
-	where 	tcu.festival_id = v_test_festival_id;
 
 end $$;
 

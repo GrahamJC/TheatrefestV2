@@ -27,7 +27,6 @@ urlpatterns = [
     path('sales/tickets_by_channel', sales.tickets_by_channel, name = 'sales_tickets_by_channel'),
     # Volunteer reports
     path('volunteer/shifts', volunteer.shifts_pdf, name = 'volunteer_shifts_pdf'),
-    path('volunteer/<uuid:volunteer_uuid>/shifts', volunteer.shifts_pdf, name = 'volunteer_shifts_pdf'),
     # Old reports
     path('sale/<uuid:sale_uuid>/pdf', finance.sale_pdf, name = 'sale_pdf'),
     path('refund/<uuid:refund_uuid>/pdf', finance.refund_pdf, name = 'refund_pdf'),

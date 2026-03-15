@@ -20,7 +20,7 @@
                     <td><a href="{% url 'volunteers:admin_role_update' role.uuid %}">{{ role.description }}</a></td>
                     <td>{{ role.comps_per_shift }}</td>
                     <td>{{ role.shifts.count }}</td>
-                    <td>{{ role.volunteers.count }}</td>
+                    <td>{{ role.users.count }}</td>
                 </tr>
             {%endfor %}
         </tbody>

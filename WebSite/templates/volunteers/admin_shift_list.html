@@ -37,7 +37,7 @@
                             <a href="{% url 'volunteers:admin_shift_update' shift.uuid %}">{{ shift.role.description }}</a>
                         {% endif %}
                     </td>
-                    <td>{% if shift.volunteer %}{{ shift.volunteer.user.first_name }} {{ shift.volunteer.user.last_name }}{% endif %}</td>
+                    <td>{% if shift.user %}{{ shift.user.first_name }} {{ shift.user.last_name }}{% endif %}</td>
                 </tr>
             {%endfor %}
         </tbody>
