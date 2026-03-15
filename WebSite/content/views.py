@@ -48,6 +48,7 @@ def page(request, page_uuid):
         'document_urls': document_urls,
         'page_urls': page_urls,
         'resource_urls': resource_urls,
+        'archive_url': '/festival/archive/index',
     }
     template = Template(page.body)
     body_html = template.render(Context(body_context))

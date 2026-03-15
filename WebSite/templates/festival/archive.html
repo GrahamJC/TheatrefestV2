@@ -1,0 +1,44 @@
+﻿{% extends "base.html" %}
+{% load i18n %}
+
+{% block pagetitle %}Theatrefest Archive{% endblock %}
+
+{% block content %}
+
+    <div class="row">
+
+        <div class="col-12 col-md-6">
+
+            <ul>
+                {% for festival in festivals %}
+                    <li><a href="/festival/archive/{{festival.name}}">{{festival.title}}</a></li>
+                {% endfor %}
+                <li><a href="/static/ionos/archive/17/productions17.htm">2017</a></li>
+                <li><a href="/static/ionos/archive/16/productions.htm">2016</a></li>
+                <li><a href="/static/ionos/archive/15/productions.htm">2015</a></li>
+                <li><a href="/static/ionos/archive/14/productions.htm">2014</a></li>
+                <li><a href="/static/ionos/archive/13/productions.htm">2013</a></li>
+                <li><a href="/static/ionos/archive/12/productions.htm">2012</a></li>
+                <li><a href="/static/ionos/archive/11/productions.htm">2011</a></li>
+                <li><a href="/static/ionos/archive/10/productions.htm">2010</a></li>
+                <li><a href="/static/ionos/archive/2009/09/productions.htm">2009</a></li>
+                <li><a href="/static/ionos/archive/2008/productions.htm">2008</a></li>
+                <li><a href="/static/ionos/archive/2007/2007programme.htm">2007</a></li>
+            </ul>
+            <p><a href="/home">Return to main site</a></p>
+            
+        </div>
+
+        <div class="col-12 col-md-6">
+            <p>
+                "Congratulations  to everyone involved in this theatrical adventure which provides audiences with a chance to eat one theatre piece after another - and still, somehow want  more."<br />
+                <br />
+                "What  is fascinating about seeing one show after another is that each one offers its  own reason for coming into existence and each sets its own standard."<br />
+                <br />
+                &quot;We  all had a fabulous time  and are planning to come next year!&quot;
+            </p>
+        </div>
+
+    </div>
+
+{% endblock %}

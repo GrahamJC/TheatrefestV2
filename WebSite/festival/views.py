@@ -36,8 +36,11 @@ logger = logging.getLogger(__name__)
 
 def archive_index(request):
 
-    # Redirect to archive and clear festival cookie
-    response = redirect('/static/ionos/archive/index.htm')
+    # Render archive index and clear festival cookie
+    context = {
+        'festivals': Festival.objects.filter(is_archived=True).order_by('-name') 
+    }
+    response = render(request, 'festival/archive.html', context)
     response.delete_cookie(settings.FESTIVAL_COOKIE)
     return response
 
