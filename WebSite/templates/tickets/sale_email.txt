@@ -1,5 +1,9 @@
 You have purchased the following:
 
+{% for fringer in fringers %}
+	eFringer ({{fringer.description}}) {{fringer.name}}
+{% endfor %}
+
 {% for ticket in tickets %}
 	{{ ticket.performance.date|date:'D, j M' }} at {{ ticket.performance.time|time:'P' }} - {{ ticket.performance.show.name }} ({{ ticket.description }})
 {% endfor %}

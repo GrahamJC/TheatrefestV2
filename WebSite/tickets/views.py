@@ -948,6 +948,7 @@ def checkout_success(request, sale_uuid):
     if sale.tickets or sale.buttons:
         context = {
             'festival': request.festival,
+            'fringers': sale.fringers.order_by('name'),
             'tickets': sale.tickets.order_by('performance__date', 'performance__time', 'performance__show__name'),
             'badges': sale.buttons,
         }
