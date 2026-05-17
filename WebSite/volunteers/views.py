@@ -11,7 +11,7 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404, render, redirect
 from django.template import Template, Context
 from django.urls import reverse, reverse_lazy
-from django.views.generic import View, ListView, CreateView, UpdateView
+from django.views.generic import View, FormView, ListView, CreateView, UpdateView
 
 from dal.autocomplete import Select2QuerySetView
 
@@ -21,10 +21,13 @@ from crispy_forms.bootstrap import FormActions, TabHolder, Tab
 
 from core.models import User
 from content.models import Document
+from program.models import ShowPerformance
 
 from .models import Role, Location, Shift, Commitment
 from .forms import (
     AdminRoleForm, AdminLocationForm, AdminShiftForm, AdminCommitmentForm,
+    AdminShiftFixedForm, AdminShiftFixedFormset, AdminShiftGenerateFixedForm,
+    AdminShiftVenueForm, AdminShiftVenueFormset, AdminShiftGenerateVenueForm,
     VolunteerAddForm, AdminVolunteerForm, AdminShiftSearchForm,
 )
 
@@ -826,6 +829,152 @@ def admin_shift_delete(request, slug):
     shift.delete()
     messages.success(request, 'Shift deleted')
     return redirect('volunteers:admin_shift_list')
+
+
+def existing_shift_overlaps(shift):
+
+    # Check if any existing shifts overlap the supplied shift (with he same location and role)
+    for existing in Shift.objects.filter(location=shift.location, role=shift.role, date=shift.date):
+        if (shift.start_time < existing.end_time) and (shift.end_time > existing.start_time):
+            return True
+    return False
+
+@login_required
+def admin_shift_generate_fixed(request):
+
+    template_formset = AdminShiftFixedFormset(form_kwargs={'festival': request.festival}, data=request.POST or None)
+    template_formset.helper = FormHelper()
+    template_formset.helper.form_tag = False
+    template_formset.helper.template = 'bootstrap4/table_inline_formset.html'
+
+    generate_form = AdminShiftGenerateFixedForm(festival=request.festival, data=request.POST or None)
+    generate_form.helper = FormHelper()
+    generate_form.helper.form_tag = False
+    generate_form.helper.layout = Layout(
+        Field('date'),
+        Field('location'),
+        FormActions(
+            Submit('generate', 'Generate'),
+            Button('cancel', 'Cancel'),
+        )
+    )
+
+    shifts = []
+    if request.method == 'POST':
+
+        # Validate shift templates and generation parameters
+        if template_formset.is_valid() and generate_form.is_valid():
+
+            # Get generation parameters
+            date = generate_form.cleaned_data['date']
+            location = generate_form.cleaned_data['location']
+
+            # Process each shift template
+            for form in template_formset:
+
+                # Get template details
+                if form.has_changed():
+                    role = form.cleaned_data['role']
+                    start_time = form.cleaned_data['start_time']
+                    end_time = form.cleaned_data['end_time']
+                    admin = form.cleaned_data['admin']
+                    shift = Shift(location=location, role=role, date=date, start_time=start_time, end_time=end_time, volunteer_can_accept=not admin)
+                    if not existing_shift_overlaps(shift):
+                        shift.save()
+                        shifts.append(shift)
+        
+    context = {
+        'breadcrumbs': [
+            { 'text': 'Volunteer Admin', 'url': reverse('volunteers:admin_home') },
+            { 'text': 'Shifts', 'url': reverse('volunteers:admin_shift_list') },
+            { 'text': 'Generate Fixed' },
+        ],
+        'template_formset': template_formset,
+        'generate_form': generate_form,
+        'shifts': shifts,
+    }
+    return render(request, 'volunteers/admin_shift_generate.html', context)
+
+
+def calc_shift_time(performance, adjust_type, adjust_mins):
+
+    performance_start = datetime.datetime.combine(performance.date, performance.time)
+    performance_end = performance_start + datetime.timedelta(minutes=performance.show.duration)
+    delta = datetime.timedelta(minutes=adjust_mins)
+    result = performance.time
+    if adjust_type == 'BeforeStart':
+        result = (performance_start - delta).time()
+    elif adjust_type == 'AfterStart':
+        result = (performance_start + delta).time()
+    elif adjust_type == 'BeforeEnd':
+        result = (performance_end - delta).time()
+    elif adjust_type == 'AfterEnd':
+        result = (performance_end + delta).time()
+    return result;
+
+
+@login_required
+def admin_shift_generate_venue(request):
+
+    template_formset = AdminShiftVenueFormset(form_kwargs={'festival': request.festival}, data=request.POST or None)
+    template_formset.helper = FormHelper()
+    template_formset.helper.form_tag = False
+    template_formset.helper.template = 'bootstrap4/table_inline_formset.html'
+
+    generate_form = AdminShiftGenerateVenueForm(festival=request.festival, data=request.POST or None)
+    generate_form.helper = FormHelper()
+    generate_form.helper.form_tag = False
+    generate_form.helper.layout = Layout(
+        Field('venue'),
+        Field('date'),
+        Field('location'),
+        FormActions(
+            Submit('generate', 'Generate'),
+            Button('cancel', 'Cancel'),
+        )
+    )
+
+    shifts = []
+    if request.method == 'POST':
+
+        # Validate shift templates and generation parameters
+        if template_formset.is_valid() and generate_form.is_valid():
+
+            # Get generation parameters
+            venue = generate_form.cleaned_data['venue']
+            date = generate_form.cleaned_data['date']
+            location = generate_form.cleaned_data['location']
+
+            # Process each shift template
+            for form in template_formset:
+
+                # Get template details
+                if form.has_changed():
+                    role = form.cleaned_data['role']
+                    start_mins = form.cleaned_data['start_mins']
+                    start_type = form.cleaned_data['start_type']
+                    end_mins = form.cleaned_data['end_mins']
+                    end_type = form.cleaned_data['end_type']
+                    admin = form.cleaned_data['admin']
+                    for performance in ShowPerformance.objects.filter(venue=venue, date=date):
+                        shift_start = calc_shift_time(performance, start_type, start_mins)
+                        shift_end = calc_shift_time(performance, end_type, end_mins)
+                        shift = Shift(location=location, role=role, date=date, start_time=shift_start, end_time=shift_end, volunteer_can_accept=not admin)
+                        if not existing_shift_overlaps(shift):
+                            shift.save()
+                            shifts.append(shift)
+        
+    context = {
+        'breadcrumbs': [
+            { 'text': 'Volunteer Admin', 'url': reverse('volunteers:admin_home') },
+            { 'text': 'Shifts', 'url': reverse('volunteers:admin_shift_list') },
+            { 'text': 'Generate Venue' },
+        ],
+        'template_formset': template_formset,
+        'generate_form': generate_form,
+        'shifts': shifts,
+    }
+    return render(request, 'volunteers/admin_shift_generate.html', context)
 
 
 class AdminVolunteerAutoComplete(Select2QuerySetView):

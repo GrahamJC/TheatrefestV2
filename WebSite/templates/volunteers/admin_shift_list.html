@@ -5,6 +5,11 @@
 
 {% block content %}
 
+    <div class="text-right mb-3">
+        <a class="btn btn-secondary" href="{% url 'volunteers:admin_shift_generate_fixed' %}">Generate Fixed</a>
+        <a class="btn btn-secondary" href="{% url 'volunteers:admin_shift_generate_venue' %}">Generate Venue</a>
+    </div>
+
     <div class="card mb-2">
         <h6 class="card-header">Search</h6>
         <div class="card-body">

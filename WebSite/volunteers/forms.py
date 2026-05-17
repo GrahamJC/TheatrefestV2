@@ -8,6 +8,7 @@ from django_select2.forms import Select2MultipleWidget
 from core.models import User
 from core.widgets import ModelSelect2
 
+from program.models import Venue
 from .models import Role, Location, Commitment, Shift
 
 # Logging
@@ -151,7 +152,69 @@ class AdminShiftForm(forms.ModelForm):
             self.fields['role'].queryset = Role.objects.filter(festival=festival)
             self.fields['user'].queryset = User.objects.filter(festival=festival, is_volunteer=True).order_by('last_name', 'first_name')
         self.fields['location'].queryset = Location.objects.filter(festival=festival)
-    
+
+
+class AdminShiftFixedForm(forms.Form):
+
+    role = forms.ModelChoiceField(queryset=Role.objects.none())
+    start_time = forms.TimeField(widget=TimePickerInput(attrs={'style': 'width:12ch'}))
+    end_time = forms.TimeField(widget=TimePickerInput(attrs={'style': 'width:12ch'}))
+    admin = forms.BooleanField(required=False)
+
+    def __init__(self, festival, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['role'].queryset = Role.objects.filter(festival=festival)
+
+AdminShiftFixedFormset = forms.formset_factory(AdminShiftFixedForm, extra=4)
+
+class AdminShiftGenerateFixedForm(forms.Form):
+
+    date = forms.DateField(required=True, label='Date', widget=DatePickerInput)
+    location = forms.ModelChoiceField(required=True, label="Location", queryset=Location.objects.none())
+
+    def __init__(self, festival, *args, **kwargs):
+
+        # Call base class
+        super().__init__(*args, **kwargs)
+        self.fields['location'].queryset = Location.objects.filter(festival=festival)
+
+
+class AdminShiftVenueForm(forms.Form):
+
+    TYPE_CHOICES = (
+        ('', ''),
+        ('BeforeStart', 'Before start'),
+        ('AfterStart', 'After start'),
+        ('BeforeEnd', 'Before end'),
+        ('AfterEnd', 'After end'),
+    )
+
+    role = forms.ModelChoiceField(queryset=Role.objects.none())
+    start_mins = forms.IntegerField(widget=forms.NumberInput(attrs={'style': 'width:12ch'}))
+    start_type = forms.ChoiceField(choices=TYPE_CHOICES)
+    end_mins = forms.IntegerField(widget=forms.NumberInput(attrs={'style': 'width:12ch'}))
+    end_type = forms.ChoiceField(choices=TYPE_CHOICES)
+    admin = forms.BooleanField(required=False)
+
+    def __init__(self, festival, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['role'].queryset = Role.objects.filter(festival=festival)
+
+AdminShiftVenueFormset = forms.formset_factory(AdminShiftVenueForm, extra=4)
+
+class AdminShiftGenerateVenueForm(forms.Form):
+
+    venue = forms.ModelChoiceField(required=True, label="Venue", queryset=Venue.objects.none())
+    date = forms.DateField(required=True, label='Date', widget=DatePickerInput)
+    location = forms.ModelChoiceField(required=True, label="Location", queryset=Location.objects.none())
+
+    def __init__(self, festival, *args, **kwargs):
+
+        # Call base class
+        super().__init__(*args, **kwargs)
+        self.fields['venue'].queryset = Venue.objects.filter(festival=festival, is_ticketed=True)
+        self.fields['location'].queryset = Location.objects.filter(festival=festival)
+
 
 class VolunteerAddForm(forms.Form):
 

@@ -1,0 +1,51 @@
+﻿{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block pagetitle %}Generate Shifts{% endblock %}
+
+{% block content %}
+
+    <form method="POST">
+        {% crispy template_formset %}
+        {% crispy generate_form %}
+    </form>
+
+    {% if shifts %}
+        <h3>Shifts Generated</h3>
+        <table class="table">
+            <thead>
+                <tr>
+                    <td>Date</td>
+                    <td>Location</td>
+                    <td>Role</td>
+                    <td>Start</td>
+                    <td>End</td>
+                    <td>Admin</td>
+                </tr>
+            </thead>
+            <tbody>
+                {% for shift in shifts %}
+                    <tr>
+                        <td>{{ shift.date }}</td>
+                        <td>{{ shift.location.description }}</td>
+                        <td>{{ shift.role.description }}</td>
+                        <td>{{ shift.start_time }}</td>
+                        <td>{{ shift.end_time }}</td>
+                        <td>{% if shift.volunteer_can_accept %}No{% else %}Yes{% endif %}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+    
+{% endblock %}
+
+{% block body-script %}
+
+    <script language="javascript">
+
+        $('#button-id-cancel').addClass('btn-secondary').on('click', function () { window.location.href = '{% url 'volunteers:admin_shift_list' %}'; });
+
+    </script>
+
+{% endblock %}

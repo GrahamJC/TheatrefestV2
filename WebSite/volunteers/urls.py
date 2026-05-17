@@ -35,6 +35,8 @@ urlpatterns = [
     path('admin/shift/create', views.AdminShiftCreate.as_view(), name='admin_shift_create'),
     path('admin/shift/<uuid:slug>/update', views.AdminShiftUpdate.as_view(), name='admin_shift_update'),
     path('admin/shift/<uuid:slug>/delete', views.admin_shift_delete, name='admin_shift_delete'),
+    path('admin/shift/generate/fixed', views.admin_shift_generate_fixed, name='admin_shift_generate_fixed'),
+    path('admin/shift/generate/venue', views.admin_shift_generate_venue, name='admin_shift_generate_venue'),
     # Admin: Volunteers
     path('admin/volunteers', views.admin_volunteers, name='admin_volunteers'),
     path('admin/volunteer/autocomplete', views.AdminVolunteerAutoComplete.as_view(), name='admin_volunteer_autocomplete'),
