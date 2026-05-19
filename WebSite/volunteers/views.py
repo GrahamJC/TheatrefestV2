@@ -858,7 +858,8 @@ def admin_shift_generate_fixed(request):
         ),
         Field('location'),
         FormActions(
-            Submit('generate', 'Generate'),
+            Submit('action', 'Test'),
+            Submit('action', 'Generate'),
             Button('cancel', 'Cancel'),
         )
     )
@@ -887,8 +888,13 @@ def admin_shift_generate_fixed(request):
                     for date in dates:
                         shift = Shift(location=location, role=role, date=date, start_time=start_time, end_time=end_time, volunteer_can_accept=not admin)
                         if not existing_shift_overlaps(shift):
-                            #shift.save()
+                            shift.save()
                             shifts.append(shift)
+        
+        # If test only delete generated shifts
+        if request.POST.get('action', None) == 'Test':
+            for shift in shifts:
+                shift.delete()
         
     context = {
         'breadcrumbs': [
@@ -940,7 +946,8 @@ def admin_shift_generate_venue(request):
         Field('venue'),
         Field('location'),
         FormActions(
-            Submit('generate', 'Generate'),
+            Submit('action', 'Test'),
+            Submit('action', 'Generate'),
             Button('cancel', 'Cancel'),
         )
     )
@@ -975,8 +982,13 @@ def admin_shift_generate_venue(request):
                             shift_end = calc_shift_time(performance, end_type, end_mins)
                             shift = Shift(location=location, role=role, date=date, start_time=shift_start, end_time=shift_end, volunteer_can_accept=not admin)
                             if not existing_shift_overlaps(shift):
-                                #shift.save()
+                                shift.save()
                                 shifts.append(shift)
+        
+        # If test only delete generated shifts
+        if request.POST.get('action', None) == 'Test':
+            for shift in shifts:
+                shift.delete()
         
     context = {
         'breadcrumbs': [
