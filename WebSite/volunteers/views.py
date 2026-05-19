@@ -851,7 +851,11 @@ def admin_shift_generate_fixed(request):
     generate_form.helper = FormHelper()
     generate_form.helper.form_tag = False
     generate_form.helper.layout = Layout(
-        Field('date'),
+        Row(
+            Column('from_date', css_class='col-sm-6'),
+            Column('to_date', css_class='col-sm-6'),
+            css_class='form-row',
+        ),
         Field('location'),
         FormActions(
             Submit('generate', 'Generate'),
@@ -866,7 +870,9 @@ def admin_shift_generate_fixed(request):
         if template_formset.is_valid() and generate_form.is_valid():
 
             # Get generation parameters
-            date = generate_form.cleaned_data['date']
+            from_date = generate_form.cleaned_data['from_date']
+            to_date = generate_form.cleaned_data['to_date'] or from_date
+            dates = [from_date + datetime.timedelta(days=x) for x in range((to_date - from_date).days + 1)]
             location = generate_form.cleaned_data['location']
 
             # Process each shift template
@@ -878,10 +884,11 @@ def admin_shift_generate_fixed(request):
                     start_time = form.cleaned_data['start_time']
                     end_time = form.cleaned_data['end_time']
                     admin = form.cleaned_data['admin']
-                    shift = Shift(location=location, role=role, date=date, start_time=start_time, end_time=end_time, volunteer_can_accept=not admin)
-                    if not existing_shift_overlaps(shift):
-                        shift.save()
-                        shifts.append(shift)
+                    for date in dates:
+                        shift = Shift(location=location, role=role, date=date, start_time=start_time, end_time=end_time, volunteer_can_accept=not admin)
+                        if not existing_shift_overlaps(shift):
+                            #shift.save()
+                            shifts.append(shift)
         
     context = {
         'breadcrumbs': [
@@ -925,8 +932,12 @@ def admin_shift_generate_venue(request):
     generate_form.helper = FormHelper()
     generate_form.helper.form_tag = False
     generate_form.helper.layout = Layout(
+        Row(
+            Column('from_date', css_class='col-sm-6'),
+            Column('to_date', css_class='col-sm-6'),
+            css_class='form-row',
+        ),
         Field('venue'),
-        Field('date'),
         Field('location'),
         FormActions(
             Submit('generate', 'Generate'),
@@ -941,8 +952,10 @@ def admin_shift_generate_venue(request):
         if template_formset.is_valid() and generate_form.is_valid():
 
             # Get generation parameters
+            from_date = generate_form.cleaned_data['from_date']
+            to_date = generate_form.cleaned_data['to_date'] or from_date
+            dates = [from_date + datetime.timedelta(days=x) for x in range((to_date - from_date).days + 1)]
             venue = generate_form.cleaned_data['venue']
-            date = generate_form.cleaned_data['date']
             location = generate_form.cleaned_data['location']
 
             # Process each shift template
@@ -956,13 +969,14 @@ def admin_shift_generate_venue(request):
                     end_mins = form.cleaned_data['end_mins']
                     end_type = form.cleaned_data['end_type']
                     admin = form.cleaned_data['admin']
-                    for performance in ShowPerformance.objects.filter(venue=venue, date=date):
-                        shift_start = calc_shift_time(performance, start_type, start_mins)
-                        shift_end = calc_shift_time(performance, end_type, end_mins)
-                        shift = Shift(location=location, role=role, date=date, start_time=shift_start, end_time=shift_end, volunteer_can_accept=not admin)
-                        if not existing_shift_overlaps(shift):
-                            shift.save()
-                            shifts.append(shift)
+                    for date in dates:
+                        for performance in ShowPerformance.objects.filter(venue=venue, date=date):
+                            shift_start = calc_shift_time(performance, start_type, start_mins)
+                            shift_end = calc_shift_time(performance, end_type, end_mins)
+                            shift = Shift(location=location, role=role, date=date, start_time=shift_start, end_time=shift_end, volunteer_can_accept=not admin)
+                            if not existing_shift_overlaps(shift):
+                                #shift.save()
+                                shifts.append(shift)
         
     context = {
         'breadcrumbs': [

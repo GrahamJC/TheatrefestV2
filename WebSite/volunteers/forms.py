@@ -165,12 +165,13 @@ class AdminShiftFixedForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.fields['role'].queryset = Role.objects.filter(festival=festival)
 
-AdminShiftFixedFormset = forms.formset_factory(AdminShiftFixedForm, extra=4)
+AdminShiftFixedFormset = forms.formset_factory(AdminShiftFixedForm, extra=8)
 
 class AdminShiftGenerateFixedForm(forms.Form):
 
-    date = forms.DateField(required=True, label='Date', widget=DatePickerInput)
-    location = forms.ModelChoiceField(required=True, label="Location", queryset=Location.objects.none())
+    from_date = forms.DateField(label='From date', widget=DatePickerInput)
+    to_date = forms.DateField(required=False, label='To date', widget=DatePickerInput)
+    location = forms.ModelChoiceField(label="Shift location", queryset=Location.objects.none())
 
     def __init__(self, festival, *args, **kwargs):
 
@@ -200,13 +201,14 @@ class AdminShiftVenueForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.fields['role'].queryset = Role.objects.filter(festival=festival)
 
-AdminShiftVenueFormset = forms.formset_factory(AdminShiftVenueForm, extra=4)
+AdminShiftVenueFormset = forms.formset_factory(AdminShiftVenueForm, extra=8)
 
 class AdminShiftGenerateVenueForm(forms.Form):
 
-    venue = forms.ModelChoiceField(required=True, label="Venue", queryset=Venue.objects.none())
-    date = forms.DateField(required=True, label='Date', widget=DatePickerInput)
-    location = forms.ModelChoiceField(required=True, label="Location", queryset=Location.objects.none())
+    from_date = forms.DateField(label='From date', widget=DatePickerInput)
+    to_date = forms.DateField(required=False, label='To date', widget=DatePickerInput)
+    venue = forms.ModelChoiceField(label="Performance venue", queryset=Venue.objects.none())
+    location = forms.ModelChoiceField(label="Shift location", queryset=Location.objects.none())
 
     def __init__(self, festival, *args, **kwargs):
 
