@@ -21,7 +21,7 @@ from crispy_forms.layout import Layout, Field, HTML, Submit, Button, Row, Column
 from crispy_forms.bootstrap import FormActions, TabHolder, Tab
 
 from reportlab.pdfgen.canvas import Canvas
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.enums import TA_LEFT, TA_CENTER
 from reportlab.lib.pagesizes import A4, portrait, landscape
@@ -133,13 +133,14 @@ def _add_non_scheduled_performances(festival, day):
                 'is_cancelled': performance['show__is_cancelled'],
             }
         )
-    day['venues'].append(
-        {
-            'name': 'Other (alt spaces)',
-            'color': '',
-            'performances': performances,
-        }
-    )
+    if performances:
+        day['venues'].append(
+            {
+                'name': 'Other (alt spaces)',
+                'color': '',
+                'performances': performances,
+            }
+        )
 
 def schedule(request, festival_uuid=None):
 
@@ -150,13 +151,16 @@ def schedule(request, festival_uuid=None):
     days = []
     day = None
     for performance in ShowPerformance.objects.filter(show__festival=festival, venue__is_scheduled=True) \
-                                              .order_by('date', 'venue__map_index', 'venue__name', 'time') \
-                                              .values('date', 'venue__name', 'venue__color', 'time', 'show__uuid', 'show__name', 'show__is_cancelled'):
+                                              .order_by('date', 'venue__name', 'time') \
+                                              .values('date', 'venue__is_ticketed', 'venue__name', 'venue__color', 'time', 'show__uuid', 'show__name', 'show__is_cancelled'):
             
         # If the date has changed start a new day
         if day and performance['date'] != day['date']:
             if venue:
-                day['venues'].append(venue)
+                if venue['is_ticketed']:
+                    day['ticketed_venues'].append(venue)
+                else:
+                    day['payw_venues'].append(venue)
                 venue = None
             _add_non_scheduled_performances(festival, day)
             days.append(day)
@@ -164,17 +168,22 @@ def schedule(request, festival_uuid=None):
         if not day:
             day = {
                 'date': performance['date'],
-                'venues': [],
+                'ticketed_venues': [],
+                'payw_venues': [],
             }
             venue = None
 
         # If the venue has changed add it to the page and start a new one
         if venue and performance['venue__name'] != venue['name']:
-            day['venues'].append(venue)
+            if venue['is_ticketed']:
+                day['ticketed_venues'].append(venue)
+            else:
+                day['payw_venues'].append(venue)
             venue = None
         if not venue:
             venue = {
                 'name': performance['venue__name'],
+                'is_ticketed': performance['venue__is_ticketed'],
                 'color': performance['venue__color'],
                 'performances': [],
             }
@@ -192,7 +201,10 @@ def schedule(request, festival_uuid=None):
     # Add final day and venue
     if day:
         if venue:
-            day['venues'].append(venue)
+            if venue['is_ticketed']:
+                day['ticketed_venues'].append(venue)
+            else:
+                day['payw_venues'].append(venue)
         _add_non_scheduled_performances(festival, day)
         days.append(day)
 
@@ -202,60 +214,13 @@ def schedule(request, festival_uuid=None):
     }
     return render(request, 'program/schedule.html', context)
 
+def venues_schedule_pdf(request, festival, venues, styles):
 
-
-def schedule_pdf(request, festival_uuid=None):
-
-    # Get festival
-    festival = get_object_or_404(Festival, uuid=festival_uuid) if festival_uuid else request.festival
-
-    # Create a Platypus story
-    response = HttpResponse(content_type = 'application/pdf')
-    response["Content-Disposition"] = 'inline; filename="TheatrefestSchedule.pdf"'
-    doc = SimpleDocTemplate(
-        response,
-        pagesize = landscape(A4),
-        leftMargin = 0.5*cm,
-        rightMargin = 0.5*cm,
-        topMargin = 0.5*cm,
-        bottomMargin = 0.5*cm,
-    )
-    styles = getSampleStyleSheet()
-    story = []
-
-    # Table data and styles
+    venues_data = []
     table_data = []
     table_styles = []
-
-    # Paragraph styles
-    venue_style = ParagraphStyle(
-        name = 'Venue',
-        align = TA_CENTER,
-        fontSize = 10,
-        textColor = colors.white,
-    )
-    day_style = ParagraphStyle(
-        name = 'Day',
-        fontSize = 10,
-    )
-    time_style = ParagraphStyle(
-        name = 'Time',
-        fontSize = 8,
-        leading = 8,
-        textColor = colors.indianred,
-    )
-    show_style = ParagraphStyle(
-        name = 'Show',
-        fontSize = 8,
-        leading = 8,
-        textColor = '#1a7cf3',
-    )
-
-    # Venues
-    venues = Venue.objects.filter(festival=festival, is_ticketed=True).order_by('map_index')
-    venues_data = []
     for v in venues:
-        venues_data.append(Paragraph(f'<para align="center"><b>{v.name}</b></para>', venue_style))
+        venues_data.append(Paragraph(f'<para align="center"><b>{v.name}</b></para>', styles['Venue']))
         venues_data.append('')
     table_data.append(venues_data)
     for i, v in enumerate(venues):
@@ -269,24 +234,25 @@ def schedule_pdf(request, festival_uuid=None):
 
         # Add a row for the day
         first_row = len(table_data)
-        table_data.append([Paragraph(f"{day['date']:%A %d}", day_style)] + ['' for i in range(2*len(venues) - 1)])
+        table_data.append([Paragraph(f"{day['date']:%A %d}", styles['Day'])] + ['' for i in range(2*len(venues) - 1)])
         table_styles.append(('SPAN', (0, first_row), (-1, first_row)))
 
         # Get performances for each venue
         venue_performances = [ ShowPerformance.objects.filter(venue=v, show__is_cancelled=False, date = day['date']).order_by('time') for v in venues]
-        slots = max([len(vp) for vp in venue_performances])
-        for i in range(slots):
-            slot_data = []
-            for v in range(len(venues)):
-                if (i < len(venue_performances[v])):
-                    performance = venue_performances[v][i]
-                    slot_data.append(Paragraph(f'{performance.time:%H:%M}', time_style))
-                    slot_url = f'http://{ request.get_host() }{ reverse("program:show", args = [performance.show.uuid]) }' 
-                    slot_data.append(Paragraph(f'<a href="{ slot_url }">{ performance.show.name }</a>', show_style))
-                else:
-                    slot_data.append('')
-                    slot_data.append('')
-            table_data.append(slot_data)
+        if venue_performances:
+            slots = max([len(vp) for vp in venue_performances])
+            for i in range(slots):
+                slot_data = []
+                for v in range(len(venues)):
+                    if (i < len(venue_performances[v])):
+                        performance = venue_performances[v][i]
+                        slot_data.append(Paragraph(f'{performance.time:%H:%M}', styles['Time']))
+                        slot_url = f'http://{ request.get_host() }{ reverse("program:show", args = [performance.show.uuid]) }' 
+                        slot_data.append(Paragraph(f'<a href="{ slot_url }">{ performance.show.name }</a>', styles['Show']))
+                    else:
+                        slot_data.append('')
+                        slot_data.append('')
+                table_data.append(slot_data)
 
         # Set background color
         table_styles.append(('BACKGROUND', (0, first_row), (-1, len(table_data)), day_color[index % len(day_color)]))
@@ -314,7 +280,133 @@ def schedule_pdf(request, festival_uuid=None):
         vAlign = 'TOP',
         style = table_styles,
     )
-    story.append(table)
+    return table
+
+
+def schedule_pdf(request, festival_uuid=None):
+
+    # Get festival
+    festival = get_object_or_404(Festival, uuid=festival_uuid) if festival_uuid else request.festival
+
+    # Create a Platypus story
+    response = HttpResponse(content_type = 'application/pdf')
+    response["Content-Disposition"] = 'inline; filename="TheatrefestSchedule.pdf"'
+    doc = SimpleDocTemplate(
+        response,
+        pagesize = landscape(A4),
+        leftMargin = 0.5*cm,
+        rightMargin = 0.5*cm,
+        topMargin = 0.5*cm,
+        bottomMargin = 0.5*cm,
+    )
+    styles = getSampleStyleSheet()
+    story = []
+
+    # Paragraph styles
+    venue_style = ParagraphStyle(
+        name = 'Venue',
+        align = TA_CENTER,
+        fontSize = 10,
+        textColor = colors.white,
+    )
+    day_style = ParagraphStyle(
+        name = 'Day',
+        fontSize = 10,
+    )
+    time_style = ParagraphStyle(
+        name = 'Time',
+        fontSize = 8,
+        leading = 8,
+        textColor = colors.indianred,
+    )
+    show_style = ParagraphStyle(
+        name = 'Show',
+        fontSize = 8,
+        leading = 8,
+        textColor = '#1a7cf3',
+    )
+    styles = {
+        'Venue': venue_style,
+        'Day': day_style,
+        'Time': time_style,
+        'Show': show_style,
+    }
+
+    # Ticketed venues
+    venues = Venue.objects.filter(festival=festival, is_scheduled=True, is_ticketed=True).order_by('name')
+    story.append(venues_schedule_pdf(request, festival, venues, styles))
+    # venues_data = []
+    # table_data = []
+    # table_styles = []
+    # for v in venues:
+    #     venues_data.append(Paragraph(f'<para align="center"><b>{v.name}</b></para>', venue_style))
+    #     venues_data.append('')
+    # table_data.append(venues_data)
+    # for i, v in enumerate(venues):
+    #     table_styles.append(('SPAN', (2*i, 0), (2*i + 1, 0)))
+    #     table_styles.append(('BACKGROUND', (2*i, 0), (2*i + 1, 0), v.color ))
+
+    # # Days
+    # days = ShowPerformance.objects.filter(show__festival=festival, show__is_cancelled=False, show__is_ticketed=True).order_by('date').values('date').distinct()
+    # day_color = ('#fbe4d5', '#fff2cc', '#e2efd9', '#deeaf6')
+    # for index, day in enumerate(days):
+
+    #     # Add a row for the day
+    #     first_row = len(table_data)
+    #     table_data.append([Paragraph(f"{day['date']:%A %d}", day_style)] + ['' for i in range(2*len(venues) - 1)])
+    #     table_styles.append(('SPAN', (0, first_row), (-1, first_row)))
+
+    #     # Get performances for each venue
+    #     venue_performances = [ ShowPerformance.objects.filter(venue=v, show__is_cancelled=False, date = day['date']).order_by('time') for v in venues]
+    #     slots = max([len(vp) for vp in venue_performances])
+    #     for i in range(slots):
+    #         slot_data = []
+    #         for v in range(len(venues)):
+    #             if (i < len(venue_performances[v])):
+    #                 performance = venue_performances[v][i]
+    #                 slot_data.append(Paragraph(f'{performance.time:%H:%M}', time_style))
+    #                 slot_url = f'http://{ request.get_host() }{ reverse("program:show", args = [performance.show.uuid]) }' 
+    #                 slot_data.append(Paragraph(f'<a href="{ slot_url }">{ performance.show.name }</a>', show_style))
+    #             else:
+    #                 slot_data.append('')
+    #                 slot_data.append('')
+    #         table_data.append(slot_data)
+
+    #     # Set background color
+    #     table_styles.append(('BACKGROUND', (0, first_row), (-1, len(table_data)), day_color[index % len(day_color)]))
+    #     for i in range(len(venues) - 1):
+    #         table_styles.append(('LINEAFTER', (2*i + 1, first_row + 1), (2*i + 1, len(table_data)), 1, colors.gray))
+
+    # # Table styles
+    # table_styles.append(('VALIGN', (0, 0), (-1, -1), 'TOP'))
+    # table_styles.append(('ALIGN', (0, 0), (-1, 0), 'CENTER'))
+    # table_styles.append(('LEFTPADDING', (0, 0), (-1, -1), 2))
+    # table_styles.append(('RIGHTPADDING', (0, 0), (-1, -1), 2))
+    # table_styles.append(('TOPPADDING', (0, 0), (-1, -1), 1))
+    # table_styles.append(('BOTTOMPADDING', (0, 0), (-1, -1), 2))
+    # table_styles.append(('BOX', (0, 0), (-1, -1), 2, colors.gray))
+    # table_styles.append(('GRID', (0, 0), (-1, 0), 1, colors.gray))
+    # table_styles.append(('LINEBELOW', (0, 1), (-1, -1), 0.25, colors.gray))
+
+    # slot_width_cm = 28.3 / len(venues)
+    # time_width_cm = 0.9
+    # show_width_cm = slot_width_cm - time_width_cm
+    # table = Table(
+    #     table_data,
+    #     colWidths = len(venues) * [time_width_cm*cm, show_width_cm*cm],
+    #     hAlign = 'LEFT',
+    #     vAlign = 'TOP',
+    #     style = table_styles,
+    # )
+    # story.append(table)
+
+    # PAYW venues
+    venues = Venue.objects.filter(festival=festival, is_scheduled=True, is_ticketed=False).order_by('name')
+    i = 0
+    while i < len(venues):
+        story.append(PageBreak())
+        story.append(venues_schedule_pdf(request, festival, venues[i:i+7], styles))
+        i += 7
 
     # Create PDF document and return it
     doc.build(story)
