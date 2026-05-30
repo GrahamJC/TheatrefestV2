@@ -23,7 +23,41 @@
                         <div class="col-12"><h3>Ticketed</h3></div>
                     </div>
                     <div class="row">
-                            {% for venue in day.ticketed_venues %}
+                        {% for venue in day.ticketed_venues %}
+                            <div class="col-12 col-md-6 col-lg-4">
+                                <div class="mb-4 pl-2" {% if venue.color %}style="border-left: 1px solid {{ venue.color }};"{% endif %}>
+                                    <h5 class="tf-venue-name" {% if venue.color %}style="color: {{ venue.color }};"{% endif %}>{{ venue.name }}</h5>
+                                    <table class="table table-borderless table-sm">
+                                        <colgroup>
+                                            <col width="10%">
+                                            <col width="90%">
+                                        </colgroup>
+                                        {% for performance in venue.performances %}
+                                            {% if performance.is_cancelled %}
+                                                <tr class="tf-cancelled">
+                                                    <td>{{ performance.time | time:"H:i" }}</td>
+                                                    <td>{{ performance.show_name }}</td>
+                                                </tr>
+                                            {% else %}
+                                                <tr>
+                                                    <td>{{ performance.time | time:"H:i" }}</td>
+                                                    <td><a href="{% url 'program:show' performance.show_uuid %}">{{ performance.show_name }}</a></td>
+                                                </tr>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </table>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    {% if day.payw_venues %}
+                        <div class="row">
+                            <div class="col-12"><h3>Pay-as-you-Will</h3></div>
+                        </div>
+                        <div class="row">
+                            {% for venue in day.payw_venues %}
                                 <div class="col-12 col-md-6 col-lg-4">
                                     <div class="mb-4 pl-2" {% if venue.color %}style="border-left: 1px solid {{ venue.color }};"{% endif %}>
                                         <h5 class="tf-venue-name" {% if venue.color %}style="color: {{ venue.color }};"{% endif %}>{{ venue.name }}</h5>
@@ -52,41 +86,6 @@
                         </div>
                     {% endif %}
                 </div>
-
-                {% if day.payw_venues %}
-                    <div class="row">
-                        <div class="col-12"><h3>Pay-as-you-Will</h3></div>
-                    </div>
-                    <div class="row">
-                        {% for venue in day.payw_venues %}
-                            <div class="col-12 col-md-6 col-lg-4">
-                                <div class="mb-4 pl-2" {% if venue.color %}style="border-left: 1px solid {{ venue.color }};"{% endif %}>
-                                    <h5 class="tf-venue-name" {% if venue.color %}style="color: {{ venue.color }};"{% endif %}>{{ venue.name }}</h5>
-                                    <table class="table table-borderless table-sm">
-                                        <colgroup>
-                                            <col width="10%">
-                                            <col width="90%">
-                                        </colgroup>
-                                        {% for performance in venue.performances %}
-                                            {% if performance.is_cancelled %}
-                                                <tr class="tf-cancelled">
-                                                    <td>{{ performance.time | time:"H:i" }}</td>
-                                                    <td>{{ performance.show_name }}</td>
-                                                </tr>
-                                            {% else %}
-                                                <tr>
-                                                    <td>{{ performance.time | time:"H:i" }}</td>
-                                                    <td><a href="{% url 'program:show' performance.show_uuid %}">{{ performance.show_name }}</a></td>
-                                                </tr>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </table>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-
             {% endfor %}
         </div>
 
