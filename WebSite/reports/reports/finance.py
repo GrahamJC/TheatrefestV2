@@ -555,11 +555,11 @@ def boxoffice_summary(request):
     first = Checkpoint.objects.filter(created__date = date, boxoffice = boxoffice).order_by('created').first()
     last = Checkpoint.objects.filter(created__date = date, boxoffice = boxoffice).order_by('created').last()
     if first and last and first != last:
-        sales_cash = Sale.objects.filter(boxoffice = boxoffice, created__date = date, transaction_type = Sale.TRANSACTION_TYPE_CASH).aggregate(Sum('amount'))['amount__sum'] or 0
-        sales_card = Sale.objects.filter(boxoffice = boxoffice, created__date = date, transaction_type = Sale.TRANSACTION_TYPE_SQUAREUP).aggregate(Sum('amount'))['amount__sum'] or 0
-        sales_fringers = Fringer.objects.filter(sale__boxoffice = boxoffice, sale__created__date = date).count() or 0
-        sales_buttons = Sale.objects.filter(boxoffice = boxoffice, created__date = date).aggregate(Sum('buttons'))['buttons__sum'] or 0
-        refunds_cash = Refund.objects.filter(boxoffice = boxoffice, created__date = date).aggregate(Sum('amount'))['amount__sum'] or 0
+        sales_cash = Sale.objects.filter(boxoffice = boxoffice, completed__date = date, transaction_type = Sale.TRANSACTION_TYPE_CASH).aggregate(Sum('amount'))['amount__sum'] or 0
+        sales_card = Sale.objects.filter(boxoffice = boxoffice, completed__date = date, transaction_type = Sale.TRANSACTION_TYPE_SQUAREUP).aggregate(Sum('amount'))['amount__sum'] or 0
+        sales_fringers = Fringer.objects.filter(sale__boxoffice = boxoffice, sale__completed__date = date).count() or 0
+        sales_buttons = Sale.objects.filter(boxoffice = boxoffice, completed__date = date).aggregate(Sum('buttons'))['buttons__sum'] or 0
+        refunds_cash = Refund.objects.filter(boxoffice = boxoffice, completed__date = date).aggregate(Sum('amount'))['amount__sum'] or 0
         periods.append({
             'title': f"Daily Summary: {first.created.astimezone():%I:%M%p} to {last.created.astimezone():%I:%M%p}",
             'open': first,
@@ -592,11 +592,11 @@ def boxoffice_summary(request):
         open = prev_checkpoint
         close = checkpoint
         if open and close:
-            sales_cash = Sale.objects.filter(boxoffice = boxoffice, created__gt = open.created, created__lt = close.created, transaction_type = Sale.TRANSACTION_TYPE_CASH).aggregate(Sum('amount'))['amount__sum'] or 0
-            sales_card = Sale.objects.filter(boxoffice = boxoffice, created__gt = open.created, created__lt = close.created, transaction_type = Sale.TRANSACTION_TYPE_SQUAREUP).aggregate(Sum('amount'))['amount__sum'] or 0
-            sales_fringers = Fringer.objects.filter(sale__boxoffice = boxoffice, sale__created__gt = open.created, sale__created__lt = close.created).count() or 0
-            sales_buttons = Sale.objects.filter(boxoffice = boxoffice, created__gt = open.created, created__lt = close.created).aggregate(Sum('buttons'))['buttons__sum'] or 0
-            refunds_cash = Refund.objects.filter(boxoffice = boxoffice, created__gt = open.created, created__lt = close.created).aggregate(Sum('amount'))['amount__sum'] or 0
+            sales_cash = Sale.objects.filter(boxoffice = boxoffice, completed__gt = open.created, completed__lt = close.created, transaction_type = Sale.TRANSACTION_TYPE_CASH).aggregate(Sum('amount'))['amount__sum'] or 0
+            sales_card = Sale.objects.filter(boxoffice = boxoffice, completed__gt = open.created, completed__lt = close.created, transaction_type = Sale.TRANSACTION_TYPE_SQUAREUP).aggregate(Sum('amount'))['amount__sum'] or 0
+            sales_fringers = Fringer.objects.filter(sale__boxoffice = boxoffice, sale__completed__gt = open.created, sale__completed__lt = close.created).count() or 0
+            sales_buttons = Sale.objects.filter(boxoffice = boxoffice, completed__gt = open.created, completed__lt = close.created).aggregate(Sum('buttons'))['buttons__sum'] or 0
+            refunds_cash = Refund.objects.filter(boxoffice = boxoffice, completed__gt = open.created, completed__lt = close.created).aggregate(Sum('amount'))['amount__sum'] or 0
             periods.append({
                 'title': f"{open.created.astimezone():%I:%M%p} to {close.created.astimezone():%I:%M%p}",
                 'open': open,
@@ -754,10 +754,10 @@ def venue_summary(request):
     first = Checkpoint.objects.filter(created__date = date, venue = venue).order_by('created').first()
     last = Checkpoint.objects.filter(created__date = date, venue = venue).order_by('created').last()
     if first and last and first != last:
-        sales_cash = Sale.objects.filter(venue = venue, created__date = date, transaction_type = Sale.TRANSACTION_TYPE_CASH).aggregate(Sum('amount'))['amount__sum'] or 0
-        sales_card = Sale.objects.filter(venue = venue, created__date = date, transaction_type = Sale.TRANSACTION_TYPE_SQUAREUP).aggregate(Sum('amount'))['amount__sum'] or 0
-        sales_fringers = Fringer.objects.filter(sale__venue = venue, sale__created__date = date).count() or 0
-        sales_buttons = Sale.objects.filter(venue = venue, created__date = date).aggregate(Sum('buttons'))['buttons__sum'] or 0
+        sales_cash = Sale.objects.filter(venue = venue, completed__date = date, transaction_type = Sale.TRANSACTION_TYPE_CASH).aggregate(Sum('amount'))['amount__sum'] or 0
+        sales_card = Sale.objects.filter(venue = venue, completed__date = date, transaction_type = Sale.TRANSACTION_TYPE_SQUAREUP).aggregate(Sum('amount'))['amount__sum'] or 0
+        sales_fringers = Fringer.objects.filter(sale__venue = venue, sale__completed__date = date).count() or 0
+        sales_buttons = Sale.objects.filter(venue = venue, completed__date = date).aggregate(Sum('buttons'))['buttons__sum'] or 0
         periods.append({
             'title': f"Daily Summary: {first.created.astimezone():%I:%M%p} to {last.created.astimezone():%I:%M%p}",
             'open': first,
@@ -786,10 +786,10 @@ def venue_summary(request):
         open = performance.open_checkpoint if performance.has_open_checkpoint else None
         close = performance.close_checkpoint if performance.has_close_checkpoint else None
         if open and close:
-            sales_cash = Sale.objects.filter(venue = venue, created__gt = open.created, created__lt = close.created, transaction_type = Sale.TRANSACTION_TYPE_CASH).aggregate(Sum('amount'))['amount__sum'] or 0
-            sales_card = Sale.objects.filter(venue = venue, created__gt = open.created, created__lt = close.created, transaction_type = Sale.TRANSACTION_TYPE_SQUAREUP).aggregate(Sum('amount'))['amount__sum'] or 0
-            sales_fringers = Fringer.objects.filter(sale__venue = venue, sale__created__gt = open.created, sale__created__lt = close.created).count() or 0
-            sales_buttons = Sale.objects.filter(venue = venue, created__gt = open.created, created__lt = close.created).aggregate(Sum('buttons'))['buttons__sum'] or 0
+            sales_cash = Sale.objects.filter(venue = venue, completed__gt = open.created, completed__lt = close.created, transaction_type = Sale.TRANSACTION_TYPE_CASH).aggregate(Sum('amount'))['amount__sum'] or 0
+            sales_card = Sale.objects.filter(venue = venue, completed__gt = open.created, completed__lt = close.created, transaction_type = Sale.TRANSACTION_TYPE_SQUAREUP).aggregate(Sum('amount'))['amount__sum'] or 0
+            sales_fringers = Fringer.objects.filter(sale__venue = venue, sale__completed__gt = open.created, sale__completed__lt = close.created).count() or 0
+            sales_buttons = Sale.objects.filter(venue = venue, completed__gt = open.created, completed__lt = close.created).aggregate(Sum('buttons'))['buttons__sum'] or 0
             periods.append({
                 'title': f"{performance.time:%I:%M%p} {performance.show.name}",
                 'open': open,
