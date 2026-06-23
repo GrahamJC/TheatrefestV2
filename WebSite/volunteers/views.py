@@ -638,9 +638,9 @@ def admin_get_shifts(festival, date_str, location_id_str, role_id_str, user_id_s
     if user_id != 0:
         shifts = shifts.filter(user_id = user_id)
     if status == 'Accepted':
-        shifts = shifts.filter(volunteer__isnull = False)
+        shifts = shifts.filter(user__isnull = False)
     elif status == 'NotAccepted':
-        shifts = shifts.filter(volunteer__isnull = True)
+        shifts = shifts.filter(user__isnull = True)
     if not include_commitments:
         shifts = shifts.filter(commitment__isnull=True)
     shifts = list(shifts.order_by('date', 'start_time', 'location__description', 'role__description'))
