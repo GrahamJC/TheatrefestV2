@@ -1256,7 +1256,7 @@ def checkpoint_add(request, boxoffice_uuid):
         return render_checkpoint(request, boxoffice, None)
 
     # Render errors
-    return render_checkpoint(request, boxoffice, checkpoint, checkpoint_form=form)
+    return render_checkpoint(request, boxoffice, None, form)
 
 
 @require_GET
@@ -1297,7 +1297,7 @@ def checkpoint_update(request, checkpoint_uuid):
         return render_checkpoint(request, boxoffice, None)
 
     # Render form errors
-    return render_checkpoint(request, boxoffice, checkpoint, checkpoint_form=form)
+    return render_checkpoint(request, boxoffice, checkpoint, form)
 
 
 @require_GET
