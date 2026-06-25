@@ -77,7 +77,7 @@ class SaleEMailForm(forms.Form):
 
 class CheckpointForm(forms.Form):
 
-    cash = forms.DecimalField(label = 'Cash', required = True, max_digits = 5, decimal_places = 2, widget = forms.NumberInput(attrs = { 'style': 'width: 75px' }))
+    cash = forms.DecimalField(label = 'Cash', required = True, max_digits = 5, decimal_places = 2, widget = forms.NumberInput(attrs = { 'style': 'width: 100px' }))
     buttons = forms.IntegerField(label = 'Badges', required = True, widget = forms.NumberInput(attrs = { 'style': 'width: 75px' }))
     fringers = forms.IntegerField(label = 'Fringers', required = True, widget = forms.NumberInput(attrs = { 'style': 'width: 75px' }))
     notes = forms.CharField(label = 'Notes', required = False, widget = forms.Textarea(attrs = { 'style': 'width: 100%; height: 200px' }))

@@ -934,8 +934,8 @@ def sale_complete_cash(request, sale_uuid):
     if sale.customer:
         send_email_receipt(sale, sale.customer)
 
-    # Update sales tab
-    return render_sales(request, boxoffice, None)
+    # Update sales tab for new sale
+    return render_sales(request, boxoffice)
 
 @require_POST
 @login_required
@@ -961,10 +961,10 @@ def sale_complete_zero(request, sale_uuid):
         logger.info(f"Sale {sale.id} completed")
         messages.success(request, 'Sale completed')
 
-        # Clear form
-        form = None
+        # Update sales tab for new sale
+        return render_sales(request, boxoffice)
 
-    # Update sales tab
+    # Update sales tab with errors
     return render_sales(request, boxoffice, sale, sale_form=form)
 
 @require_GET

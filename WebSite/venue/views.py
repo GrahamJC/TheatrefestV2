@@ -108,7 +108,7 @@ def square_callback(request):
     sale.transaction_ID = server_transaction_id
     sale.completed = timezone.now()
     sale.save()
-    logger.info(f"Sale {sale.id} completed (SQuareUp)")
+    logger.info(f"Sale {sale.id} completed (SquareUp)")
     messages.success(request, "Card payment completed")
 
     # Display main page for new sale
@@ -151,6 +151,7 @@ def open_form(performance, post_data = None):
     form.helper.form_id = 'open-form'
     form.helper.layout = Layout(
         Row(
+            Column('cash', css_class='form-group col-md-4 mb-0'),
             Column('buttons', css_class='form-group col-md-4 mb-0'),
             Column('fringers', css_class='form-group col-md-4 mb-0'),
         ),
@@ -203,7 +204,7 @@ def performance_open(request, performance_uuid):
             user = request.user,
             venue = venue,
             open_performance = performance,
-            cash = 0,
+            cash = form.cleaned_data['cash'],
             buttons = form.cleaned_data['buttons'],
             fringers = form.cleaned_data['fringers'],
             notes = form.cleaned_data['notes'],
@@ -476,10 +477,7 @@ def sale_items(request, performance_uuid, sale_uuid):
     # Render sales tab content
     return  render_sales(request, performance, sale, items_form=form)
 
-@require_POST
-@login_required
-@user_passes_test(lambda u: u.is_venue or u.is_admin)
-def sale_payment_card(request, performance_uuid, sale_uuid):
+def sale_payment(request, performance_uuid, sale_uuid, payment_type):
 
     # Get performance, venue and sale
     performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
@@ -497,14 +495,30 @@ def sale_payment_card(request, performance_uuid, sale_uuid):
         # Update sale
         sale.notes = form.cleaned_data['notes']
         sale.amount = sale.total_cost
-        sale.transaction_type = Sale.TRANSACTION_TYPE_SQUAREUP
+        sale.transaction_type = payment_type
         sale.transaction_fee = 0
         sale.save()
-        logger.info(f"Payment type {Sale.TRANSACTION_TYPE_SQUAREUP} selected for for sale {sale.id}")
+        logger.info(f"Payment type {payment_type} selected for for sale {sale.id}")
         form = None
 
-    # Form has errors
+    # Update sales tab
     return render_sales(request, performance, sale, update_form=form)
+
+@require_POST
+@login_required
+@user_passes_test(lambda u: u.is_venue or u.is_admin)
+def sale_payment_cash(request, performance_uuid, sale_uuid):
+
+    # Select cash payment
+    return sale_payment(request, performance_uuid, sale_uuid, Sale.TRANSACTION_TYPE_CASH)
+
+@require_POST
+@login_required
+@user_passes_test(lambda u: u.is_venue or u.is_admin)
+def sale_payment_card(request, performance_uuid, sale_uuid):
+
+    # Select card payment
+    return sale_payment(request, performance_uuid, sale_uuid, Sale.TRANSACTION_TYPE_SQUAREUP)
 
 @require_GET
 @login_required
@@ -530,6 +544,30 @@ def sale_payment_cancel(request, performance_uuid, sale_uuid):
 
     # Update sales tab
     return  render_sales(request, performance, sale)
+
+@require_GET
+@login_required
+@user_passes_test(lambda u: u.is_venue or u.is_admin)
+@transaction.atomic
+def sale_complete_cash(request, performance_uuid, sale_uuid):
+
+    # Get performance, venue and sale
+    performance = get_object_or_404(ShowPerformance, uuid = performance_uuid)
+    assert performance.has_open_checkpoint
+    assert not performance.has_close_checkpoint
+    venue = performance.venue
+    sale = get_object_or_404(Sale, uuid = sale_uuid)
+    assert sale.venue == venue
+    assert sale.is_payment_pending and sale.is_cash
+
+    # Complete sale
+    sale.completed = timezone.now()
+    sale.save()
+    logger.info(f"Sale {sale.id} completed (cash)")
+    messages.success(request, 'Cash sale completed')
+
+    # Update sales tab
+    return  render_sales(request, performance, None)
 
 @require_POST
 @login_required
@@ -562,10 +600,10 @@ def sale_complete_zero(request, performance_uuid, sale_uuid):
         logger.info(f"Sale {sale.id} completed")
         messages.success(request, 'Sale completed')
 
-        # Clear form
-        form = None
+        # Update sales tab for new sale
+        return  render_sales(request, performance, None)
 
-    # Update sales tab
+    # Update sales tab with errors
     return  render_sales(request, performance, sale, update_form=form)
 
 @require_GET
@@ -641,10 +679,11 @@ def close_form(performance, post_data = None):
     form.helper.form_id = 'close-form'
     form.helper.layout = Layout(
         Row(
+            Column('cash', css_class='form-group col-md-4 mb-0'),
             Column('buttons', css_class='form-group col-md-4 mb-0'),
             Column('fringers', css_class='form-group col-md-4 mb-0'),
-            Column('audience', css_class='form-group col-md-4 mb-0'),
         ),
+        Field('audience'),
         Field('notes'),
     )
 
@@ -695,7 +734,7 @@ def performance_close(request, performance_uuid):
             user = request.user,
             venue = venue,
             close_performance = performance,
-            cash = 0,
+            cash = form.cleaned_data['cash'],
             buttons = form.cleaned_data['buttons'],
             fringers = form.cleaned_data['fringers'],
             notes = form.cleaned_data['notes'],

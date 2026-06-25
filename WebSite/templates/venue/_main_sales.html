@@ -102,6 +102,10 @@
                     <button class="btn btn-primary" hx-post="{% url 'venue:sale_items' performance.uuid sale.uuid %}" hx-include="#sale-items-form">Add/Update Sale</button>
                 </div>
             </div>
+        {% elif sale.is_cash %}
+            <div class="alert alert-warning">
+                <p>Cash</p>
+            </div>
         {% elif sale.is_square %}
             <div class="alert alert-warning">
                 <p>Square POS App.</p>
@@ -187,12 +191,18 @@
                             {% if sale.is_in_progress %}
                                 {% crispy sale_form %}
                                 {% if sale.total_cost > 0 %}
+                                    <button class="btn btn-primary" hx-post="{% url 'venue:sale_payment_cash' performance.uuid sale.uuid %}" hx-include="#sale-form">Cash</button>
                                     <button class="btn btn-primary" hx-post="{% url 'venue:sale_payment_card' performance.uuid sale.uuid %}" hx-include="#sale-form">Card</button>
                                 {% elif not sale.is_empty %}
                                     <button class="btn btn-primary" hx-post="{% url 'venue:sale_complete_zero' performance.uuid sale.uuid %}" hx-include="#sale-form">Complete</button>
                                 {% endif %}
                                 <div class="float-right">
                                     <button class="btn btn-secondary" hx-get="{% url 'venue:sale_cancel' performance.uuid sale.uuid %}">Cancel</button>
+                                </div>
+                            {% elif sale.is_cash %}
+                                <button class="btn btn-primary" hx-get="{% url 'venue:sale_complete_cash' performance.uuid sale.uuid %}">Complete</button>
+                                <div class="float-right">
+                                    <button class="btn btn-secondary" hx-get="{% url 'venue:sale_payment_cancel' performance.uuid sale.uuid %}">Cancel</button>
                                 </div>
                             {% elif sale.is_square %}
                                 <button class="btn btn-primary" onclick="squareUpComplete()">Complete</button>
