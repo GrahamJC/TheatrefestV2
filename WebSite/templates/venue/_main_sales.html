@@ -136,7 +136,7 @@
                             {% for sale in sales %}
                                 <tr>
                                     <td><a href="#" hx-get="{% url "venue:sale_select" performance.uuid sale.uuid %}">{{ sale.id }}</a></td>
-                                    <td>{{ sale.completed.time }}</td>
+                                    <td>{{ sale.completed | time:"H:i" }}</td>
                                     <td>&#163;{{ sale.amount }}</td>
                                 </tr>
                             {% endfor %}
