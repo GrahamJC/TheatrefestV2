@@ -18,20 +18,12 @@
     </tr>
     {% for boxoffice_name, boxoffice_sales in sales_by_channel.boxoffices.items %}
         <tr>
-            <td>{{ boxoffice_name }} (cash)</td>
-            <td></td>
-            {% for x in boxoffice_sales.cash.dates %}
+            <td>{{ boxoffice_name }}</td>
+            <td class="text-right">&#163;{{ boxoffice_sales.pre | floatformat:'0' | default:'' }}</td>
+            {% for x in boxoffice_sales.dates %}
                 <td class="text-right">&#163;{{ x | floatformat:'0' | default:'' }}</td>
             {% endfor %}
-            <td class="text-right">&#163;{{ boxoffice_sales.cash.total | floatformat:'0' | default:'' }}</td>
-        </tr>
-        <tr>
-            <td>{{ boxoffice_name }} (card)</td>
-            <td></td>
-            {% for x in boxoffice_sales.card.dates %}
-                <td class="text-right">&#163;{{ x | floatformat:'0' | default:'' }}</td>
-            {% endfor %}
-            <td class="text-right">&#163;{{ boxoffice_sales.card.total | floatformat:'0' | default:'' }}</td>
+            <td class="text-right">&#163;{{ boxoffice_sales.total | floatformat:'0' | default:'' }}</td>
         </tr>
     {% endfor %}
     {% for venue_name, venue_sales in sales_by_channel.venues.items %}
@@ -81,6 +73,36 @@
             <td class="text-right"><strong>&#163;{{ x | floatformat:'0' | default:'' }}</strong></td>
         {% endfor %}
         <td class="text-right"><strong>&#163;{{ sales_by_type.totals.total | floatformat:'0' | default:'' }}</strong></td>
+    </tr>
+</table>
+
+<h5>Sales by Payment</h5>
+<table class="table">
+    <tr>
+        <th></th>
+        <th class="text-right">Pre-<br>sales</th>
+        {% for date in sales_by_payment.dates %}
+            <th class="text-right">{{ date | date:'D' }}<br>{{ date | date:'j-M' }}</th>
+        {% endfor %}
+        <th class="text-right">Total</th>
+    </tr>
+    {% for payment_name, payment_sales in sales_by_payment.payments.items %}
+        <tr>
+            <td>{{ payment_sales.title }}</td>
+            <td class="text-right")>&#163;{{ payment_sales.pre | floatformat:'0' | default:'' }}</td>
+            {% for x in payment_sales.dates %}
+                <td class="text-right">&#163;{{ x | floatformat:'0' | default:'' }}</td>
+            {% endfor %}
+            <td class="text-right">&#163;{{ payment_sales.total | floatformat:'0' | default:'' }}</td>
+        </tr>
+    {% endfor %}
+    <tr>
+        <td></td>
+        <td class="text-right"><strong>&#163;{{ sales_by_payment.totals.pre | floatformat:'0' | default:'' }}</strong></td>
+        {% for x in sales_by_payment.totals.dates %}
+            <td class="text-right"><strong>&#163;{{ x | floatformat:'0' | default:'' }}</strong></td>
+        {% endfor %}
+        <td class="text-right"><strong>&#163;{{ sales_by_payment.totals.total | floatformat:'0' | default:'' }}</strong></td>
     </tr>
 </table>
 
